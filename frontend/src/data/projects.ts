@@ -1,0 +1,231 @@
+import {
+  Church, Globe, Layout, Smartphone, Shield, Palette, Building2,
+  type LucideIcon,
+} from "lucide-react";
+
+export interface Project {
+  slug: string;
+  title: string;
+  subtitle: string;
+  desc: string;
+  longDesc: string[];
+  tech: string[];
+  icon: LucideIcon;
+  features: string[];
+  category: string;
+  liveUrl: string;
+  githubUrl: string;
+  year: string;
+  client: string;
+}
+
+export const projects: Project[] = [
+  {
+    slug: "royal-youth-hub",
+    title: "Royal Youth Hub",
+    subtitle: "Interactive Youth Community Platform",
+    desc: "An interactive youth community platform with event management, media galleries, and real-time communication features.",
+    longDesc: [
+      "A dynamic digital hub designed for youth communities to connect, engage, and grow together. The platform features a modern interface with intuitive navigation that makes it easy for young people to access resources, register for events, and interact with peers.",
+      "Built with a focus on mobile-first design, the platform ensures seamless access across all devices. Real-time notifications keep members informed about upcoming events, new content, and community updates.",
+      "The admin dashboard provides comprehensive tools for managing members, tracking engagement metrics, and publishing content — all within a secure, scalable architecture.",
+    ],
+    tech: ["Next.js", "MongoDB", "Tailwind CSS", "Firebase"],
+    icon: Church,
+    features: [
+      "Event registration and management system",
+      "Real-time messaging and notifications",
+      "Media gallery with video support",
+      "Member profiles and directories",
+      "Admin analytics dashboard",
+      "Mobile-responsive design",
+    ],
+    category: "Web App",
+    liveUrl: "https://royalyouthhub.vercel.app",
+    githubUrl: "https://github.com/gtechglobal/royal-youth-hub",
+    year: "2025",
+    client: "Youth Ministry",
+  },
+  {
+    slug: "interactive-church-platform",
+    title: "Interactive Church Platform",
+    subtitle: "Comprehensive Church Management System",
+    desc: "A comprehensive church management system with sermon libraries, donation integrations, and community engagement tools.",
+    longDesc: [
+      "A full-featured church management platform that streamlines operations and fosters community connection. The system handles everything from sermon archiving to donation processing with a clean, accessible interface.",
+      "Members can access live streams, browse sermon archives, submit prayer requests, and manage their giving — all from a single dashboard. The platform is designed to be intuitive for users of all ages and technical abilities.",
+      "For administrators, the backend provides powerful tools for content management, member tracking, financial reporting, and communication automation.",
+    ],
+    tech: ["React", "Node.js", "Express", "MongoDB"],
+    icon: Church,
+    features: [
+      "Sermon library with search and categories",
+      "Live streaming integration",
+      "Online donation and tithing system",
+      "Prayer request and community forums",
+      "Event calendar with RSVP",
+      "Member management portal",
+    ],
+    category: "Web App",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "Victory Assembly",
+  },
+  {
+    slug: "modern-corporate-websites",
+    title: "Modern Corporate Websites",
+    subtitle: "Premium Business Web Solutions",
+    desc: "Premium corporate websites with dynamic content management and seamless user experiences.",
+    longDesc: [
+      "A portfolio of corporate websites designed to establish strong digital presences for businesses across various industries. Each site is crafted to reflect the brand's identity while delivering exceptional user experiences.",
+      "The websites feature dynamic content management systems that allow clients to update their content independently. Performance optimization ensures fast load times and excellent search engine rankings.",
+      "Every project follows a strategic approach — starting with thorough research and planning, followed by iterative design and development, culminating in a polished launch.",
+    ],
+    tech: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion"],
+    icon: Globe,
+    features: [
+      "Custom CMS integration",
+      "SEO-optimized architecture",
+      "Multi-language support",
+      "Blog and news sections",
+      "Team and careers pages",
+      "Contact and inquiry forms",
+    ],
+    category: "Web Development",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "Multiple Clients",
+  },
+  {
+    slug: "business-landing-pages",
+    title: "Business Landing Pages",
+    subtitle: "High-Conversion Marketing Pages",
+    desc: "High-conversion landing pages optimized for lead generation with performance tracking.",
+    longDesc: [
+      "Strategically designed landing pages focused on converting visitors into leads. Each page is built around a clear call-to-action with persuasive copywriting and compelling visual design.",
+      "A/B testing capabilities allow for continuous optimization of conversion rates. Integrated analytics provide insights into user behavior, helping refine the messaging and design over time.",
+      "The pages are built for speed — optimized images, minimal JavaScript, and efficient loading strategies ensure visitors don't wait.",
+    ],
+    tech: ["React", "Tailwind CSS", "JavaScript"],
+    icon: Layout,
+    features: [
+      "A/B testing ready",
+      "Conversion-optimized layouts",
+      "Analytics and heatmap integration",
+      "Fast loading performance",
+      "Mobile-first responsive design",
+      "Lead capture forms",
+    ],
+    category: "Web Development",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "GrowthLab",
+  },
+  {
+    slug: "notification-pwas",
+    title: "Notification-enabled PWAs",
+    subtitle: "App-Like Progressive Web Applications",
+    desc: "Progressive Web Applications with offline support, push notifications, and native app-like experiences.",
+    longDesc: [
+      "Progressive Web Applications that deliver native app experiences directly in the browser. Users can install these apps on their devices, receive push notifications, and access content even without an internet connection.",
+      "The PWAs are built with service workers that intelligently cache resources for offline access. Push notifications keep users engaged with timely updates and personalized content.",
+      "These applications offer near-native performance while maintaining the accessibility and discoverability of the web — no app store required.",
+    ],
+    tech: ["Next.js", "Service Workers", "Firebase"],
+    icon: Smartphone,
+    features: [
+      "Offline functionality",
+      "Push notification system",
+      "Installable on home screen",
+      "Background sync capabilities",
+      "Fast cached performance",
+      "Cross-platform compatibility",
+    ],
+    category: "PWA",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "TechVentures",
+  },
+  {
+    slug: "admin-dashboard-systems",
+    title: "Admin Dashboard Systems",
+    subtitle: "Powerful Data Management Interfaces",
+    desc: "Powerful admin dashboards with real-time data visualization and comprehensive analytics.",
+    longDesc: [
+      "Sophisticated admin dashboard systems designed to give organizations complete control over their data and operations. Real-time visualizations turn complex data sets into actionable insights.",
+      "The dashboards feature customizable widgets, role-based access control, and automated reporting. Users can monitor key metrics, manage users, and configure system settings from a unified interface.",
+      "Built with scalability in mind, these systems handle growing data volumes without compromising performance.",
+    ],
+    tech: ["React", "Node.js", "MongoDB"],
+    icon: Shield,
+    features: [
+      "Real-time data visualization",
+      "Customizable widget layouts",
+      "Role-based access control",
+      "Automated report generation",
+      "User and permission management",
+      "API integration support",
+    ],
+    category: "Dashboard",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "Enterprise Clients",
+  },
+  {
+    slug: "graphics-branding-campaigns",
+    title: "Graphics Branding Campaigns",
+    subtitle: "Complete Visual Identity Systems",
+    desc: "Complete brand identity campaigns including logos, social media kits, and brand guidelines.",
+    longDesc: [
+      "Comprehensive branding campaigns that establish cohesive visual identities across all touchpoints. From logo design to social media templates, every element is crafted to communicate the brand's essence.",
+      "Each campaign begins with deep discovery to understand the brand's values, audience, and market position. The resulting identity system includes guidelines that ensure consistency across all applications.",
+      "Deliverables include logo variations, color palettes, typography systems, stationery designs, social media kits, and promotional material templates.",
+    ],
+    tech: ["Photoshop", "Figma", "Canva"],
+    icon: Palette,
+    features: [
+      "Logo and brand mark design",
+      "Color palette and typography",
+      "Social media kit templates",
+      "Brand guidelines document",
+      "Stationery and collateral",
+      "Promotional material design",
+    ],
+    category: "Design",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "Multiple Brands",
+  },
+  {
+    slug: "portfolio-websites",
+    title: "Portfolio Websites",
+    subtitle: "Premium Personal Brand Websites",
+    desc: "Premium portfolio websites with animated showcases and integrated contact systems.",
+    longDesc: [
+      "Custom portfolio websites designed to showcase creative work and professional achievements. Each portfolio is a digital storefront that tells a compelling story about the individual or studio behind it.",
+      "The designs emphasize visual impact with smooth animations, project showcases, and integrated contact systems that make it easy for potential clients to reach out.",
+      "Built with modern web technologies, these portfolios are fast, responsive, and optimized for search engines — ensuring the work gets the visibility it deserves.",
+    ],
+    tech: ["Next.js", "Framer Motion", "Tailwind CSS"],
+    icon: Building2,
+    features: [
+      "Animated project showcases",
+      "Filterable portfolio grid",
+      "Integrated contact system",
+      "Smooth page transitions",
+      "SEO-optimized structure",
+      "Client testimonial sections",
+    ],
+    category: "Web Development",
+    liveUrl: "#",
+    githubUrl: "#",
+    year: "2025",
+    client: "Creative Professionals",
+  },
+];
