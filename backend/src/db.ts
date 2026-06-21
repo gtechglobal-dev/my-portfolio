@@ -1,14 +1,18 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+const isVercel = process.env.VERCEL === '1';
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = isVercel
+  ? join('/tmp', 'data')
+  : join(__dirname, '..', 'data');
 const BOOKINGS_FILE = join(DATA_DIR, 'bookings.json');
 const MESSAGES_FILE = join(DATA_DIR, 'messages.json');
 
 function ensureFile(file: string, initial: string) {
   if (!existsSync(file)) {
+    mkdirSync(DATA_DIR, { recursive: true });
     writeFileSync(file, initial, 'utf-8');
   }
 }

@@ -9,6 +9,10 @@ let logoDataUri: string | null = null;
 
 function getLogo() {
   if (logoDataUri !== null) return logoDataUri;
+  if (process.env.VERCEL === '1') {
+    logoDataUri = '';
+    return logoDataUri;
+  }
   const candidates = [
     resolve(process.cwd(), '..', 'frontend', 'public', 'gtechName1.png'),
     resolve(__dirname, '..', '..', 'frontend', 'public', 'gtechName1.png'),
