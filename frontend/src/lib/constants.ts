@@ -1,9 +1,9 @@
 export const siteConfig = {
   name: 'Gtech Global',
   email: 'gtechglobal.dev@gmail.com',
-  phone: '+234 901 525 0928',
+  phone: '+234 905 486 7749',
   social: {
-    whatsapp: 'https://wa.me/2349015250928',
+    whatsapp: 'https://wa.me/2349054867749',
     linkedin: 'https://www.linkedin.com/in/okoroebube-gtech/',
   },
 }

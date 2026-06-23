@@ -8,6 +8,7 @@ import Booking from './pages/Booking'
 import Contact from './pages/Contact'
 import Blog from './pages/Blog'
 import Admin from './pages/Admin'
+import Resume from './pages/Resume'
 
 export default function App() {
   const { pathname } = useLocation()
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/booking" element={<Booking />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/resume" element={<Resume />} />
         </Routes>
       </main>
       <Footer />

@@ -7,6 +7,7 @@ const links = [
   { to: '/portfolio', label: 'Work' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/booking', label: 'Book' },
+  { to: '/resume', label: 'Resume' },
   { to: '/contact', label: 'Contact' },
 ];
 

@@ -22,6 +22,7 @@ export default function Footer() {
             <Link to="/portfolio" className="hover:text-white transition-colors">Work</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
             <Link to="/booking" className="hover:text-white transition-colors">Book</Link>
+            <Link to="/resume" className="hover:text-white transition-colors">Resume</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
           </nav>
         </div>
@@ -31,7 +32,10 @@ export default function Footer() {
             <a href={siteConfig.social.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               <LinkedinIcon className="w-4 h-4" />
             </a>
-            <span>gtechglobal.dev@gmail.com</span>
+            <span className="hidden sm:inline">|</span>
+            <a href={`tel:${siteConfig.phone}`} className="hover:text-white transition-colors">{siteConfig.phone}</a>
+            <span className="hidden sm:inline">|</span>
+            <a href={`mailto:${siteConfig.email}`} className="hover:text-white transition-colors">{siteConfig.email}</a>
           </div>
         </div>
       </div>

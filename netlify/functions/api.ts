@@ -5,6 +5,7 @@ import serverless from 'serverless-http';
 import bookingsRouter from '../../backend/src/routes/bookings';
 import adminRouter from '../../backend/src/routes/admin';
 import contactRouter from '../../backend/src/routes/contact';
+import resumeRouter from '../../backend/src/routes/resume';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/resume', resumeRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

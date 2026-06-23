@@ -4,6 +4,7 @@ import cors from 'cors';
 import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
+import resumeRouter from './routes/resume.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -23,6 +24,7 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/resume', resumeRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
