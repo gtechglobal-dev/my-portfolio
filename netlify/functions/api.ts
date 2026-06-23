@@ -28,7 +28,11 @@ app.get('/api/health', (_, res) => {
 
 const base = serverless(app);
 
+const PREFIX = '/.netlify/functions/api';
+
 export const handler = async (event: any, context: any) => {
-  event.path = event.headers['x-netlify-original-pathname'] || event.path;
+  if (event.path.startsWith(PREFIX)) {
+    event.path = '/api' + event.path.slice(PREFIX.length);
+  }
   return base(event, context);
 };
