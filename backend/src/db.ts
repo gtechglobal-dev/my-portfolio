@@ -3,8 +3,9 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const isVercel = process.env.VERCEL === '1';
+const isNetlify = process.env.NETLIFY === 'true';
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = isVercel
+const DATA_DIR = isVercel || isNetlify
   ? join('/tmp', 'data')
   : join(__dirname, '..', 'data');
 const BOOKINGS_FILE = join(DATA_DIR, 'bookings.json');
