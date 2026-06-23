@@ -2,14 +2,18 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+let __filename: string | undefined;
+let __dirname: string | undefined;
+try {
+  __filename = fileURLToPath(import.meta.url);
+  __dirname = dirname(__filename);
+} catch {}
 
 let logoDataUri: string | null = null;
 
 function getLogo() {
   if (logoDataUri !== null) return logoDataUri;
-  if (process.env.VERCEL === '1') {
+  if (process.env.VERCEL === '1' || process.env.NETLIFY === 'true') {
     logoDataUri = '';
     return logoDataUri;
   }
