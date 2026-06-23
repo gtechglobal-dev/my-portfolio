@@ -1,13 +1,5 @@
 import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-let __filename: string | undefined;
-let __dirname: string | undefined;
-try {
-  __filename = fileURLToPath(import.meta.url);
-  __dirname = dirname(__filename);
-} catch {}
+import { resolve } from 'path';
 
 let logoDataUri: string | null = null;
 
@@ -19,8 +11,7 @@ function getLogo() {
   }
   const candidates = [
     resolve(process.cwd(), '..', 'frontend', 'public', 'gtechName1.png'),
-    resolve(__dirname, '..', '..', 'frontend', 'public', 'gtechName1.png'),
-    resolve(__dirname, '..', 'frontend', 'public', 'gtechName1.png'),
+    resolve(process.cwd(), 'backend', '..', 'frontend', 'public', 'gtechName1.png'),
     resolve(process.cwd(), 'frontend', 'public', 'gtechName1.png'),
   ];
   for (const p of candidates) {

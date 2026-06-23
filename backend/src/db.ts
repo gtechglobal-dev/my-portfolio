@@ -1,17 +1,10 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 
-const isVercel = process.env.VERCEL === '1';
-const isNetlify = process.env.NETLIFY === 'true';
-const isServerless = isVercel || isNetlify;
-let __dirname: string | undefined;
-if (!isServerless) {
-  __dirname = dirname(fileURLToPath(import.meta.url));
-}
+const isServerless = process.env.VERCEL === '1' || process.env.NETLIFY === 'true';
 const DATA_DIR = isServerless
   ? join('/tmp', 'data')
-  : join(__dirname!, '..', 'data');
+  : join(process.cwd(), 'data');
 const BOOKINGS_FILE = join(DATA_DIR, 'bookings.json');
 const MESSAGES_FILE = join(DATA_DIR, 'messages.json');
 
