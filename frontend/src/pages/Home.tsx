@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Services from '../components/sections/Services';
 import CtaSection from '../components/sections/CtaSection';
+import TypeWriter from '../components/sections/TypeWriter';
 
 const stats = [
   { value: '50+', label: 'Projects' },
@@ -20,10 +21,10 @@ export default function Home() {
             <img src="/gtechlogo.png" alt="" className="w-16 md:w-[72px] mb-6 object-contain" />
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain" />
             <h1 className="text-[2.25rem] sm:text-[3rem] md:text-[3.75rem] lg:text-[4.25rem] font-bold leading-[1.1] tracking-[-0.02em] max-w-3xl">
-              Building modern digital<br /><span className="gradient-text">experiences</span>
+              Welcome to<br /><span className="gradient-text">Gtech Global</span>
             </h1>
-            <p className="mt-5 md:mt-6 text-[0.9375rem] md:text-base text-[#7a7a8c] max-w-md leading-relaxed">
-              We craft premium websites, applications, and brand identities that help businesses grow online.
+            <p className="mt-5 md:mt-6 text-[0.9375rem] md:text-base text-[#7a7a8c] max-w-lg leading-relaxed min-h-[1.6em]">
+              We craft premium <TypeWriter />
             </p>
             <div className="mt-10 md:mt-12 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <Link to="/portfolio" className="btn btn-primary w-full sm:w-auto">View Our Work</Link>
