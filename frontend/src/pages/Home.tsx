@@ -20,10 +20,10 @@ export default function Home() {
             className="flex flex-col items-center text-center">
             <img src="/gtechlogo.png" alt="" className="w-16 md:w-[72px] mb-6 object-contain" />
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain" />
-            <h1 className="text-[2.25rem] sm:text-[3rem] md:text-[3.75rem] lg:text-[4.25rem] font-bold leading-[1.1] tracking-[-0.02em] max-w-3xl">
+            <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold leading-[1.15] tracking-[-0.01em] max-w-3xl">
               Welcome to<br /><span className="gradient-text">Gtech Global</span>
             </h1>
-            <p className="mt-5 md:mt-6 text-[0.9375rem] md:text-base text-[#7a7a8c] max-w-lg leading-relaxed min-h-[1.6em]">
+            <p className="mt-5 md:mt-6 text-[1.125rem] sm:text-[1.25rem] md:text-[1.5rem] text-[#c4c4d4] max-w-2xl leading-relaxed min-h-[1.6em]">
               We craft premium <TypeWriter />
             </p>
             <div className="mt-10 md:mt-12 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
