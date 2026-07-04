@@ -18,10 +18,9 @@ export default function Home() {
         <div className="container px-6 md:px-8 py-28 md:py-36 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
             className="flex flex-col items-center text-center">
-            <img src="/gtechlogo.png" alt="" className="w-16 md:w-[72px] mb-6 object-contain" />
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain" />
             <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold leading-[1.15] tracking-[-0.01em] max-w-3xl">
-              Welcome to<br /><span className="gradient-text">Gtech Global</span>
+              Welcome to <span className="gradient-text">Gtech Global</span>
             </h1>
             <p className="mt-5 md:mt-6 text-[1.125rem] sm:text-[1.25rem] md:text-[1.5rem] text-[#c4c4d4] max-w-2xl leading-relaxed min-h-[1.6em]">
               We craft premium <TypeWriter />
@@ -34,7 +33,7 @@ export default function Home() {
               {stats.map((s) => (
                 <div key={s.label} className="text-center">
                   <div className="text-lg md:text-xl font-bold tracking-tight">{s.value}</div>
-                  <div className="text-xs md:text-sm text-[#5a5a6e] mt-1">{s.label}</div>
+                  <div className="text-xs md:text-sm text-[#6b6560] mt-1">{s.label}</div>
                 </div>
               ))}
             </div>

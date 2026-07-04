@@ -10,7 +10,7 @@ const projects = [
     tech: ['Next.js', 'MongoDB', 'Socket.IO', 'PWA'],
     url: 'https://royalyouths.onrender.com/',
     image: '/screenshots/royal-youths.png',
-    color: '#6366f1',
+    color: '#d97706',
     metric: '2K+ Active Users',
     status: 'live',
   },
@@ -19,7 +19,7 @@ const projects = [
     category: 'Digital Services Mall',
     desc: 'A full-featured service marketplace where users browse, select, and pay for digital projects — from design to development.',
     tech: ['Next.js', 'Stripe', 'MongoDB', 'TailwindCSS'],
-    url: 'https://prestigemart.vercel.app/',
+    url: 'https://prestigemart.netlify.app/',
     image: '/screenshots/prestige-mart.png',
     color: '#f59e0b',
     metric: 'Live & Active',
@@ -30,7 +30,7 @@ const projects = [
     category: 'EdTech',
     desc: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable result transcripts.',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Chart.js'],
-    url: 'https://christianworldcollegeresults.vercel.app/',
+    url: 'https://christianworldresultchecker.netlify.app/',
     image: '/screenshots/school-results.png',
     color: '#10b981',
     metric: 'Demo Available',
@@ -41,7 +41,7 @@ const projects = [
     category: 'Church Management',
     desc: 'Digital presence for a modern church with sermon archives, event calendar, donation integration, and member portal.',
     tech: ['Next.js', 'Paystack', 'Sanity CMS', 'TailwindCSS'],
-    url: 'https://houseonthethrone.vercel.app/',
+    url: 'https://houseonthethronechurch.netlify.app/',
     image: '/screenshots/church.png',
     color: '#a78bfa',
     metric: 'Live Website',
@@ -142,11 +142,11 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#12121c] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[#151412] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
           {project.image ? (
-            <div className="w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-[#1a1a2e]">
+            <div className="w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-[#1c1a18]">
               <img
                 src={project.image}
                 alt={project.title}
@@ -190,7 +190,7 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         <div className="p-6 md:p-7">
           <span className="text-[11px] uppercase tracking-wider text-white/40">{project.category}</span>
           <h2 className="text-xl font-bold mt-1 mb-3">{project.title}</h2>
-          <p className="text-sm text-[#7a7a8c] leading-relaxed mb-5">{project.desc}</p>
+          <p className="text-sm text-[#a09890] leading-relaxed mb-5">{project.desc}</p>
           <div className="flex flex-wrap gap-1.5 mb-5">
             {project.tech.map((t) => (
               <span
@@ -240,7 +240,7 @@ export default function PortfolioGrid() {
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">
             Our <span className="gradient-text">Portfolio</span>
           </h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#7a7a8c]">
+          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
             Real projects we've shipped. Real results we've delivered.
           </p>
         </motion.div>
@@ -287,7 +287,7 @@ export default function PortfolioGrid() {
                   </div>
                 )}
                 {p.status === 'coming' && (
-                  <div className="absolute inset-0 bg-[#0b0b12]/60 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[#0c0b0a]/60 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
                       <Clock className="w-3 h-3 text-amber-400" />
                       <span className="text-[10px] font-medium text-amber-400/80 uppercase tracking-wider">Under Development</span>
@@ -304,7 +304,7 @@ export default function PortfolioGrid() {
               <div className="p-4 md:p-5">
                 <span className="text-[10px] uppercase tracking-wider text-white/40">{p.category}</span>
                 <h3 className="text-sm font-semibold mt-0.5 mb-1.5">{p.title}</h3>
-                <p className="text-xs text-[#7a7a8c] leading-relaxed line-clamp-2 mb-3">{p.desc}</p>
+                <p className="text-xs text-[#a09890] leading-relaxed line-clamp-2 mb-3">{p.desc}</p>
                 <div className="flex flex-wrap gap-1">
                   {p.tech.slice(0, 3).map((t) => (
                     <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] text-white/40">{t}</span>

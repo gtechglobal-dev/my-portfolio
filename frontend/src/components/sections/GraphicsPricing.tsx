@@ -9,7 +9,7 @@ export default function GraphicsPricing() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Graphics Design Pricing</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#7a7a8c]">Professional design services at affordable rates.</p>
+          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Professional design services at affordable rates.</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {graphicsPackages.map((pkg, i) => (
@@ -18,11 +18,11 @@ export default function GraphicsPricing() {
               <h3 className="text-sm md:text-base font-semibold mb-2 leading-snug">{pkg.title}</h3>
               <div className="mb-4">
                 <div className="text-base md:text-lg font-bold">₦{pkg.price.ngn}</div>
-                <div className="text-[10px] text-[#5a5a6e]">${pkg.price.usd} USD</div>
+                <div className="text-[10px] text-[#6b6560]">${pkg.price.usd} USD</div>
               </div>
               <ul className="space-y-1.5 mb-4">
                 {pkg.features.slice(0, 3).map((f) => (
-                  <li key={f} className="flex items-start gap-1.5 text-xs text-[#7a7a8c]">
+                  <li key={f} className="flex items-start gap-1.5 text-xs text-[#a09890]">
                     <Check className="w-2.5 h-2.5 text-indigo mt-0.5 shrink-0" />
                     <span className="leading-tight">{f}</span>
                   </li>

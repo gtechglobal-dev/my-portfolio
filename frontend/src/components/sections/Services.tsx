@@ -20,7 +20,7 @@ export default function Services() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-14 md:mb-16">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">What We Do</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#7a7a8c]">
+          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
             Full-service digital agency covering everything from design to deployment.
           </p>
         </div>
@@ -33,7 +33,7 @@ export default function Services() {
                   <s.icon className="w-[18px] h-[18px] text-indigo" />
                 </div>
                 <h3 className="text-[1.0625rem] font-semibold mb-2">{s.title}</h3>
-                <p className="text-sm text-[#7a7a8c] leading-relaxed">{s.desc}</p>
+                <p className="text-sm text-[#a09890] leading-relaxed">{s.desc}</p>
               </Link>
             </motion.div>
           ))}

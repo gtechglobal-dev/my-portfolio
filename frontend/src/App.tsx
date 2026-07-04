@@ -19,7 +19,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0b12] text-[#f1f1f6] flex flex-col">
+    <div className="min-h-screen bg-[#0c0b0a] text-[#f5f0eb] flex flex-col">
       <Navbar />
       <main className="flex-1">
         <Routes>

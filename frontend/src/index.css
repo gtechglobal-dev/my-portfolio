@@ -2,20 +2,20 @@
 
 @theme inline {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --color-indigo: #4f46e5;
-  --color-indigo-dark: #4338ca;
+  --color-indigo: #d97706;
+  --color-indigo-dark: #b45309;
 }
 
 body {
   margin: 0;
-  background: #0b0b12;
-  color: #f1f1f6;
+  background: #0c0b0a;
+  color: #f5f0eb;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.25);
+  background: rgba(217, 119, 6, 0.25);
   color: #fff;
 }
 
@@ -26,14 +26,14 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #818cf8, #6366f1);
+  background: linear-gradient(135deg, #d97706, #f59e0b);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .card {
-  background: #12121c;
+  background: #151412;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 10px;
   transition: border-color 0.2s;
@@ -60,24 +60,24 @@ body {
 }
 
 .btn-primary {
-  background: #4f46e5;
+  background: #d97706;
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: #4338ca;
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+  background: #b45309;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);
   transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
-  color: #c4c4d0;
+  color: #d4cfc5;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .btn-outline:hover {
   border-color: rgba(255, 255, 255, 0.16);
-  color: #f1f1f6;
+  color: #f5f0eb;
   background: rgba(255, 255, 255, 0.03);
 }

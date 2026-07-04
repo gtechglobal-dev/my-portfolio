@@ -30,7 +30,7 @@ export default function Navbar() {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-      scrolled ? 'bg-[#0b0b12]/80 backdrop-blur-xl border-b border-white/[0.04]' : 'bg-transparent'
+      scrolled ? 'bg-[#0c0b0a]/80 backdrop-blur-xl border-b border-white/[0.04]' : 'bg-transparent'
     }`}>
       <div className="container flex items-center justify-between h-16 px-6 md:px-8">
         <Link to="/" className="flex items-center gap-2.5">
@@ -42,7 +42,7 @@ export default function Navbar() {
           {links.map((l) => (
             <Link key={l.to} to={l.to}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                pathname === l.to ? 'text-white bg-white/[0.05]' : 'text-[#7a7a8c] hover:text-white'
+                pathname === l.to ? 'text-white bg-white/[0.05]' : 'text-[#a09890] hover:text-white'
               }`}>
               {l.label}
             </Link>
@@ -51,25 +51,25 @@ export default function Navbar() {
           {extraLinks.map((l) => (
             <Link key={l.to} to={l.to}
               className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                pathname.startsWith(l.to) ? 'text-indigo bg-indigo/10' : 'text-[#5a5a6e] hover:text-indigo'
+                pathname.startsWith(l.to) ? 'text-indigo bg-indigo/10' : 'text-[#6b6560] hover:text-indigo'
               }`}>
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-[#7a7a8c] hover:text-white transition-colors">
+        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-[#a09890] hover:text-white transition-colors">
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-white/[0.04] bg-[#0b0b12]/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-white/[0.04] bg-[#0c0b0a]/95 backdrop-blur-xl">
           <div className="px-6 py-3 space-y-0.5">
             {links.map((l) => (
               <Link key={l.to} to={l.to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === l.to ? 'text-white bg-white/[0.05]' : 'text-[#7a7a8c]'
+                  pathname === l.to ? 'text-white bg-white/[0.05]' : 'text-[#a09890]'
                 }`}>
                 {l.label}
               </Link>
@@ -78,7 +78,7 @@ export default function Navbar() {
             {extraLinks.map((l) => (
               <Link key={l.to} to={l.to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith(l.to) ? 'text-indigo bg-indigo/10' : 'text-[#5a5a6e]'
+                  pathname.startsWith(l.to) ? 'text-indigo bg-indigo/10' : 'text-[#6b6560]'
                 }`}>
                 {l.label}
               </Link>

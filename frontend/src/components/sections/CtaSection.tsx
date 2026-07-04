@@ -13,7 +13,7 @@ export default function CtaSection() {
           className="card p-8 md:p-12 text-center max-w-xl mx-auto"
         >
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Let&apos;s Build Together</h2>
-          <p className="mt-3 md:mt-4 text-[0.9375rem] md:text-base text-[#7a7a8c] max-w-sm mx-auto leading-relaxed">
+          <p className="mt-3 md:mt-4 text-[0.9375rem] md:text-base text-[#a09890] max-w-sm mx-auto leading-relaxed">
             Ready to start your next project? Book a free consultation and we&apos;ll discuss your ideas.
           </p>
           <div className="mt-8 md:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">

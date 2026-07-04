@@ -69,7 +69,7 @@ export default function ResumePage() {
         <div className="flex items-center justify-between mb-10">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-[-0.01em]">Resume</h1>
-            <p className="text-sm text-[#7a7a8c] mt-1">Professional profile & experience</p>
+            <p className="text-sm text-[#a09890] mt-1">Professional profile & experience</p>
           </div>
           <a
             href="/api/resume/download"
@@ -90,35 +90,35 @@ export default function ResumePage() {
               className="card p-6 md:p-7"
             >
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo to-purple-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
                   OE
                 </div>
                 <div>
                   <h2 className="font-bold text-base">Okoro Ebube</h2>
-                  <p className="text-xs text-[#7a7a8c]">Full-Stack Developer & Agency Founder</p>
+                  <p className="text-xs text-[#a09890]">Full-Stack Developer & Agency Founder</p>
                 </div>
               </div>
 
               <div className="space-y-2.5 text-sm">
-                <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-3 text-[#7a7a8c] hover:text-white transition-colors">
+                <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
                   <Mail className="w-4 h-4 text-indigo shrink-0" />
                   {siteConfig.email}
                 </a>
-                <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-3 text-[#7a7a8c] hover:text-white transition-colors">
+                <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
                   <Phone className="w-4 h-4 text-indigo shrink-0" />
                   {siteConfig.phone}
                 </a>
-                <div className="flex items-center gap-3 text-[#7a7a8c]">
+                <div className="flex items-center gap-3 text-[#a09890]">
                   <MapPin className="w-4 h-4 text-indigo shrink-0" />
                   Nigeria
                 </div>
-                <a href={siteConfig.social.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#7a7a8c] hover:text-white transition-colors">
+                <a href={siteConfig.social.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
                   <svg className="w-4 h-4 text-indigo shrink-0" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                   </svg>
                   linkedin.com/in/okoroebube-gtech/
                 </a>
-                <a href="https://gtechglobal.netlify.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#7a7a8c] hover:text-white transition-colors">
+                <a href="https://gtechglobal.netlify.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
                   <Globe className="w-4 h-4 text-indigo shrink-0" />
                   gtechglobal.netlify.app
                 </a>
@@ -178,7 +178,7 @@ export default function ResumePage() {
                       <h3 className="font-semibold text-sm">{exp.role}</h3>
                       <p className="text-xs text-indigo/80">{exp.company}</p>
                     </div>
-                    <span className="text-[11px] text-[#5a5a6e] shrink-0">{exp.period}</span>
+                    <span className="text-[11px] text-[#6b6560] shrink-0">{exp.period}</span>
                   </div>
                   <ul className="mt-3 space-y-1.5">
                     {exp.highlights.map((h, i) => (
@@ -204,7 +204,7 @@ export default function ResumePage() {
                       <ExternalLink className="w-3.5 h-3.5 text-indigo/40 shrink-0 mt-0.5" />
                     </div>
                     <p className="text-[11px] text-indigo/60 mt-0.5">{p.tech}</p>
-                    <p className="text-sm text-[#7a7a8c] mt-1.5 leading-relaxed">{p.desc}</p>
+                    <p className="text-sm text-[#a09890] mt-1.5 leading-relaxed">{p.desc}</p>
                   </div>
                 ))}
               </div>
@@ -225,7 +225,7 @@ export default function ResumePage() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold">{s.title}</p>
-                      <p className="text-[11px] text-[#7a7a8c] mt-0.5">{s.desc}</p>
+                      <p className="text-[11px] text-[#a09890] mt-0.5">{s.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -242,7 +242,7 @@ export default function ResumePage() {
               <div>
                 <h3 className="font-semibold text-sm">Computer Science</h3>
                 <p className="text-xs text-indigo/80">University of Nigeria, Nsukka</p>
-                <p className="text-[11px] text-[#5a5a6e] mt-0.5">2019 - 2023</p>
+                <p className="text-[11px] text-[#6b6560] mt-0.5">2019 - 2023</p>
               </div>
             </motion.div>
           </div>

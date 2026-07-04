@@ -71,26 +71,26 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b12] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#0c0b0a] flex items-center justify-center p-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
             <LayoutDashboard className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
-          <p className="text-sm text-[#7a7a8c] mt-1">Gtech Global Dashboard</p>
+          <p className="text-sm text-[#a09890] mt-1">Gtech Global Dashboard</p>
         </div>
         <form onSubmit={handleSubmit} className="card p-6 space-y-4">
           <div>
-            <label className="block text-sm text-[#7a7a8c] mb-1.5">Username</label>
+            <label className="block text-sm text-[#a09890] mb-1.5">Username</label>
                             <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-sm placeholder-[#5a5a6e] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
+                              className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
           </div>
           <div>
-            <label className="block text-sm text-[#7a7a8c] mb-1.5">Password</label>
+            <label className="block text-sm text-[#a09890] mb-1.5">Password</label>
                             <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-sm placeholder-[#5a5a6e] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
+                              className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button type="submit" disabled={loading}
@@ -111,7 +111,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
       </div>
       <div>
         <div className="text-2xl font-bold">{value}</div>
-        <div className="text-xs text-[#7a7a8c]">{label}</div>
+        <div className="text-xs text-[#a09890]">{label}</div>
       </div>
     </motion.div>
   );
@@ -235,16 +235,16 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0b12] flex">
+    <div className="min-h-screen bg-[#0c0b0a] flex">
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0f0f1a] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-sm">Gtech Admin</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-[#7a7a8c]">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-[#a09890]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -252,7 +252,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           {navItems.map((item) => (
             <button key={item.id} onClick={() => { setTab(item.id); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                tab === item.id ? 'bg-indigo/10 text-indigo' : 'text-[#7a7a8c] hover:text-white hover:bg-white/[0.03]'
+                tab === item.id ? 'bg-indigo/10 text-indigo' : 'text-[#a09890] hover:text-white hover:bg-white/[0.03]'
               }`}>
               <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
@@ -269,12 +269,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       </aside>
 
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-40 bg-[#0b0b12]/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#7a7a8c]">
+        <header className="sticky top-0 z-40 bg-[#0c0b0a]/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#a09890]">
             <Menu className="w-5 h-5" />
           </button>
           <h2 className="text-sm font-semibold capitalize">{tab}</h2>
-          <div className="ml-auto flex items-center gap-2 text-xs text-[#5a5a6e]">
+          <div className="ml-auto flex items-center gap-2 text-xs text-[#6b6560]">
             <button onClick={fetchData} className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] transition-colors" title="Refresh data">
               Refresh
             </button>
@@ -307,14 +307,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         </button>
                       </div>
                       {stats.recentBookings.length === 0 ? (
-                        <p className="text-sm text-[#5a5a6e] text-center py-6">No bookings yet</p>
+                        <p className="text-sm text-[#6b6560] text-center py-6">No bookings yet</p>
                       ) : (
                         <div className="space-y-2">
                           {stats.recentBookings.map((b) => (
                             <div key={b.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
                               <div>
                                 <div className="text-sm font-medium">{b.clientName}</div>
-                                <div className="text-xs text-[#7a7a8c]">{b.serviceCategory.replace('-', ' ')}</div>
+                                <div className="text-xs text-[#a09890]">{b.serviceCategory.replace('-', ' ')}</div>
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                 b.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
@@ -352,7 +352,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               { label: 'Cancelled', value: stats.cancelledBookings, color: 'bg-red-500' },
                             ].map((s) => (
                               <div key={s.label} className="flex items-center gap-3">
-                                <span className="text-xs text-[#7a7a8c] w-16">{s.label}</span>
+                                <span className="text-xs text-[#a09890] w-16">{s.label}</span>
                                 <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
                                   <div className={`h-full rounded-full ${s.color} transition-all`}
                                     style={{ width: `${(s.value / stats.totalBookings) * 100}%` }} />
@@ -362,7 +362,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-[#5a5a6e] text-center py-4">No data yet</p>
+                          <p className="text-sm text-[#6b6560] text-center py-4">No data yet</p>
                         )}
                       </div>
                     </div>
@@ -373,27 +373,27 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="relative flex-1 min-w-[200px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5a5a6e]" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6560]" />
                         <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-sm placeholder-[#5a5a6e] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
+                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
                       </div>
                       <div className="relative">
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                           <option value="">All Status</option>
                           <option value="pending">Pending</option>
                           <option value="approved">Approved</option>
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
-                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5a5a6e] pointer-events-none" />
+                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6560] pointer-events-none" />
                       </div>
                     </div>
 
                     {filteredBookings.length === 0 ? (
                       <div className="card p-10 text-center">
-                        <CalendarCheck className="w-10 h-10 text-[#5a5a6e] mx-auto mb-3" />
-                        <p className="text-sm text-[#7a7a8c]">No bookings found</p>
+                        <CalendarCheck className="w-10 h-10 text-[#6b6560] mx-auto mb-3" />
+                        <p className="text-sm text-[#a09890]">No bookings found</p>
                       </div>
                     ) : (
                       <div className="card overflow-hidden">
@@ -401,12 +401,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-white/[0.04] bg-white/[0.02]">
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Client</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Category</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Package</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Budget</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Status</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#7a7a8c] uppercase tracking-wider font-medium">Date</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Client</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Category</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Package</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Budget</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Status</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-[#a09890] uppercase tracking-wider font-medium">Date</th>
                                 <th className="w-12 px-4 py-3"></th>
                               </tr>
                             </thead>
@@ -417,11 +417,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                     onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}>
                                     <td className="px-4 py-3">
                                       <div className="font-medium text-sm">{b.clientName}</div>
-                                      <div className="text-[10px] text-[#5a5a6e]">{b.clientEmail}</div>
+                                      <div className="text-[10px] text-[#6b6560]">{b.clientEmail}</div>
                                     </td>
-                                    <td className="px-4 py-3 text-[#7a7a8c] text-xs capitalize">{b.serviceCategory.replace('-', ' ')}</td>
-                                    <td className="px-4 py-3 text-[#7a7a8c] text-xs">{b.package || 'N/A'}</td>
-                                    <td className="px-4 py-3 text-[#7a7a8c] text-xs">{b.budget}</td>
+                                    <td className="px-4 py-3 text-[#a09890] text-xs capitalize">{b.serviceCategory.replace('-', ' ')}</td>
+                                    <td className="px-4 py-3 text-[#a09890] text-xs">{b.package || 'N/A'}</td>
+                                    <td className="px-4 py-3 text-[#a09890] text-xs">{b.budget}</td>
                                     <td className="px-4 py-3">
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                         b.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
@@ -429,9 +429,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                         b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                                       }`}>{b.status}</span>
                                     </td>
-                                    <td className="px-4 py-3 text-[#5a5a6e] text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-4 py-3 text-[#6b6560] text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
                                     <td className="px-4 py-3">
-                                      <ChevronDown className={`w-4 h-4 text-[#7a7a8c] transition-transform ${expandedId === b.id ? 'rotate-180' : ''}`} />
+                                      <ChevronDown className={`w-4 h-4 text-[#a09890] transition-transform ${expandedId === b.id ? 'rotate-180' : ''}`} />
                                     </td>
                                   </tr>
                                   {expandedId === b.id && (
@@ -440,20 +440,20 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                         <div className="space-y-4">
                                           <div className="grid md:grid-cols-2 gap-4">
                                             <div>
-                                              <div className="text-[10px] text-[#7a7a8c] uppercase tracking-wider mb-1">Description</div>
+                                              <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Description</div>
                                               <p className="text-xs leading-relaxed text-[#c0c0d0]">{b.description}</p>
                                             </div>
                                             <div>
-                                              <div className="text-[10px] text-[#7a7a8c] uppercase tracking-wider mb-1">Contact</div>
+                                              <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Contact</div>
                                               <div className="space-y-1.5">
                                                 <a href={`mailto:${b.clientEmail}`} className="flex items-center gap-2 text-xs text-indigo hover:text-indigo/80 transition-colors">
                                                   <Mail className="w-3.5 h-3.5" /> {b.clientEmail}
                                                 </a>
-                                                <div className="flex items-center gap-2 text-xs text-[#7a7a8c]">
+                                                <div className="flex items-center gap-2 text-xs text-[#a09890]">
                                                   <Phone className="w-3.5 h-3.5" /> {b.clientPhone}
                                                 </div>
                                               </div>
-                                              <div className="mt-2 text-[10px] text-[#5a5a6e]">
+                                              <div className="mt-2 text-[10px] text-[#6b6560]">
                                                 Submitted: {new Date(b.createdAt).toLocaleString()}
                                               </div>
                                             </div>
@@ -464,19 +464,19 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                           {replyingTo === b.id ? (
                                             <div className="space-y-3 max-w-lg">
                                               <div>
-                                                <label className="text-[10px] text-[#7a7a8c] uppercase tracking-wider block mb-1">To</label>
+                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
                                                 <input type="text" value={b.clientEmail} readOnly
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-xs" />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs" />
                                               </div>
                                               <div>
-                                                <label className="text-[10px] text-[#7a7a8c] uppercase tracking-wider block mb-1">Subject</label>
+                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
                                                 <input type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
                                               </div>
                                               <div>
-                                                <label className="text-[10px] text-[#7a7a8c] uppercase tracking-wider block mb-1">Message</label>
+                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
                                                 <textarea rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#12121c] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
                                               </div>
                                               <div className="flex gap-2">
                                                 <button onClick={handleSendEmail} disabled={sendingEmail}
@@ -484,7 +484,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                                   {sendingEmail ? 'Sending...' : 'Send Reply'} <Mail className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button onClick={() => setReplyingTo(null)}
-                                                  className="px-4 py-2 rounded-lg bg-white/[0.04] text-[#7a7a8c] text-xs hover:text-white transition-colors">
+                                                  className="px-4 py-2 rounded-lg bg-white/[0.04] text-[#a09890] text-xs hover:text-white transition-colors">
                                                   Cancel
                                                 </button>
                                               </div>
@@ -549,8 +549,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     <div className="space-y-2">
                       {messages.length === 0 ? (
                         <div className="card p-10 text-center">
-                          <MessageSquare className="w-10 h-10 text-[#5a5a6e] mx-auto mb-3" />
-                          <p className="text-sm text-[#7a7a8c]">No messages yet</p>
+                          <MessageSquare className="w-10 h-10 text-[#6b6560] mx-auto mb-3" />
+                          <p className="text-sm text-[#a09890]">No messages yet</p>
                         </div>
                       ) : (
                         messages.map((m) => (
@@ -560,9 +560,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               <h4 className="text-sm font-semibold">{m.name}</h4>
                               {!m.read && <span className="w-2 h-2 rounded-full bg-indigo" />}
                             </div>
-                            <p className="text-xs text-[#7a7a8c]">{m.subject}</p>
-                            <p className="text-xs text-[#5a5a6e] mt-1 line-clamp-2">{m.message}</p>
-                            <div className="text-[10px] text-[#5a5a6e] mt-1">{new Date(m.createdAt).toLocaleString()}</div>
+                            <p className="text-xs text-[#a09890]">{m.subject}</p>
+                            <p className="text-xs text-[#6b6560] mt-1 line-clamp-2">{m.message}</p>
+                            <div className="text-[10px] text-[#6b6560] mt-1">{new Date(m.createdAt).toLocaleString()}</div>
                           </button>
                         ))
                       )}
@@ -572,20 +572,20 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="card p-5 sticky top-20">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold">{selectedMsg.name}</h3>
-                            <button onClick={() => setSelectedMsg(null)} className="text-[#5a5a6e] hover:text-white text-xs">Close</button>
+                            <button onClick={() => setSelectedMsg(null)} className="text-[#6b6560] hover:text-white text-xs">Close</button>
                           </div>
                           <div className="space-y-3 text-sm">
-                            <div><span className="text-[#7a7a8c] text-xs">Email:</span> <a href={`mailto:${selectedMsg.email}`} className="text-indigo text-xs">{selectedMsg.email}</a></div>
-                            <div><span className="text-[#7a7a8c] text-xs">Subject:</span> <span className="text-xs">{selectedMsg.subject}</span></div>
-                            <div><span className="text-[#7a7a8c] text-xs">Date:</span> <span className="text-xs">{new Date(selectedMsg.createdAt).toLocaleString()}</span></div>
+                            <div><span className="text-[#a09890] text-xs">Email:</span> <a href={`mailto:${selectedMsg.email}`} className="text-indigo text-xs">{selectedMsg.email}</a></div>
+                            <div><span className="text-[#a09890] text-xs">Subject:</span> <span className="text-xs">{selectedMsg.subject}</span></div>
+                            <div><span className="text-[#a09890] text-xs">Date:</span> <span className="text-xs">{new Date(selectedMsg.createdAt).toLocaleString()}</span></div>
                             <hr className="border-white/[0.04]" />
                             <p className="text-sm leading-relaxed">{selectedMsg.message}</p>
                           </div>
                         </div>
                       ) : (
                         <div className="card p-10 text-center">
-                          <MessageSquare className="w-10 h-10 text-[#5a5a6e] mx-auto mb-3" />
-                          <p className="text-sm text-[#7a7a8c]">Select a message to read</p>
+                          <MessageSquare className="w-10 h-10 text-[#6b6560] mx-auto mb-3" />
+                          <p className="text-sm text-[#a09890]">Select a message to read</p>
                         </div>
                       )}
                     </div>

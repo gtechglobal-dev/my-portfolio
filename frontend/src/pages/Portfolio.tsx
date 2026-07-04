@@ -22,7 +22,7 @@ export default function Portfolio() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-3 text-[0.9375rem] md:text-base text-[#7a7a8c] max-w-xl mx-auto"
+          className="mt-3 text-[0.9375rem] md:text-base text-[#a09890] max-w-xl mx-auto"
         >
           Explore our premium projects — from full-scale platforms to elegant websites.
         </motion.p>
