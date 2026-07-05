@@ -3,7 +3,7 @@ services:
     name: my-portfolio
     runtime: node
     region: ohio
-    buildCommand: npm run install:all && npm run build:all
+    buildCommand: npm run build:all
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

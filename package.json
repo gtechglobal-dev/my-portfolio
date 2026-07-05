@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev:frontend": "vite frontend",
     "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "build": "tsc -p frontend/tsconfig.json --noEmit && vite build frontend",
     "build:backend": "cd backend && npm run build",
     "build:all": "npm run build && npm run build:backend",
-    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "install:all": "npm install",
     "start": "cd backend && npm start"
   },
   "dependencies": {
@@ -18,23 +18,32 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
+    "framer-motion": "^12.40.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^1.17.0",
     "nodemailer": "^8.0.10",
     "pdfkit": "^0.19.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.16.0",
     "serverless-http": "^3.2.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/nodemailer": "^8.0.0",
     "@types/pdfkit": "^0.17.6",
-    "@types/uuid": "^10.0.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^8.2.2",
-    "typescript": "^6.0.3"
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
   }
 }
