@@ -8,10 +8,10 @@
     "dev:frontend": "vite frontend",
     "dev:backend": "cd backend && npm run dev",
     "build": "tsc -p frontend/tsconfig.json --noEmit && vite build frontend",
-    "build:backend": "cd backend && npm run build",
+    "build:backend": "tsc -p backend/tsconfig.json",
     "build:all": "npm run build && npm run build:backend",
     "install:all": "npm install",
-    "start": "cd backend && npm start"
+    "start": "node backend/dist/index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
