@@ -10,7 +10,6 @@ const router = Router();
 const INDIGO = '#4f46e5';
 const DARK = '#1e1b4b';
 const GRAY = '#6b7280';
-const LIGHT_GRAY = '#f3f4f6';
 
 function getLogoBuffer(): Buffer | null {
   try {
@@ -26,43 +25,11 @@ function getLogoBuffer(): Buffer | null {
   return null;
 }
 
-function wrapText(doc: PDFKit.PDFDocument, text: string, x: number, y: number, maxWidth: number, lineHeight: number): number {
-  const fontSize = doc.fontSize();
-  const chars = text.split('');
-  let line = '';
-  let cy = y;
-  for (const char of chars) {
-    const testLine = line + char;
-    if (doc.widthOfString(testLine) > maxWidth && line.length > 0) {
-      doc.text(line, x, cy, { continued: false });
-      cy += lineHeight;
-      line = char;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) {
-    doc.text(line, x, cy, { continued: false });
-    cy += lineHeight;
-  }
-  return cy;
-}
-
 function drawSectionTitle(doc: PDFKit.PDFDocument, title: string, y: number): number {
   doc.fontSize(14).font('Helvetica-Bold').fillColor(INDIGO);
   doc.text(title, 50, y);
   doc.moveTo(50, y + 18).lineTo(545, y + 18).strokeColor(INDIGO).lineWidth(1).stroke();
   return y + 28;
-}
-
-function drawBullet(doc: PDFKit.PDFDocument, text: string, x: number, y: number, maxWidth: number, lineHeight: number): number {
-  doc.fontSize(9).font('Helvetica').fillColor(DARK);
-  const bulletX = x;
-  doc.text('•', bulletX, y);
-  const textX = x + 10;
-  const lines = doc.fontSize(9).text(text, textX, y, { width: maxWidth - 10, lineHeight: lineHeight / doc.fontSize() });
-  const height = doc.y - y;
-  return y + height + 2;
 }
 
 router.get('/download', (_req: Request, res: Response) => {
@@ -96,7 +63,7 @@ router.get('/download', (_req: Request, res: Response) => {
 
   y = drawSectionTitle(doc, 'PROFESSIONAL SUMMARY', y);
   doc.fontSize(10).font('Helvetica').fillColor(DARK);
-  const summaryLines = doc.text(resumeData.summary, margin, y, { width: contentWidth, lineHeight: 1.6 });
+  doc.text(resumeData.summary, margin, y, { width: contentWidth });
   y = doc.y + 10;
 
   y = drawSectionTitle(doc, 'SKILLS & EXPERTISE', y);
@@ -118,7 +85,9 @@ router.get('/download', (_req: Request, res: Response) => {
     doc.text(`${exp.company}  |  ${exp.period}`, margin, doc.y + 2, { width: contentWidth });
     y = doc.y + 6;
     for (const h of exp.highlights) {
-      y = drawBullet(doc, h, margin, y, contentWidth, 14);
+      doc.fontSize(9).font('Helvetica').fillColor(DARK);
+      doc.text(`  •  ${h}`, margin, y, { width: contentWidth - 20 });
+      y = doc.y + 2;
     }
     y += 4;
   }
@@ -130,7 +99,7 @@ router.get('/download', (_req: Request, res: Response) => {
     doc.fontSize(8).font('Helvetica-Oblique').fillColor(INDIGO);
     doc.text(proj.tech, margin, doc.y + 1, { width: contentWidth });
     doc.fontSize(9).font('Helvetica').fillColor(GRAY);
-    doc.text(proj.description, margin, doc.y + 2, { width: contentWidth, lineHeight: 1.4 });
+    doc.text(proj.description, margin, doc.y + 2, { width: contentWidth });
     y = doc.y + 6;
 
     if (y > 720) {
@@ -141,7 +110,9 @@ router.get('/download', (_req: Request, res: Response) => {
 
   y = drawSectionTitle(doc, 'SERVICES', y);
   for (const s of resumeData.services) {
-    y = drawBullet(doc, s, margin, y, contentWidth, 14);
+    doc.fontSize(9).font('Helvetica').fillColor(DARK);
+    doc.text(`  •  ${s}`, margin, y, { width: contentWidth - 20 });
+    y = doc.y + 2;
   }
   y += 4;
 

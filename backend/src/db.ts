@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-const isServerless = process.env.VERCEL === '1' || process.env.NETLIFY === 'true' || process.env.LAMBDA_TASK_ROOT !== undefined;
+const isServerless = process.env.VERCEL === '1' || process.env.NETLIFY === 'true' || process.env.RENDER === 'true' || process.env.LAMBDA_TASK_ROOT !== undefined;
 const DATA_DIR = isServerless
   ? join('/tmp', 'data')
   : join(process.cwd(), 'data');
