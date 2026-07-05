@@ -12,6 +12,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
+    "gtech-global": "file:..",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^8.0.10",
     "uuid": "^10.0.0"
