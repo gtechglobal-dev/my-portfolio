@@ -182,7 +182,7 @@ export default function ResumePage() {
                   </div>
                   <ul className="mt-3 space-y-1.5">
                     {exp.highlights.map((h, i) => (
-                      <Bullet key={i}>{h}</Bullet>
+                      <div key={i}><Bullet>{h}</Bullet></div>
                     ))}
                   </ul>
                 </div>
