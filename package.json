@@ -7,9 +7,9 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "vite frontend",
     "dev:backend": "cd backend && npm run dev",
-    "build": "tsc -p frontend/tsconfig.json --noEmit && vite build frontend",
+    "build": "tsc -p frontend/tsconfig.json --noEmit && vite build frontend && tsc -p backend/tsconfig.json",
     "build:backend": "tsc -p backend/tsconfig.json",
-    "build:all": "npm run build && npm run build:backend",
+    "build:all": "npm run build",
     "install:all": "npm install",
     "start": "node backend/dist/index.js"
   },
