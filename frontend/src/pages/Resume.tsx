@@ -240,9 +240,9 @@ export default function ResumePage() {
             >
               <SectionTitle>Education</SectionTitle>
               <div>
-                <h3 className="font-semibold text-sm">Computer Science</h3>
-                <p className="text-xs text-indigo/80">University of Nigeria, Nsukka</p>
-                <p className="text-[11px] text-[#6b6560] mt-0.5">2019 - 2023</p>
+                <h3 className="font-semibold text-sm">Imo State University</h3>
+                <p className="text-xs text-indigo/80">Owerri, Nigeria</p>
+                <p className="text-[11px] text-[#6b6560] mt-0.5">2012 - 2018</p>
               </div>
             </motion.div>
           </div>
