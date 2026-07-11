@@ -1,6 +1,6 @@
 export const resumeData = {
-  name: 'Okoro Ebube',
-  title: 'Full-Stack Developer & Digital Agency Founder',
+  name: 'Okoro Ebubechukwu E.',
+  title: 'Full-Stack Developer & Digital Agency Founder | CEO of Gtechglobal',
   email: 'gtechglobal.dev@gmail.com',
   phone: '+234 905 486 7749',
   location: 'Nigeria',

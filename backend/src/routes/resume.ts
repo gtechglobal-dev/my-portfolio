@@ -25,6 +25,20 @@ function getLogoBuffer(): Buffer | null {
   return null;
 }
 
+function getProfileBuffer(): Buffer | null {
+  try {
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const candidates = [
+      resolve(__dirname, '..', '..', 'frontend', 'public', 'profile.jpg'),
+      resolve(process.cwd(), 'frontend', 'public', 'profile.jpg'),
+    ];
+    for (const p of candidates) {
+      try { return readFileSync(p); } catch { }
+    }
+  } catch { }
+  return null;
+}
+
 function drawSectionTitle(doc: PDFKit.PDFDocument, title: string, y: number): number {
   doc.fontSize(14).font('Helvetica-Bold').fillColor(INDIGO);
   doc.text(title, 50, y);
@@ -45,9 +59,20 @@ router.get('/download', (_req: Request, res: Response) => {
   const contentWidth = pageWidth - margin * 2;
 
   const logo = getLogoBuffer();
+  const profile = getProfileBuffer();
 
   doc.fontSize(28).font('Helvetica-Bold').fillColor(DARK);
   doc.text(resumeData.name, margin, 50);
+
+  if (profile) {
+    const imgSize = 56;
+    const imgX = pageWidth - margin - imgSize;
+    const imgY = 42;
+    doc.save();
+    doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2).clip();
+    doc.image(profile, imgX, imgY, { width: imgSize, height: imgSize });
+    doc.restore();
+  }
 
   doc.fontSize(12).font('Helvetica').fillColor(INDIGO);
   doc.text(resumeData.title, margin, doc.y + 4);

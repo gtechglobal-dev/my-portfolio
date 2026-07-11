@@ -28,7 +28,7 @@ const experience = [
 const projects = [
   { title: 'Youth Community Management System', tech: 'Next.js, MongoDB, Socket.IO, PWA', desc: 'Interactive youth engagement platform with real-time features, role-based dashboards, and community management tools serving 2,000+ active users.' },
   { title: 'PrestigeMart Marketplace', tech: 'Next.js, Stripe, MongoDB, TailwindCSS', desc: 'Full-featured service marketplace where users browse, select, and pay for digital projects.' },
-  { title: 'Academic Result Portal', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable transcripts.' },
+  { title: 'Academic Result Portal', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable transcripts.', url: 'https://phronesisresultportal.gtechglobal.dev/' },
   { title: 'Church Website & Member Portal', tech: 'Next.js, Paystack, Sanity CMS, TailwindCSS', desc: 'Digital presence with sermon archives, event calendar, donation integration, and member portal.' },
   { title: 'Fintech Dashboard', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'Real-time financial analytics dashboard with transaction monitoring and multi-currency support.' },
   { title: 'E-Commerce Fashion Platform', tech: 'Next.js, MongoDB, Paystack, Redis', desc: 'Premium fashion e-commerce with inventory management, seamless checkout, and order tracking.' },
@@ -94,8 +94,8 @@ export default function ResumePage() {
                   OE
                 </div>
                 <div>
-                  <h2 className="font-bold text-base">Okoro Ebube</h2>
-                  <p className="text-xs text-[#a09890]">Full-Stack Developer & Agency Founder</p>
+                  <h2 className="font-bold text-base">Okoro Ebubechukwu E.</h2>
+                  <p className="text-xs text-[#a09890]">Full-Stack Developer & Agency Founder | CEO of Gtechglobal</p>
                 </div>
               </div>
 
