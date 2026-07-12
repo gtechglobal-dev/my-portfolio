@@ -42,7 +42,7 @@ export const resumeData = {
     {
       title: 'Academic Result Portal',
       tech: 'React, Node.js, PostgreSQL, Chart.js',
-      description: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable transcripts.',
+      description: 'School result management system for nursery, primary and secondary schools with secure login, term filtering, automated grade computation, and printable report cards.',
     },
     {
       title: 'Fintech Dashboard',
@@ -70,9 +70,9 @@ export const resumeData = {
   ],
   education: [
     {
-      degree: 'Computer Science',
-      institution: 'University of Nigeria, Nsukka',
-      period: '2019 - 2023',
+      degree: 'Mechanical Engineering',
+      institution: 'Imo State University',
+      period: '2012 - 2017',
     },
   ],
 };

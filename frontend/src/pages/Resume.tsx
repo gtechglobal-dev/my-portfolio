@@ -28,7 +28,7 @@ const experience = [
 const projects = [
   { title: 'Youth Community Management System', tech: 'Next.js, MongoDB, Socket.IO, PWA', desc: 'Interactive youth engagement platform with real-time features, role-based dashboards, and community management tools serving 2,000+ active users.' },
   { title: 'PrestigeMart Marketplace', tech: 'Next.js, Stripe, MongoDB, TailwindCSS', desc: 'Full-featured service marketplace where users browse, select, and pay for digital projects.' },
-  { title: 'Academic Result Portal', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable transcripts.', url: 'https://phronesisresultportal.gtechglobal.dev/' },
+  { title: 'Academic Result Portal', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'School result management system for nursery, primary and secondary schools with secure login, term filtering, automated grade computation, and printable report cards.', url: 'https://phronesisresultportal.gtechglobal.dev/' },
   { title: 'Church Website & Member Portal', tech: 'Next.js, Paystack, Sanity CMS, TailwindCSS', desc: 'Digital presence with sermon archives, event calendar, donation integration, and member portal.' },
   { title: 'Fintech Dashboard', tech: 'React, Node.js, PostgreSQL, Chart.js', desc: 'Real-time financial analytics dashboard with transaction monitoring and multi-currency support.' },
   { title: 'E-Commerce Fashion Platform', tech: 'Next.js, MongoDB, Paystack, Redis', desc: 'Premium fashion e-commerce with inventory management, seamless checkout, and order tracking.' },
@@ -241,8 +241,8 @@ export default function ResumePage() {
               <SectionTitle>Education</SectionTitle>
               <div>
                 <h3 className="font-semibold text-sm">Imo State University</h3>
-                <p className="text-xs text-indigo/80">Owerri, Nigeria</p>
-                <p className="text-[11px] text-[#6b6560] mt-0.5">2012 - 2018</p>
+                <p className="text-xs text-indigo/80">Mechanical Engineering</p>
+                <p className="text-[11px] text-[#6b6560] mt-0.5">2012 - 2017</p>
               </div>
             </motion.div>
           </div>

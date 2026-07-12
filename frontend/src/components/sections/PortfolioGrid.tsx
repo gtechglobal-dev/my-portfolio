@@ -71,7 +71,7 @@ const projects = [
   {
     title: 'Academic Result Portal',
     category: 'EdTech',
-    desc: 'Student result checking system with secure login, semester filtering, GPA calculation, and printable result transcripts.',
+    desc: 'School result management system for nursery, primary and secondary schools with secure login, term filtering, automated grade computation, and printable report cards.',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Chart.js'],
     url: 'https://phronesisresultportal.gtechglobal.dev/',
     siteUrl: 'https://phronesisresultportal.gtechglobal.dev/',
