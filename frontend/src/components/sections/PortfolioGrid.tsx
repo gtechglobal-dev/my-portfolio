@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, X, Layers, Code, Clock, Sparkles } from 'lucide-react';
 
 function getScreenshotUrl(siteUrl: string) {
-  return `https://image.thum.io/get/width/1200/crop/800/${siteUrl}`;
+  const cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  return `https://image.thum.io/get/width/1200/crop/800/${siteUrl}?t=${cacheBuster}`;
 }
 
 function DynamicScreenshot({
