@@ -90,7 +90,7 @@ export default function ResumePage() {
               className="card p-6 md:p-7"
             >
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
                   OE
                 </div>
                 <div>

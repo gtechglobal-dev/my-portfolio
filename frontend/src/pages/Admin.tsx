@@ -75,7 +75,7 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
             <LayoutDashboard className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
@@ -239,7 +239,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0f0f1a] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-amber-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-sm">Gtech Admin</span>
@@ -295,7 +295,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <StatCard icon={CalendarCheck} label="Total Bookings" value={stats.totalBookings} color="bg-indigo" />
-                      <StatCard icon={Clock} label="Pending" value={stats.pendingBookings} color="bg-amber-500" />
+                      <StatCard icon={Clock} label="Pending" value={stats.pendingBookings} color="bg-violet-500" />
                       <StatCard icon={CheckCircle} label="Completed" value={stats.completedBookings} color="bg-emerald-500" />
                       <StatCard icon={MessageSquare} label="Unread Messages" value={stats.unreadMessages} color="bg-rose-500" />
                     </div>
@@ -317,7 +317,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                 <div className="text-xs text-[#a09890]">{b.serviceCategory.replace('-', ' ')}</div>
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                b.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
+                                b.status === 'pending' ? 'bg-violet-500/10 text-violet-400' :
                                 b.status === 'approved' ? 'bg-blue-500/10 text-blue-400' :
                                 b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                               }`}>{b.status}</span>
@@ -346,7 +346,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         {stats.totalBookings > 0 ? (
                           <div className="space-y-2">
                             {[
-                              { label: 'Pending', value: stats.pendingBookings, color: 'bg-amber-500' },
+                              { label: 'Pending', value: stats.pendingBookings, color: 'bg-violet-500' },
                               { label: 'Approved', value: stats.approvedBookings, color: 'bg-blue-500' },
                               { label: 'Completed', value: stats.completedBookings, color: 'bg-emerald-500' },
                               { label: 'Cancelled', value: stats.cancelledBookings, color: 'bg-red-500' },
@@ -424,7 +424,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                     <td className="px-4 py-3 text-[#a09890] text-xs">{b.budget}</td>
                                     <td className="px-4 py-3">
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                        b.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
+                                        b.status === 'pending' ? 'bg-violet-500/10 text-violet-400' :
                                         b.status === 'approved' ? 'bg-blue-500/10 text-blue-400' :
                                         b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                                       }`}>{b.status}</span>

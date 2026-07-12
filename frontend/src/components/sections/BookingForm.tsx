@@ -1,10 +1,53 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ArrowRight, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown } from 'lucide-react';
 import { webDevPackages, graphicsPackages } from '../../lib/constants';
 
-const budgets = ['₦10k-₦50k', '₦50k-₦200k', '₦200k-₦500k', '₦500k-₦1M', '₦1M+', 'Custom'];
+const countries = [
+  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}' },
+  { code: 'US', name: 'United States', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}' },
+  { code: 'GH', name: 'Ghana', dial: '+233', flag: '\u{1F1EC}\u{1F1ED}' },
+  { code: 'KE', name: 'Kenya', dial: '+254', flag: '\u{1F1F0}\u{1F1EA}' },
+  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '\u{1F1FF}\u{1F1E6}' },
+  { code: 'CA', name: 'Canada', dial: '+1', flag: '\u{1F1E8}\u{1F1E6}' },
+  { code: 'DE', name: 'Germany', dial: '+49', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'FR', name: 'France', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}' },
+  { code: 'IN', name: 'India', dial: '+91', flag: '\u{1F1EE}\u{1F1F3}' },
+  { code: 'BR', name: 'Brazil', dial: '+55', flag: '\u{1F1E7}\u{1F1F7}' },
+  { code: 'AE', name: 'United Arab Emirates', dial: '+971', flag: '\u{1F1E6}\u{1F1EA}' },
+  { code: 'SA', name: 'Saudi Arabia', dial: '+966', flag: '\u{1F1F8}\u{1F1E6}' },
+  { code: 'EG', name: 'Egypt', dial: '+20', flag: '\u{1F1EA}\u{1F1EC}' },
+  { code: 'JP', name: 'Japan', dial: '+81', flag: '\u{1F1EF}\u{1F1F5}' },
+  { code: 'CN', name: 'China', dial: '+86', flag: '\u{1F1E8}\u{1F1F3}' },
+  { code: 'AU', name: 'Australia', dial: '+61', flag: '\u{1F1E6}\u{1F1FA}' },
+  { code: 'IT', name: 'Italy', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}' },
+  { code: 'ES', name: 'Spain', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}' },
+  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '\u{1F1F3}\u{1F1F1}' },
+  { code: 'SE', name: 'Sweden', dial: '+46', flag: '\u{1F1F8}\u{1F1EA}' },
+  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '\u{1F1E8}\u{1F1ED}' },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}' },
+  { code: 'PH', name: 'Philippines', dial: '+63', flag: '\u{1F1F5}\u{1F1ED}' },
+  { code: 'SG', name: 'Singapore', dial: '+65', flag: '\u{1F1F8}\u{1F1EC}' },
+  { code: 'MY', name: 'Malaysia', dial: '+60', flag: '\u{1F1F2}\u{1F1FE}' },
+  { code: 'PK', name: 'Pakistan', dial: '+92', flag: '\u{1F1F5}\u{1F1F0}' },
+  { code: 'BD', name: 'Bangladesh', dial: '+880', flag: '\u{1F1E7}\u{1F1E9}' },
+  { code: 'IL', name: 'Israel', dial: '+972', flag: '\u{1F1EE}\u{1F1F1}' },
+  { code: 'TR', name: 'Turkey', dial: '+90', flag: '\u{1F1F9}\u{1F1F7}' },
+  { code: 'KR', name: 'South Korea', dial: '+82', flag: '\u{1F1F0}\u{1F1F7}' },
+  { code: 'MX', name: 'Mexico', dial: '+52', flag: '\u{1F1F2}\u{1F1FD}' },
+  { code: 'AR', name: 'Argentina', dial: '+54', flag: '\u{1F1E6}\u{1F1F7}' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '\u{1F1E8}\u{1F1F4}' },
+  { code: 'CL', name: 'Chile', dial: '+56', flag: '\u{1F1E8}\u{1F1F1}' },
+  { code: 'PL', name: 'Poland', dial: '+48', flag: '\u{1F1F5}\u{1F1F1}' },
+  { code: 'RU', name: 'Russia', dial: '+7', flag: '\u{1F1F7}\u{1F1FA}' },
+  { code: 'TH', name: 'Thailand', dial: '+66', flag: '\u{1F1F9}\u{1F1ED}' },
+  { code: 'VN', name: 'Vietnam', dial: '+84', flag: '\u{1F1FB}\u{1F1F3}' },
+  { code: 'ID', name: 'Indonesia', dial: '+62', flag: '\u{1F1EE}\u{1F1E9}' },
+  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '\u{1F1F3}\u{1F1FF}' },
+  { code: 'IE', name: 'Ireland', dial: '+353', flag: '\u{1F1EE}\u{1F1EA}' },
+];
 
 function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -32,7 +75,7 @@ export default function BookingForm() {
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState<'web-development' | 'graphics-design'>('web-development');
   const [selectedPkg, setSelectedPkg] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', budget: '', description: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', country: 'NG', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -48,13 +91,17 @@ export default function BookingForm() {
 
   const packages = category === 'web-development' ? webDevPackages : graphicsPackages;
 
+  const selectedCountry = countries.find((c) => c.code === form.country) || countries[0];
+  const selectedPkgData = packages.find((p) => p.id === selectedPkg);
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Name is required';
     if (!form.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Invalid email format';
     if (!form.phone.trim()) errs.phone = 'Phone is required';
-    if (!form.budget) errs.budget = 'Select a budget range';
+    if (!form.country) errs.country = 'Select a country';
+    if (!selectedPkg) errs.package = 'Select a package';
     if (!form.description.trim()) errs.description = 'Description is required';
     else if (form.description.trim().length < 20) errs.description = 'Description must be at least 20 characters';
     setValidationErrors(errs);
@@ -66,10 +113,19 @@ export default function BookingForm() {
     setSubmitting(true);
     setError('');
     try {
+      const pkgLabel = selectedPkg === 'other' ? 'Other Designs (Custom)' : selectedPkgData ? `${selectedPkgData.title} — ₦${selectedPkgData.price.ngn} ($${selectedPkgData.price.usd} USD)` : selectedPkg;
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientName: form.name.trim(), clientEmail: form.email.trim(), clientPhone: form.phone.trim(), serviceCategory: category, package: selectedPkg, budget: form.budget, description: form.description.trim() }),
+        body: JSON.stringify({
+          clientName: form.name.trim(),
+          clientEmail: form.email.trim(),
+          clientPhone: `${selectedCountry.dial} ${form.phone.trim()}`,
+          clientCountry: `${selectedCountry.flag} ${selectedCountry.name}`,
+          serviceCategory: category,
+          package: pkgLabel,
+          description: form.description.trim(),
+        }),
       });
       if (res.ok) {
         setSubmitted(true);
@@ -80,14 +136,14 @@ export default function BookingForm() {
         setShowModal(true);
       }
     } catch {
-      setError('Could not connect to server. Make sure the backend is running (npm run dev in /backend).');
+      setError('Could not connect to server. Make sure the backend is running.');
       setShowModal(true);
     }
     setSubmitting(false);
   };
 
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', budget: '', description: '' });
+    setForm({ name: '', email: '', phone: '', country: 'NG', description: '' });
     setSelectedPkg('');
     setStep(1);
     setSubmitted(false);
@@ -105,13 +161,15 @@ export default function BookingForm() {
               <Check className="w-7 h-7 text-emerald-400" />
             </div>
             <h3 className="text-xl font-bold mb-2">Booking Submitted!</h3>
-            <p className="text-sm text-[#a09890] mb-2">We'll review your details and contact you within 24 hours.</p>
+            <p className="text-sm text-[#a09890] mb-2">We'll review your details and get back to you shortly.</p>
             <div className="bg-[#151412] rounded-lg p-4 mt-4 text-left text-sm space-y-1">
               <p><span className="text-[#a09890]">Name:</span> {form.name}</p>
               <p><span className="text-[#a09890]">Email:</span> {form.email}</p>
+              <p><span className="text-[#a09890]">Phone:</span> {selectedCountry.dial} {form.phone}</p>
+              <p><span className="text-[#a09890]">Country:</span> {selectedCountry.flag} {selectedCountry.name}</p>
               <p><span className="text-[#a09890]">Category:</span> {category === 'web-development' ? 'Web Development' : 'Graphics Design'}</p>
-              {selectedPkg && <p><span className="text-[#a09890]">Package:</span> {selectedPkg}</p>}
-              <p><span className="text-[#a09890]">Budget:</span> {form.budget}</p>
+              {selectedPkgData && selectedPkg !== 'other' && <p><span className="text-[#a09890]">Package:</span> {selectedPkgData.title} — ₦{selectedPkgData.price.ngn} (${selectedPkgData.price.usd} USD)</p>}
+              {selectedPkg === 'other' && <p><span className="text-[#a09890]">Package:</span> Other Designs (Custom)</p>}
             </div>
             <div className="flex gap-3 mt-6 justify-center">
               <button onClick={resetForm} className="btn btn-primary">Book Another</button>
@@ -159,11 +217,17 @@ export default function BookingForm() {
               <h3 className="text-lg font-semibold text-center mb-6">Choose a Package</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 {packages.map((pkg) => (
-                  <button key={pkg.id} onClick={() => { setSelectedPkg(pkg.id); setStep(3); }}
+                  <button key={pkg.id} onClick={() => { setSelectedPkg(pkg.id); if (pkg.id === 'other') { setStep(3); } else { setStep(3); } }}
                     className="card p-5 md:p-6 text-left transition-all cursor-pointer hover:border-indigo/30">
                     <h4 className="text-sm font-semibold mb-2">{pkg.title}</h4>
-                    <div className="text-indigo text-base font-bold">₦{pkg.price.ngn}</div>
-                    <div className="text-xs text-[#6b6560]">${pkg.price.usd} USD</div>
+                    {pkg.id !== 'other' ? (
+                      <>
+                        <div className="text-indigo text-base font-bold">₦{pkg.price.ngn}</div>
+                        <div className="text-xs text-[#6b6560]">${pkg.price.usd} USD</div>
+                      </>
+                    ) : (
+                      <div className="text-indigo text-sm font-medium mt-1">Describe your needs →</div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -188,23 +252,31 @@ export default function BookingForm() {
                     {validationErrors.email && <p className="text-red-400 text-[11px] mt-1">{validationErrors.email}</p>}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm text-[#a09890] mb-1.5">Phone *</label>
-                  <input type="tel" required value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); setValidationErrors({ ...validationErrors, phone: '' }); }}
-                    className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="+234 900 000 0000" />
-                  {validationErrors.phone && <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm text-[#a09890] mb-1.5">Budget *</label>
-                  <div className="flex flex-wrap gap-2">
-                    {budgets.map((b) => (
-                      <button key={b} type="button" onClick={() => { setForm({ ...form, budget: b }); setValidationErrors({ ...validationErrors, budget: '' }); }}
-                        className={`px-4 py-1.5 rounded-lg text-sm transition-all cursor-pointer ${
-                          form.budget === b ? 'bg-indigo/10 text-indigo border border-indigo/20' : 'bg-[#151412] text-[#a09890] border border-white/[0.06] hover:border-white/[0.12]'
-                        }`}>{b}</button>
-                    ))}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-[#a09890] mb-1.5">Country *</label>
+                    <div className="relative">
+                      <select value={form.country} onChange={(e) => { setForm({ ...form, country: e.target.value }); setValidationErrors({ ...validationErrors, country: '' }); }}
+                        className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${validationErrors.country ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`}>
+                        {countries.map((c) => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6560] pointer-events-none" />
+                    </div>
+                    {validationErrors.country && <p className="text-red-400 text-[11px] mt-1">{validationErrors.country}</p>}
                   </div>
-                  {validationErrors.budget && <p className="text-red-400 text-[11px] mt-1">{validationErrors.budget}</p>}
+                  <div>
+                    <label className="block text-sm text-[#a09890] mb-1.5">Phone *</label>
+                    <div className="flex">
+                      <span className="flex items-center px-3 py-3 rounded-l-lg bg-[#1a1915] border border-r-0 border-white/[0.06] text-sm text-[#a09890] shrink-0 select-none">
+                        {selectedCountry.flag} {selectedCountry.dial}
+                      </span>
+                      <input type="tel" required value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); setValidationErrors({ ...validationErrors, phone: '' }); }}
+                        className={`w-full px-4 py-3 rounded-r-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Phone number" />
+                    </div>
+                    {validationErrors.phone && <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm text-[#a09890] mb-1.5">Description *</label>
@@ -219,6 +291,7 @@ export default function BookingForm() {
                   {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Submit Booking'}
                 </button>
               </div>
+              {validationErrors.package && <p className="text-red-400 text-[11px] mt-2 text-center">{validationErrors.package}</p>}
             </motion.div>
           )}
         </div>

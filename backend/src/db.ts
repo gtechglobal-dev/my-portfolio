@@ -23,9 +23,9 @@ export interface Booking {
   clientName: string;
   clientEmail: string;
   clientPhone: string;
+  clientCountry: string;
   serviceCategory: 'web-development' | 'graphics-design';
   package: string;
-  budget: string;
   description: string;
   status: 'pending' | 'approved' | 'completed' | 'cancelled';
   createdAt: string;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
@@ -13,6 +14,8 @@ import Resume from './pages/Resume'
 export default function App() {
   const { pathname } = useLocation()
   const isAdmin = pathname.startsWith('/admin')
+
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
   if (isAdmin) {
     return <Admin />

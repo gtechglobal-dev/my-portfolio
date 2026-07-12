@@ -52,7 +52,7 @@ const projects = [
     url: 'https://royalyouths.onrender.com/',
     siteUrl: 'https://royalyouths.onrender.com/',
     image: '/screenshots/royal-youths.png',
-    color: '#d97706',
+    color: '#4f46e5',
     metric: '2K+ Active Users',
     status: 'live',
   },
@@ -64,7 +64,7 @@ const projects = [
     url: 'https://prestigemart.netlify.app/',
     siteUrl: 'https://prestigemart.netlify.app/',
     image: '/screenshots/prestige-mart.png',
-    color: '#f59e0b',
+    color: '#7c3aed',
     metric: 'Live & Active',
     status: 'live',
   },
@@ -136,7 +136,7 @@ const projects = [
     url: '#',
     siteUrl: '',
     image: null,
-    color: '#f59e0b',
+    color: '#7c3aed',
     metric: 'Under Development',
     status: 'coming',
   },
@@ -224,8 +224,8 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
           </button>
           {project.status === 'coming' && (
             <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/[0.06]">
-              <Clock className="w-3 h-3 text-amber-400" />
-              <span className="text-[10px] font-medium text-amber-400 uppercase tracking-wider">Coming Soon</span>
+              <Clock className="w-3 h-3 text-violet-400" />
+              <span className="text-[10px] font-medium text-violet-400 uppercase tracking-wider">Coming Soon</span>
             </div>
           )}
         </div>
@@ -323,8 +323,8 @@ export default function PortfolioGrid() {
                 {p.status === 'coming' && (
                   <div className="absolute inset-0 bg-[#0c0b0a]/60 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
-                      <Clock className="w-3 h-3 text-amber-400" />
-                      <span className="text-[10px] font-medium text-amber-400/80 uppercase tracking-wider">Under Development</span>
+                      <Clock className="w-3 h-3 text-violet-400" />
+                      <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-wider">Under Development</span>
                     </div>
                   </div>
                 )}
