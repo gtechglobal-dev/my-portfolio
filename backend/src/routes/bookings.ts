@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import { readBookings, writeBookings, type Booking } from '../db.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 import { buildEmailHtml } from '../emailTemplate.js';
+import { sendBookingWhatsApp } from '../services/whatsapp.js';
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -42,40 +43,49 @@ router.post('/', async (req: Request, res: Response) => {
   bookings.push(booking);
   writeBookings(bookings);
 
+  res.status(201).json({ success: true, id: booking.id });
+
   if (SMTP_PASS) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: false,
-        requireTLS: true,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-        tls: { rejectUnauthorized: false },
-      });
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: false,
+      requireTLS: true,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
 
-      const catLabel = serviceCategory === 'web-development' ? 'Web Development' : 'Graphics Design';
-      const text = `New Booking Request\n\n` +
-        `Name: ${clientName}\n` +
-        `Email: ${clientEmail}\n` +
-        `Phone: ${clientPhone}\n` +
-        `Country: ${clientCountry || 'N/A'}\n` +
-        `Category: ${catLabel}\n` +
-        `Package: ${pkg || 'N/A'}\n\n` +
-        `Project Description:\n${description}`;
+    const catLabel = serviceCategory === 'web-development' ? 'Web Development' : 'Graphics Design';
+    const text = `New Booking Request\n\n` +
+      `Name: ${clientName}\n` +
+      `Email: ${clientEmail}\n` +
+      `Phone: ${clientPhone}\n` +
+      `Country: ${clientCountry || 'N/A'}\n` +
+      `Category: ${catLabel}\n` +
+      `Package: ${pkg || 'N/A'}\n\n` +
+      `Project Description:\n${description}`;
 
-      await transporter.sendMail({
-        from: `"Gtech Global" <${EMAIL_FROM}>`,
-        to: NOTIFY_EMAIL,
-        subject: `New Booking — ${catLabel}${pkg ? ` (${pkg})` : ''}`,
-        text,
-        html: buildEmailHtml(text, `New Booking — ${catLabel}`),
-      });
-    } catch (err: any) {
-      console.error('Booking notification email failed:', err.message);
-    }
+    transporter.sendMail({
+      from: `"Gtech Global" <${EMAIL_FROM}>`,
+      to: NOTIFY_EMAIL,
+      subject: `New Booking — ${catLabel}${pkg ? ` (${pkg})` : ''}`,
+      text,
+      html: buildEmailHtml(text, `New Booking — ${catLabel}`),
+    }).then(() => console.log('Booking email sent'))
+      .catch((err) => console.error('Booking email failed:', err.message));
   }
 
-  res.status(201).json({ success: true, id: booking.id });
+  sendBookingWhatsApp({
+    clientName,
+    clientEmail,
+    clientPhone,
+    serviceCategory,
+    pkg: pkg || '',
+    description,
+  }).catch((err) => console.error('WhatsApp notification failed:', err.message));
 });
 
 router.get('/', authMiddleware, (req: AuthRequest, res: Response) => {

@@ -27,3 +27,9 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: WA_ACCESS_TOKEN
+        sync: false
+      - key: WA_PHONE_NUMBER_ID
+        sync: false
+      - key: WA_TEMPLATE_NAME
+        sync: false
