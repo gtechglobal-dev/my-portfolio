@@ -18,6 +18,7 @@ interface Booking {
   package: string;
   budget: string;
   description: string;
+  sampleImages?: string[];
   status: string;
   createdAt: string;
 }
@@ -567,6 +568,23 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                               </div>
                                             </div>
                                           </div>
+
+                                          {b.sampleImages && b.sampleImages.length > 0 && (
+                                            <>
+                                              <hr className="border-white/[0.04]" />
+                                              <div>
+                                                <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-2">Sample References ({b.sampleImages.length})</div>
+                                                <div className="flex flex-wrap gap-2">
+                                                  {b.sampleImages.map((img, i) => (
+                                                    <a key={i} href={img} target="_blank" rel="noopener noreferrer"
+                                                      className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820] hover:border-indigo/30 transition-colors">
+                                                      <img src={img} alt={`Sample ${i + 1}`} className="w-full h-full object-contain p-1" />
+                                                    </a>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </>
+                                          )}
 
                                           <hr className="border-white/[0.04]" />
 

@@ -81,8 +81,7 @@ export default function BookingForm() {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [sampleFile, setSampleFile] = useState<File | null>(null);
-  const [samplePreview, setSamplePreview] = useState('');
+  const [samplePreviews, setSamplePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     const pkg = searchParams.get('package');
@@ -128,7 +127,7 @@ export default function BookingForm() {
           serviceCategory: category,
           package: pkgLabel,
           description: form.description.trim(),
-          sampleImage: samplePreview || undefined,
+          sampleImages: samplePreviews.length > 0 ? samplePreviews : undefined,
         }),
       });
       if (res.ok) {
@@ -154,8 +153,7 @@ export default function BookingForm() {
     setError('');
     setShowModal(false);
     setValidationErrors({});
-    setSampleFile(null);
-    setSamplePreview('');
+    setSamplePreviews([]);
   };
 
   return (
@@ -285,33 +283,40 @@ export default function BookingForm() {
                 </div>
                 {category === 'graphics-design' && (
                   <div>
-                    <label className="block text-sm text-[#a09890] mb-1.5">Upload Sample (optional)</label>
-                    <p className="text-[11px] text-[#6b6560] mb-2">Upload a reference image of what you want designed</p>
-                    {samplePreview ? (
-                      <div className="relative rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820]">
-                        <img src={samplePreview} alt="Sample" className="w-full max-h-48 object-contain" />
-                        <button onClick={() => { setSampleFile(null); setSamplePreview(''); }}
-                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/90 transition-colors">
-                          <X className="w-4 h-4 text-white" />
-                        </button>
+                    <label className="block text-sm text-[#a09890] mb-1.5">Upload Samples (optional)</label>
+                    <p className="text-[11px] text-[#6b6560] mb-2">Upload reference images of what you want designed (max 3)</p>
+                    {samplePreviews.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {samplePreviews.map((img, i) => (
+                          <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820]">
+                            <img src={img} alt={`Sample ${i + 1}`} className="w-full h-28 object-contain p-1" />
+                            <button onClick={() => setSamplePreviews((prev) => prev.filter((_, j) => j !== i))}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-white/[0.08] bg-[#111820] cursor-pointer hover:border-indigo/30 transition-colors">
-                        <Upload className="w-6 h-6 text-[#6b6560] mb-2" />
-                        <span className="text-sm text-[#6b6560]">Click to upload</span>
-                        <span className="text-[11px] text-[#4a4540] mt-1">PNG, JPG, WEBP up to 5MB</span>
-                        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
-                            setSampleFile(file);
-                            const reader = new FileReader();
-                            reader.onload = () => setSamplePreview(reader.result as string);
-                            reader.readAsDataURL(file);
-                          }} />
-                      </label>
                     )}
+                    <label className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-white/[0.08] bg-[#111820] cursor-pointer hover:border-indigo/30 transition-colors py-5">
+                      <Upload className="w-5 h-5 text-[#6b6560] mb-1" />
+                      <span className="text-xs text-[#6b6560]">{samplePreviews.length === 0 ? 'Click to upload images' : 'Add more images'}</span>
+                      <span className="text-[10px] text-[#4a4540] mt-0.5">PNG, JPG, WEBP — max 5MB each</span>
+                      <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden"
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (!files) return;
+                          const remaining = 3 - samplePreviews.length;
+                          if (remaining <= 0) { alert('Maximum 3 sample images allowed.'); return; }
+                          Array.from(files).slice(0, remaining).forEach((file) => {
+                            if (file.size > 5 * 1024 * 1024) { alert(`"${file.name}" is too large. Max 5MB.`); return; }
+                            const reader = new FileReader();
+                            reader.onload = () => setSamplePreviews((prev) => [...prev, reader.result as string]);
+                            reader.readAsDataURL(file);
+                          });
+                          e.target.value = '';
+                        }} />
+                    </label>
                   </div>
                 )}
                 <div>

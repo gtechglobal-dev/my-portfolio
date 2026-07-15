@@ -17,7 +17,7 @@ const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage } = req.body;
+    const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage, sampleImages } = req.body;
 
     if (!clientName || !clientEmail || !clientPhone || !serviceCategory || !description) {
       return res.status(400).json({ error: 'All required fields must be provided' });
@@ -26,6 +26,9 @@ router.post('/', async (req: Request, res: Response) => {
     if (description.length < 20) {
       return res.status(400).json({ error: 'Description must be at least 20 characters' });
     }
+
+    const rawImages: string[] = Array.isArray(sampleImages) ? sampleImages : sampleImage ? [sampleImage] : [];
+    const sampleImagesClean = rawImages.slice(0, 3);
 
     const booking: Booking = {
       id: uuid(),
@@ -36,7 +39,7 @@ router.post('/', async (req: Request, res: Response) => {
       serviceCategory: serviceCategory as Booking['serviceCategory'],
       package: pkg || '',
       description,
-      sampleImage: sampleImage || undefined,
+      sampleImages: sampleImagesClean.length > 0 ? sampleImagesClean : undefined,
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -67,7 +70,8 @@ router.post('/', async (req: Request, res: Response) => {
       `Country: ${clientCountry || 'N/A'}\n` +
       `Category: ${catLabel}\n` +
       `Package: ${pkg || 'N/A'}\n\n` +
-      `Project Description:\n${description}`;
+      `Project Description:\n${description}` +
+      (sampleImagesClean.length > 0 ? `\n\nSample images attached: ${sampleImagesClean.length}` : '');
 
     transporter.sendMail({
       from: `"Gtech Global" <${EMAIL_FROM}>`,
