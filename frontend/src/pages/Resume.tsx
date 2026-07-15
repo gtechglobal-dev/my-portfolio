@@ -83,9 +83,7 @@ export default function ResumePage() {
               className="card p-6 md:p-7"
             >
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
-                  OE
-                </div>
+                <img src="/profile.jpg" alt="Okoro Ebubechukwu" className="w-14 h-14 rounded-full object-cover shrink-0" />
                 <div>
                   <h2 className="font-bold text-base">Okoro Ebubechukwu E.</h2>
                   <p className="text-xs text-[#a09890]">Full-Stack Developer & Agency Founder | CEO of Gtechglobal</p>
