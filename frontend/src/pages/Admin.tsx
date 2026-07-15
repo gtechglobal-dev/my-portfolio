@@ -94,13 +94,13 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
         </div>
         <form onSubmit={handleSubmit} className="card p-6 space-y-4">
           <div>
-            <label className="block text-sm text-[#a09890] mb-1.5">Username</label>
-                            <input type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
+            <label htmlFor="admin-username" className="block text-sm text-[#a09890] mb-1.5">Username</label>
+                            <input id="admin-username" name="admin-username" type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
                               className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
           </div>
           <div>
-            <label className="block text-sm text-[#a09890] mb-1.5">Password</label>
-                            <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
+            <label htmlFor="admin-password" className="block text-sm text-[#a09890] mb-1.5">Password</label>
+                            <input id="admin-password" name="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
                               className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -455,11 +455,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6560]" />
-                        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                        <input id="booking-search" name="booking-search" type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
                       </div>
                       <div className="relative">
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                        <label htmlFor="booking-status-filter" className="sr-only">Filter by status</label>
+                        <select id="booking-status-filter" name="booking-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
                           className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                           <option value="">All Status</option>
                           <option value="pending">Pending</option>
@@ -545,18 +546,18 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                           {replyingTo === b.id ? (
                                             <div className="space-y-3 max-w-lg">
                                               <div>
-                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
-                                                <input type="text" value={b.clientEmail} readOnly
+                                                <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
+                                                <input id={`reply-to-${b.id}`} name={`reply-to-${b.id}`} type="text" value={b.clientEmail} readOnly
                                                   className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs" />
                                               </div>
                                               <div>
-                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
-                                                <input type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
+                                                <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
+                                                <input id={`reply-subject-${b.id}`} name={`reply-subject-${b.id}`} type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
                                                   className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
                                               </div>
                                               <div>
-                                                <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
-                                                <textarea rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
+                                                <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
+                                                <textarea id={`reply-message-${b.id}`} name={`reply-message-${b.id}`} rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
                                                   className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
                                               </div>
                                               <div className="flex gap-2">
@@ -683,14 +684,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-4">
                           <div>
-                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Title *</label>
-                            <input type="text" value={gfxTitle} onChange={(e) => setGfxTitle(e.target.value)}
+                            <label htmlFor="gfx-title" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Title *</label>
+                            <input id="gfx-title" name="gfx-title" type="text" value={gfxTitle} onChange={(e) => setGfxTitle(e.target.value)}
                               className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors"
                               placeholder="e.g. Premium Logo Concept" />
                           </div>
                           <div>
-                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Category</label>
-                            <select value={gfxCategory} onChange={(e) => setGfxCategory(e.target.value)}
+                            <label htmlFor="gfx-category" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Category</label>
+                            <select id="gfx-category" name="gfx-category" value={gfxCategory} onChange={(e) => setGfxCategory(e.target.value)}
                               className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                               <option>Logo Design</option>
                               <option>Flyer Design</option>
@@ -703,15 +704,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                             </select>
                           </div>
                           <div>
-                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Description</label>
-                            <textarea rows={3} value={gfxDescription} onChange={(e) => setGfxDescription(e.target.value)}
+                            <label htmlFor="gfx-description" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Description</label>
+                            <textarea id="gfx-description" name="gfx-description" rows={3} value={gfxDescription} onChange={(e) => setGfxDescription(e.target.value)}
                               className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none"
                               placeholder="Brief description of the design..." />
                           </div>
                           <div>
-                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Accent Color</label>
+                            <label htmlFor="gfx-color" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Accent Color</label>
                             <div className="flex items-center gap-3">
-                              <input type="color" value={gfxColor} onChange={(e) => setGfxColor(e.target.value)}
+                              <input id="gfx-color" name="gfx-color" type="color" value={gfxColor} onChange={(e) => setGfxColor(e.target.value)}
                                 className="w-10 h-10 rounded-lg border border-white/[0.06] cursor-pointer bg-transparent" />
                               <span className="text-xs text-[#6b6560]">{gfxColor}</span>
                             </div>
@@ -719,8 +720,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         </div>
                         <div className="space-y-4">
                           <div>
-                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Image * (max 5MB)</label>
-                            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#151412]">
+                            <label htmlFor="gfx-image" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Image * (max 5MB)</label>
+                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#151412]">
                               {gfxImage ? (
                                 <img src={gfxImage} alt="Preview" className="w-full h-full object-contain rounded-xl p-2" />
                               ) : (
@@ -730,7 +731,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                   <p className="text-[10px] text-[#6b6560] mt-1">PNG, JPG, WebP</p>
                                 </div>
                               )}
-                              <input type="file" accept="image/*" onChange={handleGfxImageChange} className="hidden" />
+                              <input id="gfx-image" name="gfx-image" type="file" accept="image/*" onChange={handleGfxImageChange} className="hidden" />
                             </label>
                           </div>
                           <button onClick={handleGfxUpload} disabled={gfxUploading || !gfxTitle.trim() || !gfxImage}
