@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, Clock, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { webDevPackages } from '../../lib/constants';
+import { webDevPackages, webDevAddons } from '../../lib/constants';
 
 export default function WebPricing() {
   return (
@@ -11,35 +11,88 @@ export default function WebPricing() {
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Web Development Pricing</h2>
           <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Choose the right package for your project.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto">
+
+        <div className="space-y-6 max-w-4xl mx-auto">
           {webDevPackages.map((pkg, i) => (
-            <motion.div key={pkg.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }}
-              transition={{ delay: i * 0.05, duration: 0.35 }}
-              className={`card p-6 md:p-7 flex flex-col relative ${pkg.popular ? 'border-indigo/30' : ''}`}>
+            <motion.div key={pkg.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-30px' }} transition={{ delay: i * 0.05, duration: 0.4 }}
+              className={`card p-6 md:p-8 relative overflow-hidden ${pkg.popular ? 'border-indigo/30' : ''}`}>
               {pkg.popular && (
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-semibold whitespace-nowrap">Most Popular</div>
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-orange-500 text-white text-[10px] font-semibold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Most Popular
+                </div>
               )}
-              <h3 className="text-base md:text-lg font-semibold mb-2">{pkg.title}</h3>
-              <div className="mb-5">
-                <div className="text-xl md:text-2xl font-bold">₦{pkg.price.ngn}</div>
-                <div className="text-xs text-[#6b6560]">${pkg.price.usd} USD</div>
+
+              <div className="flex flex-col md:flex-row md:items-start gap-6">
+                <div className="md:w-1/3">
+                  <h3 className="text-lg md:text-xl font-bold mb-1">{pkg.title}</h3>
+                  <p className="text-sm text-[#a09890] mb-4">{pkg.desc}</p>
+                  <div className="mb-4">
+                    <div className="text-2xl md:text-3xl font-bold">₦{pkg.price.ngn}</div>
+                    <div className="text-sm text-[#6b6560]">${pkg.price.usd} USD</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#6b6560]">
+                    <Clock className="w-3.5 h-3.5" />
+                    Delivery: {pkg.delivery}
+                  </div>
+                </div>
+
+                <div className="md:w-2/3 md:border-l md:border-white/[0.06] md:pl-8">
+                  <div className="mb-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#6b6560] mb-2">Perfect for</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {pkg.perfectFor.map((p) => (
+                        <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-[#a09890] border border-white/[0.06]">{p}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#6b6560] mb-2">Includes</h4>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                      {pkg.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-sm text-[#a09890] list-none">
+                          <Check className="w-3.5 h-3.5 text-indigo mt-0.5 shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {pkg.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-[#a09890]">
-                    <Check className="w-3.5 h-3.5 text-indigo mt-0.5 shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link to={`/booking?package=${pkg.id}&category=web-development`}
-                className={`w-full py-2.5 rounded-lg text-sm font-semibold text-center flex items-center justify-center gap-2 ${
-                  pkg.popular ? 'btn-primary' : 'btn-outline'}`}>
-                Get Started <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+
+              <div className="mt-6 pt-5 border-t border-white/[0.06] flex justify-end">
+                <Link to={`/booking?package=${pkg.id}&category=web-development`}
+                  className={`px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 ${
+                    pkg.popular ? 'btn-primary' : 'btn-outline'}`}>
+                  Get Started <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.4 }}
+          className="max-w-4xl mx-auto mt-16">
+          <div className="text-center mb-8">
+            <h3 className="text-xl md:text-2xl font-bold tracking-[-0.01em]">Optional Add-ons</h3>
+            <p className="mt-2 text-sm text-[#a09890]">Enhance your package with extra features.</p>
+          </div>
+          <div className="card overflow-hidden">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-white/[0.04]">
+              {webDevAddons.map((addon) => (
+                <div key={addon.service} className="bg-[#111820] p-4 flex flex-col justify-between">
+                  <span className="text-sm text-[#a09890] mb-2">{addon.service}</span>
+                  <div>
+                    <span className="text-sm font-semibold">₦{addon.price.ngn}</span>
+                    <span className="text-xs text-[#6b6560] ml-1.5">${addon.price.usd} USD</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
