@@ -16,33 +16,34 @@ const NOTIFY_EMAIL = 'gtechglobal.dev@gmail.com';
 const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
-  const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage } = req.body;
+  try {
+    const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage } = req.body;
 
-  if (!clientName || !clientEmail || !clientPhone || !serviceCategory || !description) {
-    return res.status(400).json({ error: 'All required fields must be provided' });
-  }
+    if (!clientName || !clientEmail || !clientPhone || !serviceCategory || !description) {
+      return res.status(400).json({ error: 'All required fields must be provided' });
+    }
 
-  if (description.length < 20) {
-    return res.status(400).json({ error: 'Description must be at least 20 characters' });
-  }
+    if (description.length < 20) {
+      return res.status(400).json({ error: 'Description must be at least 20 characters' });
+    }
 
-  const booking: Booking = {
-    id: uuid(),
-    clientName,
-    clientEmail,
-    clientPhone,
-    clientCountry: clientCountry || '',
-    serviceCategory: serviceCategory as Booking['serviceCategory'],
-    package: pkg || '',
-    description,
-    sampleImage: sampleImage || undefined,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-  };
+    const booking: Booking = {
+      id: uuid(),
+      clientName,
+      clientEmail,
+      clientPhone,
+      clientCountry: clientCountry || '',
+      serviceCategory: serviceCategory as Booking['serviceCategory'],
+      package: pkg || '',
+      description,
+      sampleImage: sampleImage || undefined,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
 
-  await writeBooking(booking);
+    await writeBooking(booking);
 
-  res.status(201).json({ success: true, id: booking.id });
+    res.status(201).json({ success: true, id: booking.id });
 
   if (SMTP_PASS) {
     const transporter = nodemailer.createTransport({
@@ -106,6 +107,12 @@ router.post('/', async (req: Request, res: Response) => {
     pkg: pkg || '',
     description,
   }).catch((err) => console.error('WhatsApp notification failed:', err.message));
+  } catch (err: any) {
+    console.error('Failed to create booking:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+  }
 });
 
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
