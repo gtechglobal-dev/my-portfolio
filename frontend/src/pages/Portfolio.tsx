@@ -28,6 +28,19 @@ export default function Portfolio() {
     <div className="pt-20 md:pt-24">
       <section className="py-12 md:py-16">
         <div className="container px-6 md:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-xl mx-auto mb-10"
+          >
+            <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">
+              Let's Create Something <span className="gradient-text">Special for You</span>
+            </h2>
+            <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
+              Real projects we've shipped. Real results we've delivered.
+            </p>
+          </motion.div>
 
           <div className="flex justify-center mb-10 md:mb-12">
             <div className="inline-flex bg-[#111820] border border-white/[0.06] rounded-xl p-1 gap-1">

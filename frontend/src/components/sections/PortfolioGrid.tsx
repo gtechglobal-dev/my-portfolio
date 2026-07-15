@@ -272,20 +272,6 @@ export default function PortfolioGrid() {
   return (
     <section className="py-20 md:py-24">
       <div className="container px-6 md:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-xl mx-auto mb-12 md:mb-14"
-        >
-          <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">
-            Our <span className="gradient-text">Portfolio</span>
-          </h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
-            Real projects we've shipped. Real results we've delivered.
-          </p>
-        </motion.div>
 
         <motion.div
           variants={containerVariants}
