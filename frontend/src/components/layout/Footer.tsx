@@ -34,18 +34,18 @@ export default function Footer() {
             <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
           </nav>
         </div>
-        <div className="mt-6 pt-5 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6b6560]">
+        <div className="mt-6 pt-5 border-t border-white/[0.04] flex flex-col items-center gap-3 text-xs text-[#6b6560]">
           <span>&copy; {new Date().getFullYear()} Gtech Global.</span>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <a href={siteConfig.social.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               <LinkedinIcon className="w-4 h-4" />
             </a>
             <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               <GithubIcon className="w-4 h-4" />
             </a>
-            <span className="hidden sm:inline">|</span>
+            <span>|</span>
             <a href={`tel:${siteConfig.phone}`} className="hover:text-white transition-colors">{siteConfig.phone}</a>
-            <span className="hidden sm:inline">|</span>
+            <span>|</span>
             <a href={`mailto:${siteConfig.email}`} className="hover:text-white transition-colors">{siteConfig.email}</a>
           </div>
         </div>

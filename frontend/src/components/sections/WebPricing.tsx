@@ -1,15 +1,41 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ArrowRight, Clock, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Clock, Sparkles, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { webDevPackages, webDevAddons } from '../../lib/constants';
+import { webDevPackages, webDevAddons, DEFAULT_EXCHANGE_RATE, formatNgn } from '../../lib/constants';
 
 export default function WebPricing() {
+  const [rate, setRate] = useState(DEFAULT_EXCHANGE_RATE);
+  const [rateSource, setRateSource] = useState('fallback');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        if (data?.rates?.NGN) {
+          setRate(Math.round(data.rates.NGN));
+          setRateSource('live');
+        }
+      } catch {
+        setRateSource('fallback');
+      }
+      setLoading(false);
+    };
+    fetchRate();
+  }, []);
+
   return (
     <section className="py-20 md:py-24">
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Web Development Pricing</h2>
           <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Choose the right package for your project.</p>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs text-[#6b6560] bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            1 USD = ₦{rate.toLocaleString()} {rateSource === 'live' ? '(Live rate)' : '(Estimated)'}
+          </div>
         </div>
 
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -28,8 +54,9 @@ export default function WebPricing() {
                   <h3 className="text-lg md:text-xl font-bold mb-1">{pkg.title}</h3>
                   <p className="text-sm text-[#a09890] mb-4">{pkg.desc}</p>
                   <div className="mb-4">
-                    <div className="text-2xl md:text-3xl font-bold">₦{pkg.price.ngn}</div>
-                    <div className="text-sm text-[#6b6560]">${pkg.price.usd} USD</div>
+                    <div className="text-xs text-[#6b6560] mb-1">Starting from</div>
+                    <div className="text-2xl md:text-3xl font-bold">₦{formatNgn(pkg.priceUsd, rate)}</div>
+                    <div className="text-sm text-[#6b6560]">${pkg.priceUsd.toLocaleString()} USD</div>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-[#6b6560]">
                     <Clock className="w-3.5 h-3.5" />
@@ -85,8 +112,8 @@ export default function WebPricing() {
                 <div key={addon.service} className="bg-[#111820] p-4 flex flex-col justify-between">
                   <span className="text-sm text-[#a09890] mb-2">{addon.service}</span>
                   <div>
-                    <span className="text-sm font-semibold">₦{addon.price.ngn}</span>
-                    <span className="text-xs text-[#6b6560] ml-1.5">${addon.price.usd} USD</span>
+                    <span className="text-sm font-semibold">₦{formatNgn(addon.priceUsd, rate)}</span>
+                    <span className="text-xs text-[#6b6560] ml-1.5">${addon.priceUsd}{addon.perMonth ? '/mo' : ''} USD</span>
                   </div>
                 </div>
               ))}

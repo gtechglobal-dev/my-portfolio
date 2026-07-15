@@ -1,15 +1,35 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { graphicsPackages } from '../../lib/constants';
+import { graphicsPackages, DEFAULT_EXCHANGE_RATE, formatNgn } from '../../lib/constants';
 
 export default function GraphicsPricing() {
+  const [rate, setRate] = useState(DEFAULT_EXCHANGE_RATE);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        if (data?.rates?.NGN) setRate(Math.round(data.rates.NGN));
+      } catch {}
+      setLoading(false);
+    };
+    fetchRate();
+  }, []);
+
   return (
     <section className="pb-20 md:pb-24">
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Graphics Design Pricing</h2>
           <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Professional design services at affordable rates.</p>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs text-[#6b6560] bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            1 USD = ₦{rate.toLocaleString()} {loading ? '' : '(Live rate)'}
+          </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {graphicsPackages.map((pkg, i) => (
@@ -21,8 +41,8 @@ export default function GraphicsPricing() {
                   <div className="text-base md:text-lg font-bold text-emerald-400">Available</div>
                 ) : (
                   <>
-                    <div className="text-base md:text-lg font-bold">₦{pkg.price.ngn}</div>
-                    <div className="text-[10px] text-[#6b6560]">${pkg.price.usd} USD</div>
+                    <div className="text-base md:text-lg font-bold">₦{formatNgn(pkg.priceUsd, rate)}</div>
+                    <div className="text-[10px] text-[#6b6560]">${pkg.priceUsd} USD</div>
                   </>
                 )}
               </div>

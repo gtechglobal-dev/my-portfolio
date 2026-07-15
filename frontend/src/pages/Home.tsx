@@ -18,7 +18,7 @@ const particles = Array.from({ length: 20 }, (_, i) => ({
 export default function Home() {
   return (
     <>
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(56,189,248,0.06)_0%,transparent_60%)]" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -80,7 +80,7 @@ export default function Home() {
             animate={{ opacity: [0, 0.3, 0], scaleX: [0.5, 1, 0.5] }} transition={{ duration: 5, delay: 2, repeat: Infinity, ease: 'easeInOut' }} />
         </div>
 
-        <div className="container px-6 md:px-8 py-28 md:py-36 relative z-10">
+        <div className="container px-6 md:px-8 py-20 md:py-28 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
             className="flex flex-col items-center text-center">
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain" />

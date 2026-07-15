@@ -6,7 +6,7 @@ import {
   authMiddleware,
   type AuthRequest,
 } from "../middleware/auth.js";
-import { readBookings, readMessages } from "../db.js";
+import { getBookings, getMessages } from "../db.js";
 import { buildEmailHtml } from "../emailTemplate.js";
 
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
@@ -41,9 +41,9 @@ router.post("/login", (req: Request, res: Response) => {
   res.json({ token, username });
 });
 
-router.get("/stats", authMiddleware, (req: AuthRequest, res: Response) => {
-  const bookings = readBookings();
-  const messages = readMessages();
+router.get("/stats", authMiddleware, async (req: AuthRequest, res: Response) => {
+  const bookings = await getBookings();
+  const messages = await getMessages();
 
   const stats = {
     totalBookings: bookings.length,

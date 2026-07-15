@@ -4,6 +4,7 @@ import cors from 'cors';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import { connectDB } from './db.js';
 import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
@@ -44,6 +45,14 @@ if (existsSync(frontendDist)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`Gtech Global API running on http://localhost:${PORT}`);
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Gtech Global API running on http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error('Failed to connect to MongoDB:', err.message);
+  console.warn('Starting server without database — writes will fail');
+  app.listen(PORT, () => {
+    console.log(`Gtech Global API running on http://localhost:${PORT} (NO DB)`);
+  });
 });

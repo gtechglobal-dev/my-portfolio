@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
-import { webDevPackages, graphicsPackages } from '../../lib/constants';
+import { webDevPackages, graphicsPackages, formatNgn, DEFAULT_EXCHANGE_RATE } from '../../lib/constants';
 
 const countries = [
   { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}' },
@@ -116,7 +116,7 @@ export default function BookingForm() {
     setSubmitting(true);
     setError('');
     try {
-      const pkgLabel = selectedPkg === 'other' ? 'Other Designs (Custom)' : selectedPkgData ? `${selectedPkgData.title} — ₦${selectedPkgData.price.ngn} ($${selectedPkgData.price.usd} USD)` : selectedPkg;
+      const pkgLabel = selectedPkg === 'other' ? 'Other Designs (Custom)' : selectedPkgData ? `${selectedPkgData.title} — $${selectedPkgData.priceUsd} USD` : selectedPkg;
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -174,7 +174,7 @@ export default function BookingForm() {
               <p><span className="text-[#a09890]">Phone:</span> {selectedCountry.dial} {form.phone}</p>
               <p><span className="text-[#a09890]">Country:</span> {selectedCountry.flag} {selectedCountry.name}</p>
               <p><span className="text-[#a09890]">Category:</span> {category === 'web-development' ? 'Web Development' : 'Graphics Design'}</p>
-              {selectedPkgData && selectedPkg !== 'other' && <p><span className="text-[#a09890]">Package:</span> {selectedPkgData.title} — ₦{selectedPkgData.price.ngn} (${selectedPkgData.price.usd} USD)</p>}
+              {selectedPkgData && selectedPkg !== 'other' && <p><span className="text-[#a09890]">Package:</span> {selectedPkgData.title} — ${selectedPkgData.priceUsd} USD</p>}
               {selectedPkg === 'other' && <p><span className="text-[#a09890]">Package:</span> Other Designs (Custom)</p>}
             </div>
             <div className="flex gap-3 mt-6 justify-center">
@@ -228,8 +228,7 @@ export default function BookingForm() {
                     <h4 className="text-sm font-semibold mb-2">{pkg.title}</h4>
                     {pkg.id !== 'other' ? (
                       <>
-                        <div className="text-indigo text-base font-bold">₦{pkg.price.ngn}</div>
-                        <div className="text-xs text-[#6b6560]">${pkg.price.usd} USD</div>
+                        <div className="text-indigo text-base font-bold">${pkg.priceUsd}</div>
                       </>
                     ) : (
                       <div className="text-indigo text-sm font-medium mt-1">Describe your needs →</div>

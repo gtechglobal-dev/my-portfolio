@@ -1,26 +1,32 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { MongoClient, Collection, ObjectId } from 'mongodb';
 
-const isServerless = process.env.VERCEL === '1' || process.env.NETLIFY === 'true' || process.env.RENDER === 'true' || process.env.LAMBDA_TASK_ROOT !== undefined;
-const DATA_DIR = isServerless
-  ? join('/tmp', 'data')
-  : join(process.cwd(), 'data');
-const BOOKINGS_FILE = join(DATA_DIR, 'bookings.json');
-const MESSAGES_FILE = join(DATA_DIR, 'messages.json');
-const GRAPHICS_FILE = join(DATA_DIR, 'graphics.json');
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
+const DB_NAME = 'gtech-portfolio';
 
-function ensureFile(file: string, initial: string) {
-  if (!existsSync(file)) {
-    mkdirSync(DATA_DIR, { recursive: true });
-    writeFileSync(file, initial, 'utf-8');
+let client: MongoClient | null = null;
+let db: ReturnType<MongoClient['db']> | null = null;
+
+export async function connectDB(): Promise<void> {
+  if (db) return;
+  if (!MONGODB_URI) {
+    console.warn('MONGODB_URI not set — using in-memory fallback');
+    return;
   }
+  client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  db = client.db(DB_NAME);
+  console.log(`Connected to MongoDB: ${DB_NAME}`);
 }
 
-ensureFile(BOOKINGS_FILE, '[]');
-ensureFile(MESSAGES_FILE, '[]');
-ensureFile(GRAPHICS_FILE, '[]');
+function getCollection<T extends { _id?: ObjectId }>(name: string): Collection<T> {
+  if (!db) throw new Error('MongoDB not connected. Set MONGODB_URI.');
+  return db.collection<T>(name);
+}
+
+// ─── Booking ───────────────────────────────────────────────
 
 export interface Booking {
+  _id?: ObjectId;
   id: string;
   clientName: string;
   clientEmail: string;
@@ -34,7 +40,39 @@ export interface Booking {
   createdAt: string;
 }
 
+export async function readBookings(): Promise<Booking[]> {
+  const col = getCollection<Booking>('bookings');
+  const docs = await col.find().sort({ createdAt: -1 }).toArray();
+  return docs.map(({ _id, ...rest }) => rest);
+}
+
+export async function writeBooking(booking: Booking): Promise<void> {
+  const col = getCollection<Booking>('bookings');
+  await col.insertOne(booking as any);
+}
+
+export async function updateBooking(id: string, update: Partial<Booking>): Promise<Booking | null> {
+  const col = getCollection<Booking>('bookings');
+  const doc = await col.findOneAndUpdate(
+    { id },
+    { $set: update },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function deleteBooking(id: string): Promise<boolean> {
+  const col = getCollection<Booking>('bookings');
+  const result = await col.deleteOne({ id });
+  return result.deletedCount > 0;
+}
+
+// ─── Message ───────────────────────────────────────────────
+
 export interface Message {
+  _id?: ObjectId;
   id: string;
   name: string;
   email: string;
@@ -44,48 +82,29 @@ export interface Message {
   createdAt: string;
 }
 
-export interface GraphicsDesign {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  image: string;
-  color: string;
-  createdAt: string;
+export async function readMessages(): Promise<Message[]> {
+  const col = getCollection<Message>('messages');
+  const docs = await col.find().sort({ createdAt: -1 }).toArray();
+  return docs.map(({ _id, ...rest }) => rest);
 }
 
-export function readBookings(): Booking[] {
-  try {
-    return JSON.parse(readFileSync(BOOKINGS_FILE, 'utf-8'));
-  } catch {
-    return [];
-  }
+export async function writeMessage(msg: Message): Promise<void> {
+  const col = getCollection<Message>('messages');
+  await col.insertOne(msg as any);
 }
 
-export function writeBookings(bookings: Booking[]) {
-  writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2), 'utf-8');
+export async function markMessageRead(id: string): Promise<boolean> {
+  const col = getCollection<Message>('messages');
+  const result = await col.updateOne({ id }, { $set: { read: true } });
+  return result.modifiedCount > 0;
 }
 
-export function readMessages(): Message[] {
-  try {
-    return JSON.parse(readFileSync(MESSAGES_FILE, 'utf-8'));
-  } catch {
-    return [];
-  }
+// ─── Stats helper (used by admin) ──────────────────────────
+
+export async function getBookings(): Promise<Booking[]> {
+  return readBookings();
 }
 
-export function writeMessages(messages: Message[]) {
-  writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2), 'utf-8');
-}
-
-export function readGraphics(): GraphicsDesign[] {
-  try {
-    return JSON.parse(readFileSync(GRAPHICS_FILE, 'utf-8'));
-  } catch {
-    return [];
-  }
-}
-
-export function writeGraphics(graphics: GraphicsDesign[]) {
-  writeFileSync(GRAPHICS_FILE, JSON.stringify(graphics, null, 2), 'utf-8');
+export async function getMessages(): Promise<Message[]> {
+  return readMessages();
 }
