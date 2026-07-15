@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Code, Smartphone, Palette, ShoppingCart, Globe, Search } from 'lucide-react';
+import { Code, Smartphone, Palette, ShoppingCart, Globe, Layers } from 'lucide-react';
 
 const services = [
   { icon: Code, title: 'Web Development', desc: 'Custom websites and web apps built with modern frameworks.' },
   { icon: Smartphone, title: 'Mobile Apps', desc: 'Cross-platform mobile applications for iOS and Android.' },
   { icon: Palette, title: 'UI/UX Design', desc: 'User interfaces that are beautiful, intuitive, and effective.' },
   { icon: ShoppingCart, title: 'E-Commerce', desc: 'Online stores with secure payments and smooth checkout.' },
-  { icon: Globe, title: 'Brand Identity', desc: 'Logos, color systems, and brand guidelines that stand out.' },
-  { icon: Search, title: 'SEO & Analytics', desc: 'Search optimization and data-driven growth strategies.' },
+  { icon: Globe, title: 'Graphics Design/Branding', desc: 'Logos, color systems, and brand guidelines that stand out.' },
+  { icon: Layers, title: 'Web Apps', desc: 'Scalable web applications with powerful features and integrations.' },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
