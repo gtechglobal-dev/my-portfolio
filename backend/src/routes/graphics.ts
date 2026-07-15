@@ -7,7 +7,8 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
 import { readGraphics, writeGraphics } from "../db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOAD_DIR = join(__dirname, "..", "..", "..", "frontend", "public", "uploads", "graphics");
+const PROJECT_ROOT = join(__dirname, "..", "..", "..");
+const UPLOAD_DIR = join(PROJECT_ROOT, "frontend", "public", "uploads", "graphics");
 
 if (!existsSync(UPLOAD_DIR)) {
   mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -38,7 +39,12 @@ router.post("/", authMiddleware, (req: AuthRequest, res: Response) => {
   const filename = `${randomUUID()}.${ext}`;
   const filepath = join(UPLOAD_DIR, filename);
 
-  writeFileSync(filepath, Buffer.from(match[2], "base64"));
+  try {
+    writeFileSync(filepath, Buffer.from(match[2], "base64"));
+  } catch (err: any) {
+    console.error("Failed to write image:", err.message);
+    return res.status(500).json({ error: "Failed to save image file" });
+  }
 
   const graphics = readGraphics();
   const entry = {
@@ -67,9 +73,12 @@ router.delete("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
   }
 
   const removed = graphics[idx];
-  const filepath = join(UPLOAD_DIR, removed.image.split("/").pop()!);
-  if (existsSync(filepath)) {
-    unlinkSync(filepath);
+  const filename = removed.image.split("/").pop();
+  if (filename) {
+    const filepath = join(UPLOAD_DIR, filename);
+    if (existsSync(filepath)) {
+      unlinkSync(filepath);
+    }
   }
 
   graphics.splice(idx, 1);
