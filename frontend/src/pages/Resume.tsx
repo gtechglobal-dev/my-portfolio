@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Download, ExternalLink, Mail, Phone, MapPin, Globe, Code, Smartphone, Palette, ShoppingCart, Search } from 'lucide-react';
+import { ExternalLink, Mail, Phone, MapPin, Globe, Code, Smartphone, Palette, ShoppingCart, Search } from 'lucide-react';
 import { siteConfig } from '../lib/constants';
 
 const skills = [
@@ -71,13 +71,6 @@ export default function ResumePage() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-[-0.01em]">Resume</h1>
             <p className="text-sm text-[#a09890] mt-1">Professional profile & experience</p>
           </div>
-          <a
-            href="/api/resume/download"
-            className="btn btn-primary text-sm flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Download PDF
-          </a>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">

@@ -16,7 +16,7 @@ const NOTIFY_EMAIL = 'gtechglobal.dev@gmail.com';
 const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
-  const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description } = req.body;
+  const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage } = req.body;
 
   if (!clientName || !clientEmail || !clientPhone || !serviceCategory || !description) {
     return res.status(400).json({ error: 'All required fields must be provided' });
@@ -35,6 +35,7 @@ router.post('/', async (req: Request, res: Response) => {
     serviceCategory: serviceCategory as Booking['serviceCategory'],
     package: pkg || '',
     description,
+    sampleImage: sampleImage || undefined,
     status: 'pending',
     createdAt: new Date().toISOString(),
   };

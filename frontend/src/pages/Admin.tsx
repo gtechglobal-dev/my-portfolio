@@ -4,7 +4,7 @@ import {
   LogIn, LogOut, LayoutDashboard, CalendarCheck, MessageSquare,
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
-  Palette, Upload, Image as ImageIcon,
+  Palette, Upload, Image as ImageIcon, Download, FileText,
 } from 'lucide-react';
 
 const API = '/api';
@@ -137,8 +137,8 @@ function formatPhoneForWhatsApp(phone: string): string {
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics';
-  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics'];
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
+  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume'];
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -313,12 +313,13 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     return true;
   });
 
-  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics';
+  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume';
   const navItems: { id: NavId; label: string; icon: any; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: stats?.pendingBookings },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats?.unreadMessages },
     { id: 'graphics', label: 'Graphics', icon: Palette },
+    { id: 'resume', label: 'Resume', icon: FileText },
   ];
 
   return (
@@ -782,6 +783,26 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           ))}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {tab === 'resume' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Resume</h3>
+                      <a href="/api/resume/download" target="_blank" rel="noopener noreferrer"
+                        className="btn btn-primary text-sm flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        Download PDF
+                      </a>
+                    </div>
+                    <div className="card p-6">
+                      <p className="text-sm text-[#a09890]">Download the resume PDF to share with clients or employers.</p>
+                      <a href="/api/resume/download" target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 mt-4 text-sm text-indigo hover:underline">
+                        <Download className="w-4 h-4" /> Open Resume PDF
+                      </a>
                     </div>
                   </div>
                 )}

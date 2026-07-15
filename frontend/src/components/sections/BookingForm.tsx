@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
 import { webDevPackages, graphicsPackages } from '../../lib/constants';
 
 const countries = [
@@ -81,6 +81,8 @@ export default function BookingForm() {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [sampleFile, setSampleFile] = useState<File | null>(null);
+  const [samplePreview, setSamplePreview] = useState('');
 
   useEffect(() => {
     const pkg = searchParams.get('package');
@@ -126,6 +128,7 @@ export default function BookingForm() {
           serviceCategory: category,
           package: pkgLabel,
           description: form.description.trim(),
+          sampleImage: samplePreview || undefined,
         }),
       });
       if (res.ok) {
@@ -151,6 +154,8 @@ export default function BookingForm() {
     setError('');
     setShowModal(false);
     setValidationErrors({});
+    setSampleFile(null);
+    setSamplePreview('');
   };
 
   return (
@@ -279,6 +284,37 @@ export default function BookingForm() {
                     {validationErrors.phone && <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>}
                   </div>
                 </div>
+                {category === 'graphics-design' && (
+                  <div>
+                    <label className="block text-sm text-[#a09890] mb-1.5">Upload Sample (optional)</label>
+                    <p className="text-[11px] text-[#6b6560] mb-2">Upload a reference image of what you want designed</p>
+                    {samplePreview ? (
+                      <div className="relative rounded-lg overflow-hidden border border-white/[0.06] bg-[#151412]">
+                        <img src={samplePreview} alt="Sample" className="w-full max-h-48 object-contain" />
+                        <button onClick={() => { setSampleFile(null); setSamplePreview(''); }}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/90 transition-colors">
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-white/[0.08] bg-[#151412] cursor-pointer hover:border-indigo/30 transition-colors">
+                        <Upload className="w-6 h-6 text-[#6b6560] mb-2" />
+                        <span className="text-sm text-[#6b6560]">Click to upload</span>
+                        <span className="text-[11px] text-[#4a4540] mt-1">PNG, JPG, WEBP up to 5MB</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+                            setSampleFile(file);
+                            const reader = new FileReader();
+                            reader.onload = () => setSamplePreview(reader.result as string);
+                            reader.readAsDataURL(file);
+                          }} />
+                      </label>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm text-[#a09890] mb-1.5">Description *</label>
                   <textarea required rows={4} value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); setValidationErrors({ ...validationErrors, description: '' }); }}

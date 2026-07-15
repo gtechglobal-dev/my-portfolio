@@ -29,6 +29,7 @@ export interface Booking {
   serviceCategory: 'web-development' | 'graphics-design';
   package: string;
   description: string;
+  sampleImage?: string;
   status: 'pending' | 'approved' | 'completed' | 'cancelled';
   createdAt: string;
 }
