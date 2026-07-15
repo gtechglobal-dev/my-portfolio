@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
   --color-indigo: #38bdf8;
   --color-indigo-dark: #0284c7;
 }
