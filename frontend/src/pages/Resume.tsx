@@ -117,9 +117,9 @@ export default function ResumePage() {
                   </svg>
                   github.com/gtechglobal-dev
                 </a>
-                <a href="https://gtechglobal.netlify.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
+                <a href="https://gtechglobal.dev" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-[#a09890] hover:text-white transition-colors">
                   <Globe className="w-4 h-4 text-indigo shrink-0" />
-                  gtechglobal.netlify.app
+                  gtechglobal.dev
                 </a>
               </div>
             </motion.div>

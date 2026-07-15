@@ -5,7 +5,7 @@ export const resumeData = {
   phone: '+234 905 486 7749',
   location: 'Nigeria',
   linkedin: 'https://www.linkedin.com/in/okoroebube-gtech/',
-  website: 'https://gtechglobal.netlify.app',
+  website: 'https://gtechglobal.dev',
   summary: 'Results-driven full-stack developer and founder of Gtech Global, a digital agency specializing in web development, mobile applications, UI/UX design, and brand identity. Proven track record of delivering high-quality digital solutions for diverse clients, from interactive community platforms to e-commerce marketplaces and fintech dashboards.',
   skills: [
     { category: 'Frontend', items: ['React', 'Next.js', 'TypeScript', 'Vite', 'TailwindCSS', 'Framer Motion'] },
