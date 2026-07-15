@@ -171,26 +171,20 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, bookingsRes, messagesRes, graphicsRes] = await Promise.all([
-        fetch(`${API}/admin/stats`, { headers }),
-        fetch(`${API}/bookings`, { headers }),
-        fetch(`${API}/contact`, { headers }),
-        fetch(`${API}/graphics`, { headers }),
+      const results = await Promise.allSettled([
+        fetch(`${API}/admin/stats`, { headers }).then(r => r.ok ? r.json() : null),
+        fetch(`${API}/bookings`, { headers }).then(r => r.ok ? r.json() : null),
+        fetch(`${API}/contact`, { headers }).then(r => r.ok ? r.json() : null),
+        fetch(`${API}/graphics`, { headers }).then(r => r.ok ? r.json() : null),
       ]);
-      if (statsRes.ok) setStats(await statsRes.json());
-      if (bookingsRes.ok) {
-        const data = await bookingsRes.json();
-        setBookings(data.bookings || []);
-      }
-      if (messagesRes.ok) {
-        const data = await messagesRes.json();
-        setMessages(data.messages || []);
-      }
-      if (graphicsRes.ok) {
-        const data = await graphicsRes.json();
-        setGraphics(data.graphics || []);
-      }
-    } catch {}
+      const [statsData, bookingsData, messagesData, graphicsData] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+      if (statsData) setStats(statsData);
+      if (bookingsData?.bookings) setBookings(bookingsData.bookings);
+      if (messagesData?.messages) setMessages(messagesData.messages);
+      if (graphicsData?.graphics) setGraphics(graphicsData.graphics);
+    } catch (err) {
+      console.error('Failed to fetch admin data:', err);
+    }
     setLoading(false);
   };
 
