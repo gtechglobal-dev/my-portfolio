@@ -19,12 +19,17 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { clientName, clientEmail, clientPhone, clientCountry, serviceCategory, package: pkg, description, sampleImage, sampleImages } = req.body;
 
-    if (!clientName || !clientEmail || !clientPhone || !serviceCategory || !description) {
+    const cleanName = (clientName || '').trim().slice(0, 100);
+    const cleanEmail = (clientEmail || '').trim().toLowerCase().slice(0, 254);
+    const cleanPhone = (clientPhone || '').trim().slice(0, 30);
+    const cleanDesc = (description || '').trim().slice(0, 2000);
+
+    if (!cleanName || !cleanEmail || !cleanPhone || !serviceCategory || !cleanDesc) {
       return res.status(400).json({ error: 'All required fields must be provided' });
     }
 
-    if (description.length < 20) {
-      return res.status(400).json({ error: 'Description must be at least 20 characters' });
+    if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Invalid email address' });
     }
 
     const rawImages: string[] = Array.isArray(sampleImages) ? sampleImages : sampleImage ? [sampleImage] : [];
@@ -32,13 +37,13 @@ router.post('/', async (req: Request, res: Response) => {
 
     const booking: Booking = {
       id: uuid(),
-      clientName,
-      clientEmail,
-      clientPhone,
-      clientCountry: clientCountry || '',
+      clientName: cleanName,
+      clientEmail: cleanEmail,
+      clientPhone: cleanPhone,
+      clientCountry: (clientCountry || '').trim().slice(0, 50),
       serviceCategory: serviceCategory as Booking['serviceCategory'],
-      package: pkg || '',
-      description,
+      package: (pkg || '').trim().slice(0, 200),
+      description: cleanDesc,
       sampleImages: sampleImagesClean.length > 0 ? sampleImagesClean : undefined,
       status: 'pending',
       createdAt: new Date().toISOString(),

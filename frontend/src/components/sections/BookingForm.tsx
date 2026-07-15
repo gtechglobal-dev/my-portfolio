@@ -5,48 +5,48 @@ import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Imag
 import { webDevPackages, graphicsPackages, formatNgn, DEFAULT_EXCHANGE_RATE } from '../../lib/constants';
 
 const countries = [
-  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}' },
-  { code: 'US', name: 'United States', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
-  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}' },
-  { code: 'GH', name: 'Ghana', dial: '+233', flag: '\u{1F1EC}\u{1F1ED}' },
-  { code: 'KE', name: 'Kenya', dial: '+254', flag: '\u{1F1F0}\u{1F1EA}' },
-  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '\u{1F1FF}\u{1F1E6}' },
-  { code: 'CA', name: 'Canada', dial: '+1', flag: '\u{1F1E8}\u{1F1E6}' },
-  { code: 'DE', name: 'Germany', dial: '+49', flag: '\u{1F1E9}\u{1F1EA}' },
-  { code: 'FR', name: 'France', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}' },
-  { code: 'IN', name: 'India', dial: '+91', flag: '\u{1F1EE}\u{1F1F3}' },
-  { code: 'BR', name: 'Brazil', dial: '+55', flag: '\u{1F1E7}\u{1F1F7}' },
-  { code: 'AE', name: 'United Arab Emirates', dial: '+971', flag: '\u{1F1E6}\u{1F1EA}' },
-  { code: 'SA', name: 'Saudi Arabia', dial: '+966', flag: '\u{1F1F8}\u{1F1E6}' },
-  { code: 'EG', name: 'Egypt', dial: '+20', flag: '\u{1F1EA}\u{1F1EC}' },
-  { code: 'JP', name: 'Japan', dial: '+81', flag: '\u{1F1EF}\u{1F1F5}' },
-  { code: 'CN', name: 'China', dial: '+86', flag: '\u{1F1E8}\u{1F1F3}' },
-  { code: 'AU', name: 'Australia', dial: '+61', flag: '\u{1F1E6}\u{1F1FA}' },
-  { code: 'IT', name: 'Italy', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}' },
-  { code: 'ES', name: 'Spain', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}' },
-  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '\u{1F1F3}\u{1F1F1}' },
-  { code: 'SE', name: 'Sweden', dial: '+46', flag: '\u{1F1F8}\u{1F1EA}' },
-  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '\u{1F1E8}\u{1F1ED}' },
-  { code: 'PT', name: 'Portugal', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}' },
-  { code: 'PH', name: 'Philippines', dial: '+63', flag: '\u{1F1F5}\u{1F1ED}' },
-  { code: 'SG', name: 'Singapore', dial: '+65', flag: '\u{1F1F8}\u{1F1EC}' },
-  { code: 'MY', name: 'Malaysia', dial: '+60', flag: '\u{1F1F2}\u{1F1FE}' },
-  { code: 'PK', name: 'Pakistan', dial: '+92', flag: '\u{1F1F5}\u{1F1F0}' },
-  { code: 'BD', name: 'Bangladesh', dial: '+880', flag: '\u{1F1E7}\u{1F1E9}' },
-  { code: 'IL', name: 'Israel', dial: '+972', flag: '\u{1F1EE}\u{1F1F1}' },
-  { code: 'TR', name: 'Turkey', dial: '+90', flag: '\u{1F1F9}\u{1F1F7}' },
-  { code: 'KR', name: 'South Korea', dial: '+82', flag: '\u{1F1F0}\u{1F1F7}' },
-  { code: 'MX', name: 'Mexico', dial: '+52', flag: '\u{1F1F2}\u{1F1FD}' },
-  { code: 'AR', name: 'Argentina', dial: '+54', flag: '\u{1F1E6}\u{1F1F7}' },
-  { code: 'CO', name: 'Colombia', dial: '+57', flag: '\u{1F1E8}\u{1F1F4}' },
-  { code: 'CL', name: 'Chile', dial: '+56', flag: '\u{1F1E8}\u{1F1F1}' },
-  { code: 'PL', name: 'Poland', dial: '+48', flag: '\u{1F1F5}\u{1F1F1}' },
-  { code: 'RU', name: 'Russia', dial: '+7', flag: '\u{1F1F7}\u{1F1FA}' },
-  { code: 'TH', name: 'Thailand', dial: '+66', flag: '\u{1F1F9}\u{1F1ED}' },
-  { code: 'VN', name: 'Vietnam', dial: '+84', flag: '\u{1F1FB}\u{1F1F3}' },
-  { code: 'ID', name: 'Indonesia', dial: '+62', flag: '\u{1F1EE}\u{1F1E9}' },
-  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '\u{1F1F3}\u{1F1FF}' },
-  { code: 'IE', name: 'Ireland', dial: '+353', flag: '\u{1F1EE}\u{1F1EA}' },
+  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}', pattern: /^[7-9][0-1]\d{7}$/, hint: '10 digits e.g. 8012345678' },
+  { code: 'US', name: 'United States', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}', pattern: /^[2-9]\d{9}$/, hint: '10 digits e.g. 2025551234' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}', pattern: /^7\d{9}$/, hint: '10 digits starting with 7' },
+  { code: 'GH', name: 'Ghana', dial: '+233', flag: '\u{1F1EC}\u{1F1ED}', pattern: /^[2-5]\d{8}$/, hint: '9 digits e.g. 241234567' },
+  { code: 'KE', name: 'Kenya', dial: '+254', flag: '\u{1F1F0}\u{1F1EA}', pattern: /^[17]\d{8}$/, hint: '9 digits e.g. 712345678' },
+  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '\u{1F1FF}\u{1F1E6}', pattern: /^[6-8]\d{8}$/, hint: '9 digits e.g. 812345678' },
+  { code: 'CA', name: 'Canada', dial: '+1', flag: '\u{1F1E8}\u{1F1E6}', pattern: /^[2-9]\d{9}$/, hint: '10 digits e.g. 4165551234' },
+  { code: 'DE', name: 'Germany', dial: '+49', flag: '\u{1F1E9}\u{1F1EA}', pattern: /^[1-9]\d{6,14}$/, hint: '7-15 digits' },
+  { code: 'FR', name: 'France', dial: '+33', flag: '\u{1F1EB}\u{1F1F7}', pattern: /^[67]\d{8}$/, hint: '9 digits starting with 6 or 7' },
+  { code: 'IN', name: 'India', dial: '+91', flag: '\u{1F1EE}\u{1F1F3}', pattern: /^[6-9]\d{9}$/, hint: '10 digits e.g. 9876543210' },
+  { code: 'BR', name: 'Brazil', dial: '+55', flag: '\u{1F1E7}\u{1F1F7}', pattern: /^[1-9]\d{9,10}$/, hint: '10-11 digits' },
+  { code: 'AE', name: 'United Arab Emirates', dial: '+971', flag: '\u{1F1E6}\u{1F1EA}', pattern: /^5[024568]\d{7}$/, hint: '9 digits starting with 5' },
+  { code: 'SA', name: 'Saudi Arabia', dial: '+966', flag: '\u{1F1F8}\u{1F1E6}', pattern: /^5\d{8}$/, hint: '9 digits starting with 5' },
+  { code: 'EG', name: 'Egypt', dial: '+20', flag: '\u{1F1EA}\u{1F1EC}', pattern: /^1[0125]\d{8}$/, hint: '10 digits starting with 1' },
+  { code: 'JP', name: 'Japan', dial: '+81', flag: '\u{1F1EF}\u{1F1F5}', pattern: /^[7-9]0\d{8}$/, hint: '10 digits e.g. 9012345678' },
+  { code: 'CN', name: 'China', dial: '+86', flag: '\u{1F1E8}\u{1F1F3}', pattern: /^1[3-9]\d{9}$/, hint: '11 digits starting with 1' },
+  { code: 'AU', name: 'Australia', dial: '+61', flag: '\u{1F1E6}\u{1F1FA}', pattern: /^4\d{8}$/, hint: '9 digits starting with 4' },
+  { code: 'IT', name: 'Italy', dial: '+39', flag: '\u{1F1EE}\u{1F1F9}', pattern: /^[3-9]\d{8,10}$/, hint: '9-11 digits' },
+  { code: 'ES', name: 'Spain', dial: '+34', flag: '\u{1F1EA}\u{1F1F8}', pattern: /^[6-9]\d{8}$/, hint: '9 digits e.g. 612345678' },
+  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '\u{1F1F3}\u{1F1F1}', pattern: /^[6-9]\d{8}$/, hint: '9 digits e.g. 612345678' },
+  { code: 'SE', name: 'Sweden', dial: '+46', flag: '\u{1F1F8}\u{1F1EA}', pattern: /^[7-8]\d{7,9}$/, hint: '8-10 digits' },
+  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '\u{1F1E8}\u{1F1ED}', pattern: /^[7-8]\d{8}$/, hint: '9 digits' },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '\u{1F1F5}\u{1F1F9}', pattern: /^[6-9]\d{8}$/, hint: '9 digits e.g. 912345678' },
+  { code: 'PH', name: 'Philippines', dial: '+63', flag: '\u{1F1F5}\u{1F1ED}', pattern: /^9\d{9}$/, hint: '10 digits starting with 9' },
+  { code: 'SG', name: 'Singapore', dial: '+65', flag: '\u{1F1F8}\u{1F1EC}', pattern: /^[689]\d{7}$/, hint: '8 digits' },
+  { code: 'MY', name: 'Malaysia', dial: '+60', flag: '\u{1F1F2}\u{1F1FE}', pattern: /^1\d{8,9}$/, hint: '9-10 digits starting with 1' },
+  { code: 'PK', name: 'Pakistan', dial: '+92', flag: '\u{1F1F5}\u{1F1F0}', pattern: /^3\d{9}$/, hint: '10 digits starting with 3' },
+  { code: 'BD', name: 'Bangladesh', dial: '+880', flag: '\u{1F1E7}\u{1F1E9}', pattern: /^1[3-9]\d{8}$/, hint: '10 digits starting with 1' },
+  { code: 'IL', name: 'Israel', dial: '+972', flag: '\u{1F1EE}\u{1F1F1}', pattern: /^[5-9]\d{8}$/, hint: '9 digits' },
+  { code: 'TR', name: 'Turkey', dial: '+90', flag: '\u{1F1F9}\u{1F1F7}', pattern: /^[5]\d{9}$/, hint: '10 digits starting with 5' },
+  { code: 'KR', name: 'South Korea', dial: '+82', flag: '\u{1F1F0}\u{1F1F7}', pattern: /^1[016-9]\d{7,8}$/, hint: '9-10 digits starting with 1' },
+  { code: 'MX', name: 'Mexico', dial: '+52', flag: '\u{1F1F2}\u{1F1FD}', pattern: /^[1-9]\d{9}$/, hint: '10 digits' },
+  { code: 'AR', name: 'Argentina', dial: '+54', flag: '\u{1F1E6}\u{1F1F7}', pattern: /^[1-9]\d{9}$/, hint: '10 digits' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '\u{1F1E8}\u{1F1F4}', pattern: /^3\d{9}$/, hint: '10 digits starting with 3' },
+  { code: 'CL', name: 'Chile', dial: '+56', flag: '\u{1F1E8}\u{1F1F1}', pattern: /^[6-9]\d{8}$/, hint: '9 digits' },
+  { code: 'PL', name: 'Poland', dial: '+48', flag: '\u{1F1F5}\u{1F1F1}', pattern: /^[5-8]\d{8}$/, hint: '9 digits' },
+  { code: 'RU', name: 'Russia', dial: '+7', flag: '\u{1F1F7}\u{1F1FA}', pattern: /^[9]\d{9}$/, hint: '10 digits starting with 9' },
+  { code: 'TH', name: 'Thailand', dial: '+66', flag: '\u{1F1F9}\u{1F1ED}', pattern: /^[6-9]\d{8}$/, hint: '9 digits' },
+  { code: 'VN', name: 'Vietnam', dial: '+84', flag: '\u{1F1FB}\u{1F1F3}', pattern: /^[3-9]\d{8}$/, hint: '9 digits' },
+  { code: 'ID', name: 'Indonesia', dial: '+62', flag: '\u{1F1EE}\u{1F1E9}', pattern: /^[8]\d{9,12}$/, hint: '10-13 digits starting with 8' },
+  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '\u{1F1F3}\u{1F1FF}', pattern: /^2\d{7,9}$/, hint: '8-10 digits starting with 2' },
+  { code: 'IE', name: 'Ireland', dial: '+353', flag: '\u{1F1EE}\u{1F1EA}', pattern: /^[8-9]\d{7,8}$/, hint: '8-9 digits' },
 ];
 
 function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
@@ -98,14 +98,28 @@ export default function BookingForm() {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Invalid email format';
+    const name = form.name.trim();
+    if (!name) errs.name = 'Name is required';
+    else if (name.length > 100) errs.name = 'Name is too long';
+    else if (/[<>"{}|\\^~\[\]`]/.test(name)) errs.name = 'Name contains invalid characters';
+
+    const email = form.email.trim().toLowerCase();
+    if (!email) errs.email = 'Email is required';
+    else if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email)) errs.email = 'Enter a valid email address';
+
     if (!form.phone.trim()) errs.phone = 'Phone is required';
+    else {
+      const digits = form.phone.replace(/\D/g, '');
+      if (!selectedCountry.pattern.test(digits)) errs.phone = `Invalid number for ${selectedCountry.name}. ${selectedCountry.hint}`;
+    }
+
     if (!form.country) errs.country = 'Select a country';
     if (!selectedPkg) errs.package = 'Select a package';
-    if (!form.description.trim()) errs.description = 'Description is required';
-    else if (form.description.trim().length < 20) errs.description = 'Description must be at least 20 characters';
+
+    const desc = form.description.trim();
+    if (!desc) errs.description = 'Description is required';
+    else if (desc.length > 2000) errs.description = 'Description must be under 2000 characters';
+
     setValidationErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -275,10 +289,15 @@ export default function BookingForm() {
                       <span className="flex items-center px-3 py-3 rounded-l-lg bg-[#1a1915] border border-r-0 border-white/[0.06] text-sm text-[#a09890] shrink-0 select-none">
                         {selectedCountry.flag} {selectedCountry.dial}
                       </span>
-                      <input type="tel" required value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); setValidationErrors({ ...validationErrors, phone: '' }); }}
-                        className={`w-full px-4 py-3 rounded-r-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Phone number" />
+                      <input type="tel" required value={form.phone}
+                        onChange={(e) => { const digits = e.target.value.replace(/\D/g, '').slice(0, 15); setForm({ ...form, phone: digits }); setValidationErrors({ ...validationErrors, phone: '' }); }}
+                        className={`w-full px-4 py-3 rounded-r-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder={selectedCountry.hint} />
                     </div>
-                    {validationErrors.phone && <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>}
+                    {validationErrors.phone ? (
+                      <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>
+                    ) : (
+                      <p className="text-[10px] text-[#6b6560] mt-1">{selectedCountry.hint}</p>
+                    )}
                   </div>
                 </div>
                 {category === 'graphics-design' && (
