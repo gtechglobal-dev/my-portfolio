@@ -5,6 +5,7 @@ export const siteConfig = {
   social: {
     whatsapp: 'https://wa.me/2349054867749',
     linkedin: 'https://www.linkedin.com/in/okoroebube-gtech/',
+    github: 'https://github.com/gtechglobal-dev',
   },
 }
 
