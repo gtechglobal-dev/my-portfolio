@@ -19,6 +19,7 @@ interface Booking {
   budget: string;
   description: string;
   sampleImages?: string[];
+  sampleImageCount?: number;
   status: string;
   createdAt: string;
 }
@@ -149,6 +150,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedBooking, setExpandedBooking] = useState<Booking | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replySubject, setReplySubject] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
@@ -524,7 +526,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               {filteredBookings.map((b) => (
                                 <>
                                   <tr key={b.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer"
-                                    onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}>
+                                    onClick={async () => {
+                                      if (expandedId === b.id) { setExpandedId(null); setExpandedBooking(null); return; }
+                                      setExpandedId(b.id);
+                                      setExpandedBooking(null);
+                                      try {
+                                        const res = await fetch(`${API}/bookings/${b.id}`, { headers });
+                                        if (res.ok) setExpandedBooking(await res.json());
+                                      } catch {}
+                                    }}>
                                     <td className="px-4 py-3">
                                       <div className="font-medium text-sm">{b.clientName}</div>
                                       <div className="text-[10px] text-[#6b6560]">{b.clientEmail}</div>
@@ -548,114 +558,123 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                     <tr key={`${b.id}-details`}>
                                       <td colSpan={7} className="px-4 py-4 bg-white/[0.02] border-b border-white/[0.04]">
                                         <div className="space-y-4">
-                                          <div className="grid md:grid-cols-2 gap-4">
-                                            <div>
-                                              <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Description</div>
-                                              <p className="text-xs leading-relaxed text-[#c0c0d0]">{b.description}</p>
-                                            </div>
-                                            <div>
-                                              <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Contact</div>
-                                              <div className="space-y-1.5">
-                                                <a href={`mailto:${b.clientEmail}`} className="flex items-center gap-2 text-xs text-indigo hover:text-indigo/80 transition-colors">
-                                                  <Mail className="w-3.5 h-3.5" /> {b.clientEmail}
-                                                </a>
-                                                <div className="flex items-center gap-2 text-xs text-[#a09890]">
-                                                  <Phone className="w-3.5 h-3.5" /> {b.clientPhone}
-                                                </div>
-                                              </div>
-                                              <div className="mt-2 text-[10px] text-[#6b6560]">
-                                                Submitted: {new Date(b.createdAt).toLocaleString()}
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {b.sampleImages && b.sampleImages.length > 0 && (
-                                            <>
-                                              <hr className="border-white/[0.04]" />
-                                              <div>
-                                                <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-2">Sample References ({b.sampleImages.length})</div>
-                                                <div className="flex flex-wrap gap-2">
-                                                  {b.sampleImages.map((img, i) => (
-                                                    <a key={i} href={img} target="_blank" rel="noopener noreferrer"
-                                                      className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820] hover:border-indigo/30 transition-colors">
-                                                      <img src={img} alt={`Sample ${i + 1}`} className="w-full h-full object-contain p-1" />
-                                                    </a>
-                                                  ))}
-                                                </div>
-                                              </div>
-                                            </>
-                                          )}
-
-                                          <hr className="border-white/[0.04]" />
-
-                                          {replyingTo === b.id ? (
-                                            <div className="space-y-3 max-w-lg">
-                                              <div>
-                                                <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
-                                                <input id={`reply-to-${b.id}`} name={`reply-to-${b.id}`} type="text" value={b.clientEmail} readOnly
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs" />
-                                              </div>
-                                              <div>
-                                                <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
-                                                <input id={`reply-subject-${b.id}`} name={`reply-subject-${b.id}`} type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
-                                              </div>
-                                              <div>
-                                                <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
-                                                <textarea id={`reply-message-${b.id}`} name={`reply-message-${b.id}`} rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
-                                              </div>
-                                              <div className="flex gap-2">
-                                                <button onClick={handleSendEmail} disabled={sendingEmail}
-                                                  className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-indigo text-white text-xs font-medium hover:bg-indigo/80 transition-colors disabled:opacity-50">
-                                                  {sendingEmail ? 'Sending...' : 'Send Reply'} <Mail className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button onClick={() => setReplyingTo(null)}
-                                                  className="px-4 py-2 rounded-lg bg-white/[0.04] text-[#a09890] text-xs hover:text-white transition-colors">
-                                                  Cancel
-                                                </button>
-                                              </div>
-                                              {emailStatus && (
-                                                <p className={`text-xs ${emailStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                  {emailStatus.message}
-                                                </p>
-                                              )}
+                                          {!expandedBooking ? (
+                                            <div className="flex items-center gap-2 py-4">
+                                              <div className="w-4 h-4 border-2 border-indigo border-t-transparent rounded-full animate-spin" />
+                                              <span className="text-xs text-[#6b6560]">Loading details...</span>
                                             </div>
                                           ) : (
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              <button onClick={() => { setReplyingTo(b.id); setReplySubject('Re: Your Booking Enquiry'); setReplyMessage(''); setEmailStatus(null); }}
-                                                className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-indigo/10 text-indigo text-xs font-medium hover:bg-indigo/20 transition-colors">
-                                                <Mail className="w-4 h-4" /> Reply via Email
-                                              </button>
-                                              <a href={`https://wa.me/${formatPhoneForWhatsApp(b.clientPhone)}?text=Hi ${b.clientName}, regarding your booking enquiry...`}
-                                                target="_blank" rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors">
-                                                <MessageSquare className="w-4 h-4" /> WhatsApp
-                                              </a>
-                                              <div className="flex-1" />
-                                              {b.status !== 'approved' && (
-                                                <button onClick={() => { updateStatus(b.id, 'approved'); setExpandedId(null); }}
-                                                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-400 text-xs hover:bg-blue-500/20 transition-colors">
-                                                  <CheckCircle className="w-3.5 h-3.5" /> Approve
-                                                </button>
+                                            <>
+                                              <div className="grid md:grid-cols-2 gap-4">
+                                                <div>
+                                                  <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Description</div>
+                                                  <p className="text-xs leading-relaxed text-[#c0c0d0]">{expandedBooking.description}</p>
+                                                </div>
+                                                <div>
+                                                  <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-1">Contact</div>
+                                                  <div className="space-y-1.5">
+                                                    <a href={`mailto:${expandedBooking.clientEmail}`} className="flex items-center gap-2 text-xs text-indigo hover:text-indigo/80 transition-colors">
+                                                      <Mail className="w-3.5 h-3.5" /> {expandedBooking.clientEmail}
+                                                    </a>
+                                                    <div className="flex items-center gap-2 text-xs text-[#a09890]">
+                                                      <Phone className="w-3.5 h-3.5" /> {expandedBooking.clientPhone}
+                                                    </div>
+                                                  </div>
+                                                  <div className="mt-2 text-[10px] text-[#6b6560]">
+                                                    Submitted: {new Date(expandedBooking.createdAt).toLocaleString()}
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {expandedBooking.sampleImages && expandedBooking.sampleImages.length > 0 && (
+                                                <>
+                                                  <hr className="border-white/[0.04]" />
+                                                  <div>
+                                                    <div className="text-[10px] text-[#a09890] uppercase tracking-wider mb-2">Sample References ({expandedBooking.sampleImages.length})</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                      {expandedBooking.sampleImages.map((img, i) => (
+                                                        <a key={i} href={img} target="_blank" rel="noopener noreferrer"
+                                                          className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820] hover:border-indigo/30 transition-colors">
+                                                          <img src={img} alt={`Sample ${i + 1}`} className="w-full h-full object-contain p-1" />
+                                                        </a>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                </>
                                               )}
-                                              {b.status !== 'completed' && (
-                                                <button onClick={() => { updateStatus(b.id, 'completed'); setExpandedId(null); }}
-                                                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors">
-                                                  <CheckCircle className="w-3.5 h-3.5" /> Complete
-                                                </button>
+
+                                              <hr className="border-white/[0.04]" />
+
+                                              {replyingTo === b.id ? (
+                                                <div className="space-y-3 max-w-lg">
+                                                  <div>
+                                                    <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
+                                                    <input id={`reply-to-${b.id}`} name={`reply-to-${b.id}`} type="text" value={b.clientEmail} readOnly
+                                                      className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs" />
+                                                  </div>
+                                                  <div>
+                                                    <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
+                                                    <input id={`reply-subject-${b.id}`} name={`reply-subject-${b.id}`} type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
+                                                      className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
+                                                  </div>
+                                                  <div>
+                                                    <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
+                                                    <textarea id={`reply-message-${b.id}`} name={`reply-message-${b.id}`} rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
+                                                      className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
+                                                  </div>
+                                                  <div className="flex gap-2">
+                                                    <button onClick={handleSendEmail} disabled={sendingEmail}
+                                                      className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-indigo text-white text-xs font-medium hover:bg-indigo/80 transition-colors disabled:opacity-50">
+                                                      {sendingEmail ? 'Sending...' : 'Send Reply'} <Mail className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => setReplyingTo(null)}
+                                                      className="px-4 py-2 rounded-lg bg-white/[0.04] text-[#a09890] text-xs hover:text-white transition-colors">
+                                                      Cancel
+                                                    </button>
+                                                  </div>
+                                                  {emailStatus && (
+                                                    <p className={`text-xs ${emailStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                      {emailStatus.message}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                  <button onClick={() => { setReplyingTo(b.id); setReplySubject('Re: Your Booking Enquiry'); setReplyMessage(''); setEmailStatus(null); }}
+                                                    className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-indigo/10 text-indigo text-xs font-medium hover:bg-indigo/20 transition-colors">
+                                                    <Mail className="w-4 h-4" /> Reply via Email
+                                                  </button>
+                                                  <a href={`https://wa.me/${formatPhoneForWhatsApp(b.clientPhone)}?text=Hi ${b.clientName}, regarding your booking enquiry...`}
+                                                    target="_blank" rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors">
+                                                    <MessageSquare className="w-4 h-4" /> WhatsApp
+                                                  </a>
+                                                  <div className="flex-1" />
+                                                  {b.status !== 'approved' && (
+                                                    <button onClick={() => { updateStatus(b.id, 'approved'); setExpandedId(null); }}
+                                                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-400 text-xs hover:bg-blue-500/20 transition-colors">
+                                                      <CheckCircle className="w-3.5 h-3.5" /> Approve
+                                                    </button>
+                                                  )}
+                                                  {b.status !== 'completed' && (
+                                                    <button onClick={() => { updateStatus(b.id, 'completed'); setExpandedId(null); }}
+                                                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors">
+                                                      <CheckCircle className="w-3.5 h-3.5" /> Complete
+                                                    </button>
+                                                  )}
+                                                  {b.status !== 'cancelled' && (
+                                                    <button onClick={() => { updateStatus(b.id, 'cancelled'); setExpandedId(null); }}
+                                                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                                                      <XCircle className="w-3.5 h-3.5" /> Cancel
+                                                    </button>
+                                                  )}
+                                                  <button onClick={() => { deleteBooking(b.id); setExpandedId(null); }}
+                                                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                                  </button>
+                                                </div>
                                               )}
-                                              {b.status !== 'cancelled' && (
-                                                <button onClick={() => { updateStatus(b.id, 'cancelled'); setExpandedId(null); }}
-                                                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
-                                                  <XCircle className="w-3.5 h-3.5" /> Cancel
-                                                </button>
-                                              )}
-                                              <button onClick={() => { deleteBooking(b.id); setExpandedId(null); }}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
-                                                <Trash2 className="w-3.5 h-3.5" /> Delete
-                                              </button>
-                                            </div>
+                                            </>
                                           )}
                                         </div>
                                       </td>

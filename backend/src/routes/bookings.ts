@@ -131,10 +131,27 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
       bookings = bookings.filter((b) => b.serviceCategory === category);
     }
 
-    res.json({ bookings, total: bookings.length });
+    const lightweight = bookings.map(({ sampleImages, ...rest }) => ({
+      ...rest,
+      sampleImageCount: sampleImages?.length || 0,
+    }));
+
+    res.json({ bookings: lightweight, total: lightweight.length });
   } catch (err: any) {
     console.error('Failed to fetch bookings:', err.message);
     res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const bookings = await readBookings();
+    const booking = bookings.find((b) => b.id === req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json(booking);
+  } catch (err: any) {
+    console.error('Failed to fetch booking:', err.message);
+    res.status(500).json({ error: 'Failed to fetch booking' });
   }
 });
 

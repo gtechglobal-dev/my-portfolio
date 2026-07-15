@@ -59,7 +59,8 @@ router.get("/stats", authMiddleware, async (req: AuthRequest, res: Response) => 
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
-        .slice(0, 5),
+        .slice(0, 5)
+        .map(({ sampleImages, ...rest }) => rest),
     };
 
     res.json(stats);
