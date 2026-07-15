@@ -38,18 +38,18 @@ router.get("/", async (_req, res: Response) => {
 });
 
 router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const { title, category, description, image, color } = req.body;
-
-  if (!title || !category || !image) {
-    return res.status(400).json({ error: "Title, category, and image are required" });
-  }
-
-  const match = image.match(/^data:image\/(\w+);base64,(.+)$/);
-  if (!match) {
-    return res.status(400).json({ error: "Invalid image format. Must be a base64 data URL." });
-  }
-
   try {
+    const { title, category, description, image, color } = req.body;
+
+    if (!title || !category || !image) {
+      return res.status(400).json({ error: "Title, category, and image are required" });
+    }
+
+    const match = image.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!match) {
+      return res.status(400).json({ error: "Invalid image format. Must be a base64 data URL." });
+    }
+
     const uploadResult = await cloudinary.uploader.upload(image, {
       folder: FOLDER,
       context: `title=${title}|category=${category}|description=${description || ""}|color=${color || "#4f46e5"}`,

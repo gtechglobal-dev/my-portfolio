@@ -158,8 +158,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [gfxCategory, setGfxCategory] = useState('Logo Design');
   const [gfxDescription, setGfxDescription] = useState('');
   const [gfxColor, setGfxColor] = useState('#38bdf8');
-  const [gfxImage, setGfxImage] = useState<string | null>(null);
+  const [gfxImages, setGfxImages] = useState<string[]>([]);
   const [gfxUploading, setGfxUploading] = useState(false);
+  const [gfxUploadProgress, setGfxUploadProgress] = useState<string>('');
   const [gfxStatus, setGfxStatus] = useState<{ type: string; message: string } | null>(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -250,51 +251,70 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   };
 
   const handleGfxImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setGfxStatus({ type: 'error', message: 'Image must be under 5MB' });
-      return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const remaining = 10 - gfxImages.length;
+    const toAdd = Math.min(files.length, remaining);
+    if (files.length > remaining) {
+      setGfxStatus({ type: 'error', message: `Max 10 images. You can add ${remaining} more.` });
     }
-    const reader = new FileReader();
-    reader.onload = () => setGfxImage(reader.result as string);
-    reader.readAsDataURL(file);
+    Array.from(files).slice(0, toAdd).forEach((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        setGfxStatus({ type: 'error', message: `"${file.name}" is over 5MB — skipped.` });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setGfxImages((prev) => [...prev, reader.result as string]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeGfxImage = (index: number) => {
+    setGfxImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleGfxUpload = async () => {
-    if (!gfxTitle.trim() || !gfxImage) {
-      setGfxStatus({ type: 'error', message: 'Title and image are required' });
+    if (!gfxTitle.trim() || gfxImages.length === 0) {
+      setGfxStatus({ type: 'error', message: 'Title and at least one image are required' });
       return;
     }
     setGfxUploading(true);
     setGfxStatus(null);
-    try {
-      const res = await fetch(`${API}/graphics`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          title: gfxTitle.trim(),
-          category: gfxCategory,
-          description: gfxDescription.trim(),
-          image: gfxImage,
-          color: gfxColor,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setGfxStatus({ type: 'success', message: 'Design uploaded successfully!' });
-        setGfxTitle('');
-        setGfxDescription('');
-        setGfxImage(null);
-        setGfxColor('#38bdf8');
-        fetchData();
-        setTimeout(() => setGfxStatus(null), 3000);
-      } else {
-        setGfxStatus({ type: 'error', message: data.error || 'Upload failed' });
+    let successCount = 0;
+    let failCount = 0;
+    for (let i = 0; i < gfxImages.length; i++) {
+      setGfxUploadProgress(`Uploading ${i + 1} of ${gfxImages.length}...`);
+      try {
+        const res = await fetch(`${API}/graphics`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            title: gfxTitle.trim(),
+            category: gfxCategory,
+            description: gfxDescription.trim(),
+            image: gfxImages[i],
+            color: gfxColor,
+          }),
+        });
+        if (res.ok) successCount++;
+        else failCount++;
+      } catch {
+        failCount++;
       }
-    } catch {
-      setGfxStatus({ type: 'error', message: 'Could not connect to server' });
     }
+    setGfxImages([]);
+    setGfxTitle('');
+    setGfxDescription('');
+    setGfxColor('#38bdf8');
+    setGfxUploadProgress('');
+    fetchData();
+    if (failCount === 0) {
+      setGfxStatus({ type: 'success', message: `${successCount} design${successCount > 1 ? 's' : ''} uploaded!` });
+    } else {
+      setGfxStatus({ type: 'error', message: `${successCount} uploaded, ${failCount} failed` });
+    }
+    setTimeout(() => setGfxStatus(null), 4000);
     setGfxUploading(false);
   };
 
@@ -727,23 +747,32 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         </div>
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="gfx-image" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Image * (max 5MB)</label>
-                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#111820]">
-                              {gfxImage ? (
-                                <img src={gfxImage} alt="Preview" className="w-full h-full object-contain rounded-xl p-2" />
-                              ) : (
-                                <div className="text-center">
-                                  <ImageIcon className="w-8 h-8 text-[#6b6560] mx-auto mb-2" />
-                                  <p className="text-xs text-[#6b6560]">Click to select image</p>
-                                  <p className="text-[10px] text-[#6b6560] mt-1">PNG, JPG, WebP</p>
-                                </div>
-                              )}
-                              <input id="gfx-image" name="gfx-image" type="file" accept="image/*" onChange={handleGfxImageChange} className="hidden" />
+                            <label htmlFor="gfx-image" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Images * (max 5MB each, up to 10)</label>
+                            {gfxImages.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2 mb-3">
+                                {gfxImages.map((img, i) => (
+                                  <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820]">
+                                    <img src={img} alt={`Preview ${i + 1}`} className="w-full h-24 object-contain p-1" />
+                                    <button onClick={() => removeGfxImage(i)}
+                                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
+                                      <X className="w-3 h-3 text-white" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#111820] py-6">
+                              <div className="text-center">
+                                <ImageIcon className="w-8 h-8 text-[#6b6560] mx-auto mb-2" />
+                                <p className="text-xs text-[#6b6560]">{gfxImages.length === 0 ? 'Click to select images' : 'Add more images'}</p>
+                                <p className="text-[10px] text-[#6b6560] mt-1">PNG, JPG, WebP — multiple files allowed</p>
+                              </div>
+                              <input id="gfx-image" name="gfx-image" type="file" accept="image/*" multiple onChange={handleGfxImageChange} className="hidden" />
                             </label>
                           </div>
-                          <button onClick={handleGfxUpload} disabled={gfxUploading || !gfxTitle.trim() || !gfxImage}
+                          <button onClick={handleGfxUpload} disabled={gfxUploading || !gfxTitle.trim() || gfxImages.length === 0}
                             className="w-full py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-indigo-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-                            {gfxUploading ? 'Uploading...' : 'Upload Design'} <Upload className="w-4 h-4" />
+                            {gfxUploading ? gfxUploadProgress || 'Uploading...' : `Upload ${gfxImages.length > 0 ? gfxImages.length + ' ' : ''}Design${gfxImages.length !== 1 ? 's' : ''}`} <Upload className="w-4 h-4" />
                           </button>
                           {gfxStatus && (
                             <p className={`text-xs ${gfxStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
