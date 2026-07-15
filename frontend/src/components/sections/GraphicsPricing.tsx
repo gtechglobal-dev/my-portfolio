@@ -17,8 +17,14 @@ export default function GraphicsPricing() {
               transition={{ delay: i * 0.03, duration: 0.3 }} className="card p-4 md:p-5">
               <h3 className="text-sm md:text-base font-semibold mb-2 leading-snug">{pkg.title}</h3>
               <div className="mb-4">
-                <div className="text-base md:text-lg font-bold">₦{pkg.price.ngn}</div>
-                <div className="text-[10px] text-[#6b6560]">${pkg.price.usd} USD</div>
+                {pkg.id === 'other' ? (
+                  <div className="text-base md:text-lg font-bold text-emerald-400">Available</div>
+                ) : (
+                  <>
+                    <div className="text-base md:text-lg font-bold">₦{pkg.price.ngn}</div>
+                    <div className="text-[10px] text-[#6b6560]">${pkg.price.usd} USD</div>
+                  </>
+                )}
               </div>
               <ul className="space-y-1.5 mb-4">
                 {pkg.features.slice(0, 3).map((f) => (

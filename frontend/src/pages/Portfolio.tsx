@@ -35,7 +35,7 @@ export default function Portfolio() {
             className="text-center max-w-xl mx-auto mb-10"
           >
             <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">
-              Let's Create Something <span className="gradient-text">Special for You</span>
+              <span className="gradient-text">Let's Create It!</span>
             </h2>
             <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
               Real projects we've shipped. Real results we've delivered.
