@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { resolve, dirname, join } from 'path';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
@@ -12,18 +12,8 @@ import graphicsRouter from './routes/graphics.js';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, '..', '..');
-const isServerless = process.env.VERCEL === '1' || process.env.NETLIFY === 'true' || process.env.RENDER === 'true';
-
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '10mb' }));
-
-if (isServerless) {
-  app.use('/uploads', express.static('/tmp/uploads'));
-} else {
-  app.use('/uploads', express.static(join(projectRoot, 'frontend', 'public', 'uploads')));
-}
 
 app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof SyntaxError && 'body' in err) {
@@ -44,7 +34,8 @@ app.get('/api/health', (_, res) => {
 });
 
 if (process.env.RENDER === 'true' || process.env.NODE_ENV === 'production') {
-  const frontendDist = resolve(projectRoot, 'frontend', 'dist');
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const frontendDist = resolve(__dirname, '..', '..', 'frontend', 'dist');
   app.use(express.static(frontendDist));
   app.get('*', (_req, res) => {
     res.sendFile(resolve(frontendDist, 'index.html'));
