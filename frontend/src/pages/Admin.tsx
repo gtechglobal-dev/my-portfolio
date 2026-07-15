@@ -136,7 +136,9 @@ function formatPhoneForWhatsApp(phone: string): string {
 }
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics'>('dashboard');
+  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics';
+  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics'];
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -189,6 +191,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   };
 
   useEffect(() => { fetchData(); }, [token]);
+
+  useEffect(() => {
+    window.location.hash = tab;
+  }, [tab]);
 
   useEffect(() => {
     if (tab === 'bookings' && bookings.length === 0 && !loading) fetchData();

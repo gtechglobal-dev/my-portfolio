@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Code, Palette } from 'lucide-react';
 import PortfolioGrid from '../components/sections/PortfolioGrid';
@@ -12,7 +13,16 @@ const tabs: { id: Tab; label: string; icon: typeof Code }[] = [
 ];
 
 export default function Portfolio() {
-  const [activeTab, setActiveTab] = useState<Tab>('web');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) === 'graphics' ? 'graphics' : 'web';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    const current = searchParams.get('tab');
+    if (current !== activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+  }, [activeTab]);
 
   return (
     <div className="pt-20 md:pt-24">

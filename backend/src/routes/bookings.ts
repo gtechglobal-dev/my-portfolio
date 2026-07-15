@@ -53,13 +53,14 @@ router.post('/', async (req: Request, res: Response) => {
       requireTLS: true,
       auth: { user: SMTP_USER, pass: SMTP_PASS },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 5000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     const catLabel = serviceCategory === 'web-development' ? 'Web Development' : 'Graphics Design';
-    const text = `New Booking Request\n\n` +
+
+    const adminText = `New Booking Request\n\n` +
       `Name: ${clientName}\n` +
       `Email: ${clientEmail}\n` +
       `Phone: ${clientPhone}\n` +
@@ -72,10 +73,30 @@ router.post('/', async (req: Request, res: Response) => {
       from: `"Gtech Global" <${EMAIL_FROM}>`,
       to: NOTIFY_EMAIL,
       subject: `New Booking — ${catLabel}${pkg ? ` (${pkg})` : ''}`,
-      text,
-      html: buildEmailHtml(text, `New Booking — ${catLabel}`),
-    }).then(() => console.log('Booking email sent'))
-      .catch((err) => console.error('Booking email failed:', err.message));
+      text: adminText,
+      html: buildEmailHtml(adminText, `New Booking — ${catLabel}`),
+    }).then(() => console.log('Admin booking email sent'))
+      .catch((err) => console.error('Admin booking email failed:', err.message));
+
+    const clientText = `Hi ${clientName},\n\n` +
+      `Thank you for reaching out to Gtech Global! We've received your ${catLabel} booking enquiry.\n\n` +
+      `Here's what you submitted:\n` +
+      `Category: ${catLabel}\n` +
+      `Package: ${pkg || 'N/A'}\n` +
+      `Description: ${description}\n\n` +
+      `Our team will review your request and get back to you within 24 hours.\n\n` +
+      `Best regards,\nGtech Global Team`;
+
+    transporter.sendMail({
+      from: `"Gtech Global" <${EMAIL_FROM}>`,
+      to: clientEmail,
+      subject: `Booking Received — ${catLabel} | Gtech Global`,
+      text: clientText,
+      html: buildEmailHtml(clientText, `Booking Received — ${catLabel}`),
+    }).then(() => console.log('Client confirmation email sent'))
+      .catch((err) => console.error('Client confirmation email failed:', err.message));
+  } else {
+    console.warn('SMTP_PASS not set — skipping booking emails');
   }
 
   sendBookingWhatsApp({
