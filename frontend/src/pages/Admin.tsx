@@ -4,6 +4,7 @@ import {
   LogIn, LogOut, LayoutDashboard, CalendarCheck, MessageSquare,
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
+  Palette, Upload, Image as ImageIcon,
 } from 'lucide-react';
 
 const API = '/api';
@@ -28,6 +29,16 @@ interface Message {
   subject: string;
   message: string;
   read: boolean;
+  createdAt: string;
+}
+
+interface GraphicsDesign {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  image: string;
+  color: string;
   createdAt: string;
 }
 
@@ -125,7 +136,7 @@ function formatPhoneForWhatsApp(phone: string): string {
 }
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics'>('dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -140,16 +151,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [replyMessage, setReplyMessage] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<{ type: string; message: string } | null>(null);
+  const [graphics, setGraphics] = useState<GraphicsDesign[]>([]);
+  const [gfxTitle, setGfxTitle] = useState('');
+  const [gfxCategory, setGfxCategory] = useState('Logo Design');
+  const [gfxDescription, setGfxDescription] = useState('');
+  const [gfxColor, setGfxColor] = useState('#4f46e5');
+  const [gfxImage, setGfxImage] = useState<string | null>(null);
+  const [gfxUploading, setGfxUploading] = useState(false);
+  const [gfxStatus, setGfxStatus] = useState<{ type: string; message: string } | null>(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, bookingsRes, messagesRes] = await Promise.all([
+      const [statsRes, bookingsRes, messagesRes, graphicsRes] = await Promise.all([
         fetch(`${API}/admin/stats`, { headers }),
         fetch(`${API}/bookings`, { headers }),
         fetch(`${API}/contact`, { headers }),
+        fetch(`${API}/graphics`, { headers }),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
       if (bookingsRes.ok) {
@@ -160,6 +180,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         const data = await messagesRes.json();
         setMessages(data.messages || []);
       }
+      if (graphicsRes.ok) {
+        const data = await graphicsRes.json();
+        setGraphics(data.graphics || []);
+      }
     } catch {}
     setLoading(false);
   };
@@ -168,6 +192,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   useEffect(() => {
     if (tab === 'bookings' && bookings.length === 0 && !loading) fetchData();
+    if (tab === 'graphics' && graphics.length === 0 && !loading) fetchData();
   }, [tab]);
 
   const updateStatus = async (id: string, status: string) => {
@@ -218,6 +243,61 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setSendingEmail(false);
   };
 
+  const handleGfxImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setGfxStatus({ type: 'error', message: 'Image must be under 5MB' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setGfxImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleGfxUpload = async () => {
+    if (!gfxTitle.trim() || !gfxImage) {
+      setGfxStatus({ type: 'error', message: 'Title and image are required' });
+      return;
+    }
+    setGfxUploading(true);
+    setGfxStatus(null);
+    try {
+      const res = await fetch(`${API}/graphics`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: gfxTitle.trim(),
+          category: gfxCategory,
+          description: gfxDescription.trim(),
+          image: gfxImage,
+          color: gfxColor,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGfxStatus({ type: 'success', message: 'Design uploaded successfully!' });
+        setGfxTitle('');
+        setGfxDescription('');
+        setGfxImage(null);
+        setGfxColor('#4f46e5');
+        fetchData();
+        setTimeout(() => setGfxStatus(null), 3000);
+      } else {
+        setGfxStatus({ type: 'error', message: data.error || 'Upload failed' });
+      }
+    } catch {
+      setGfxStatus({ type: 'error', message: 'Could not connect to server' });
+    }
+    setGfxUploading(false);
+  };
+
+  const deleteGraphics = async (id: string) => {
+    if (!confirm('Delete this design?')) return;
+    const res = await fetch(`${API}/graphics/${id}`, { method: 'DELETE', headers });
+    if (res.ok) fetchData();
+  };
+
   const filteredBookings = bookings.filter((b) => {
     if (statusFilter && b.status !== statusFilter) return false;
     if (searchQuery) {
@@ -227,11 +307,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     return true;
   });
 
-  type NavId = 'dashboard' | 'bookings' | 'messages';
+  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics';
   const navItems: { id: NavId; label: string; icon: any; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: stats?.pendingBookings },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats?.unreadMessages },
+    { id: 'graphics', label: 'Graphics', icon: Palette },
   ];
 
   return (
@@ -586,6 +667,112 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="card p-10 text-center">
                           <MessageSquare className="w-10 h-10 text-[#6b6560] mx-auto mb-3" />
                           <p className="text-sm text-[#a09890]">Select a message to read</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {tab === 'graphics' && (
+                  <div className="space-y-6">
+                    <div className="card p-6">
+                      <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <Upload className="w-4 h-4 text-indigo" />
+                        Upload New Design
+                      </h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Title *</label>
+                            <input type="text" value={gfxTitle} onChange={(e) => setGfxTitle(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors"
+                              placeholder="e.g. Premium Logo Concept" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Category</label>
+                            <select value={gfxCategory} onChange={(e) => setGfxCategory(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                              <option>Logo Design</option>
+                              <option>Flyer Design</option>
+                              <option>Banner Ad</option>
+                              <option>Social Media</option>
+                              <option>Brand Identity</option>
+                              <option>Business Card</option>
+                              <option>Poster</option>
+                              <option>Other</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Description</label>
+                            <textarea rows={3} value={gfxDescription} onChange={(e) => setGfxDescription(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none"
+                              placeholder="Brief description of the design..." />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Accent Color</label>
+                            <div className="flex items-center gap-3">
+                              <input type="color" value={gfxColor} onChange={(e) => setGfxColor(e.target.value)}
+                                className="w-10 h-10 rounded-lg border border-white/[0.06] cursor-pointer bg-transparent" />
+                              <span className="text-xs text-[#6b6560]">{gfxColor}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Image * (max 5MB)</label>
+                            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#151412]">
+                              {gfxImage ? (
+                                <img src={gfxImage} alt="Preview" className="w-full h-full object-contain rounded-xl p-2" />
+                              ) : (
+                                <div className="text-center">
+                                  <ImageIcon className="w-8 h-8 text-[#6b6560] mx-auto mb-2" />
+                                  <p className="text-xs text-[#6b6560]">Click to select image</p>
+                                  <p className="text-[10px] text-[#6b6560] mt-1">PNG, JPG, WebP</p>
+                                </div>
+                              )}
+                              <input type="file" accept="image/*" onChange={handleGfxImageChange} className="hidden" />
+                            </label>
+                          </div>
+                          <button onClick={handleGfxUpload} disabled={gfxUploading || !gfxTitle.trim() || !gfxImage}
+                            className="w-full py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-indigo-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            {gfxUploading ? 'Uploading...' : 'Upload Design'} <Upload className="w-4 h-4" />
+                          </button>
+                          {gfxStatus && (
+                            <p className={`text-xs ${gfxStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {gfxStatus.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-semibold mb-4">
+                        Uploaded Designs <span className="text-[#6b6560] font-normal">({graphics.length})</span>
+                      </h3>
+                      {graphics.length === 0 ? (
+                        <div className="card p-10 text-center">
+                          <Palette className="w-10 h-10 text-[#6b6560] mx-auto mb-3" />
+                          <p className="text-sm text-[#a09890]">No designs uploaded yet</p>
+                        </div>
+                      ) : (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {graphics.map((d) => (
+                            <div key={d.id} className="card p-0 overflow-hidden group">
+                              <div className="relative w-full h-40 overflow-hidden bg-[#1c1a18]">
+                                <img src={d.image} alt={d.title} className="w-full h-full object-cover" />
+                                <button onClick={() => deleteGraphics(d.id)}
+                                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">
+                                  <Trash2 className="w-3.5 h-3.5 text-white" />
+                                </button>
+                              </div>
+                              <div className="p-3">
+                                <span className="text-[9px] uppercase tracking-wider text-white/40">{d.category}</span>
+                                <h4 className="text-xs font-semibold mt-0.5">{d.title}</h4>
+                                <div className="text-[9px] text-[#6b6560] mt-1">{new Date(d.createdAt).toLocaleDateString()}</div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

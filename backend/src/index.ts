@@ -7,12 +7,13 @@ import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
 import resumeRouter from './routes/resume.js';
+import graphicsRouter from './routes/graphics.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof SyntaxError && 'body' in err) {
@@ -26,6 +27,7 @@ app.use('/api/bookings', bookingsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/resume', resumeRouter);
+app.use('/api/graphics', graphicsRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

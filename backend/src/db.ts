@@ -7,6 +7,7 @@ const DATA_DIR = isServerless
   : join(process.cwd(), 'data');
 const BOOKINGS_FILE = join(DATA_DIR, 'bookings.json');
 const MESSAGES_FILE = join(DATA_DIR, 'messages.json');
+const GRAPHICS_FILE = join(DATA_DIR, 'graphics.json');
 
 function ensureFile(file: string, initial: string) {
   if (!existsSync(file)) {
@@ -17,6 +18,7 @@ function ensureFile(file: string, initial: string) {
 
 ensureFile(BOOKINGS_FILE, '[]');
 ensureFile(MESSAGES_FILE, '[]');
+ensureFile(GRAPHICS_FILE, '[]');
 
 export interface Booking {
   id: string;
@@ -38,6 +40,16 @@ export interface Message {
   subject: string;
   message: string;
   read: boolean;
+  createdAt: string;
+}
+
+export interface GraphicsDesign {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  image: string;
+  color: string;
   createdAt: string;
 }
 
@@ -63,4 +75,16 @@ export function readMessages(): Message[] {
 
 export function writeMessages(messages: Message[]) {
   writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2), 'utf-8');
+}
+
+export function readGraphics(): GraphicsDesign[] {
+  try {
+    return JSON.parse(readFileSync(GRAPHICS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+export function writeGraphics(graphics: GraphicsDesign[]) {
+  writeFileSync(GRAPHICS_FILE, JSON.stringify(graphics, null, 2), 'utf-8');
 }
