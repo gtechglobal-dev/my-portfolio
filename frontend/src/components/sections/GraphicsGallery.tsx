@@ -55,14 +55,14 @@ function GraphicsModal({ design, onClose }: { design: GraphicsDesign; onClose: (
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#151412] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[#151412] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
-          <div className="w-full h-64 md:h-72 overflow-hidden rounded-t-2xl bg-[#1c1a18]">
+          <div className="w-full bg-[#0c0b0a] rounded-t-2xl flex items-center justify-center p-4 min-h-[200px] max-h-[65vh]">
             <img
               src={design.image}
               alt={design.title}
-              className="w-full h-full object-cover"
+              className="max-w-full max-h-[60vh] object-contain rounded-lg"
             />
           </div>
           <button
@@ -139,13 +139,12 @@ export default function GraphicsGallery() {
             className="card p-0 overflow-hidden cursor-pointer group"
           >
             <div
-              className="relative w-full h-48 md:h-52 overflow-hidden"
-              style={{ background: `linear-gradient(135deg, ${d.color}12, ${d.color}06)` }}
+              className="relative w-full aspect-[4/3] overflow-hidden bg-[#0c0b0a] flex items-center justify-center p-3"
             >
               <img
                 src={d.image}
                 alt={d.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

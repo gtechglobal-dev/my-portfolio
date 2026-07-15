@@ -759,8 +759,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {graphics.map((d) => (
                             <div key={d.id} className="card p-0 overflow-hidden group">
-                              <div className="relative w-full h-40 overflow-hidden bg-[#1c1a18]">
-                                <img src={d.image} alt={d.title} className="w-full h-full object-cover" />
+                              <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#0c0b0a] flex items-center justify-center p-2">
+                                <img src={d.image} alt={d.title} className="max-w-full max-h-full object-contain" />
                                 <button onClick={() => deleteGraphics(d.id)}
                                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">
                                   <Trash2 className="w-3.5 h-3.5 text-white" />
