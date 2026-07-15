@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
@@ -33,9 +34,10 @@ app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-if (process.env.RENDER === 'true' || process.env.NODE_ENV === 'production') {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const frontendDist = resolve(__dirname, '..', '..', 'frontend', 'dist');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const frontendDist = resolve(__dirname, '..', '..', 'frontend', 'dist');
+
+if (existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
   app.get('*', (_req, res) => {
     res.sendFile(resolve(frontendDist, 'index.html'));
