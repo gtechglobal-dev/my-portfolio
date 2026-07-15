@@ -5,7 +5,7 @@ import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Imag
 import { webDevPackages, graphicsPackages, formatNgn, DEFAULT_EXCHANGE_RATE } from '../../lib/constants';
 
 const countries = [
-  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}', pattern: /^[7-9][0-1]\d{7}$/, hint: '10 digits e.g. 8012345678' },
+  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}', pattern: /^[7-9]\d{9}$/, hint: '10 digits e.g. 8012345678' },
   { code: 'US', name: 'United States', dial: '+1', flag: '\u{1F1FA}\u{1F1F8}', pattern: /^[2-9]\d{9}$/, hint: '10 digits e.g. 2025551234' },
   { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '\u{1F1EC}\u{1F1E7}', pattern: /^7\d{9}$/, hint: '10 digits starting with 7' },
   { code: 'GH', name: 'Ghana', dial: '+233', flag: '\u{1F1EC}\u{1F1ED}', pattern: /^[2-5]\d{8}$/, hint: '9 digits e.g. 241234567' },
