@@ -82,6 +82,14 @@ export default function BookingForm() {
   const [showModal, setShowModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [samplePreviews, setSamplePreviews] = useState<string[]>([]);
+  const [rate, setRate] = useState(DEFAULT_EXCHANGE_RATE);
+
+  useEffect(() => {
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then((r) => r.json())
+      .then((d) => { if (d?.rates?.NGN) setRate(Math.round(d.rates.NGN)); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const pkg = searchParams.get('package');
@@ -240,7 +248,8 @@ export default function BookingForm() {
                     <h4 className="text-sm font-semibold mb-2">{pkg.title}</h4>
                     {pkg.id !== 'other' ? (
                       <>
-                        <div className="text-indigo text-base font-bold">${pkg.priceUsd}</div>
+                        <div className="text-base font-bold">${pkg.priceUsd} <span className="text-sm font-normal text-[#6b6560]">USD</span></div>
+                        <div className="text-xs text-indigo">₦{formatNgn(pkg.priceUsd, rate)}</div>
                       </>
                     ) : (
                       <div className="text-indigo text-sm font-medium mt-1">Describe your needs →</div>
