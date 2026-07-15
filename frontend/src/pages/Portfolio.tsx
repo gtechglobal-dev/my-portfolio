@@ -43,7 +43,7 @@ export default function Portfolio() {
           </motion.div>
 
           <div className="flex justify-center mb-10 md:mb-12">
-            <div className="inline-flex bg-[#151412] border border-white/[0.06] rounded-xl p-1 gap-1">
+            <div className="inline-flex bg-[#111820] border border-white/[0.06] rounded-xl p-1 gap-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}

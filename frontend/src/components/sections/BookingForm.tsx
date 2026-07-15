@@ -159,7 +159,7 @@ export default function BookingForm() {
   };
 
   return (
-    <section className="min-h-screen bg-[#0c0b0a] pt-28 pb-24">
+    <section className="min-h-screen bg-[#0a0f14] pt-28 pb-24">
       <Modal open={showModal} onClose={() => { setShowModal(false); if (submitted) resetForm(); }}>
         {submitted ? (
           <div className="text-center">
@@ -168,7 +168,7 @@ export default function BookingForm() {
             </div>
             <h3 className="text-xl font-bold mb-2">Booking Submitted!</h3>
             <p className="text-sm text-[#a09890] mb-2">We'll review your details and get back to you shortly.</p>
-            <div className="bg-[#151412] rounded-lg p-4 mt-4 text-left text-sm space-y-1">
+            <div className="bg-[#111820] rounded-lg p-4 mt-4 text-left text-sm space-y-1">
               <p><span className="text-[#a09890]">Name:</span> {form.name}</p>
               <p><span className="text-[#a09890]">Email:</span> {form.email}</p>
               <p><span className="text-[#a09890]">Phone:</span> {selectedCountry.dial} {form.phone}</p>
@@ -248,13 +248,13 @@ export default function BookingForm() {
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Name *</label>
                     <input type="text" required value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setValidationErrors({ ...validationErrors, name: '' }); }}
-                      className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.name ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Your name" />
+                      className={`w-full px-4 py-3 rounded-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.name ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Your name" />
                     {validationErrors.name && <p className="text-red-400 text-[11px] mt-1">{validationErrors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Email *</label>
                     <input type="email" required value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setValidationErrors({ ...validationErrors, email: '' }); }}
-                      className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.email ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="you@email.com" />
+                      className={`w-full px-4 py-3 rounded-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.email ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="you@email.com" />
                     {validationErrors.email && <p className="text-red-400 text-[11px] mt-1">{validationErrors.email}</p>}
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function BookingForm() {
                     <label className="block text-sm text-[#a09890] mb-1.5">Country *</label>
                     <div className="relative">
                       <select value={form.country} onChange={(e) => { setForm({ ...form, country: e.target.value }); setValidationErrors({ ...validationErrors, country: '' }); }}
-                        className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${validationErrors.country ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`}>
+                        className={`w-full px-4 py-3 rounded-lg bg-[#111820] border text-white text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${validationErrors.country ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`}>
                         {countries.map((c) => (
                           <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                         ))}
@@ -279,7 +279,7 @@ export default function BookingForm() {
                         {selectedCountry.flag} {selectedCountry.dial}
                       </span>
                       <input type="tel" required value={form.phone} onChange={(e) => { setForm({ ...form, phone: e.target.value }); setValidationErrors({ ...validationErrors, phone: '' }); }}
-                        className={`w-full px-4 py-3 rounded-r-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Phone number" />
+                        className={`w-full px-4 py-3 rounded-r-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Phone number" />
                     </div>
                     {validationErrors.phone && <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>}
                   </div>
@@ -289,7 +289,7 @@ export default function BookingForm() {
                     <label className="block text-sm text-[#a09890] mb-1.5">Upload Sample (optional)</label>
                     <p className="text-[11px] text-[#6b6560] mb-2">Upload a reference image of what you want designed</p>
                     {samplePreview ? (
-                      <div className="relative rounded-lg overflow-hidden border border-white/[0.06] bg-[#151412]">
+                      <div className="relative rounded-lg overflow-hidden border border-white/[0.06] bg-[#111820]">
                         <img src={samplePreview} alt="Sample" className="w-full max-h-48 object-contain" />
                         <button onClick={() => { setSampleFile(null); setSamplePreview(''); }}
                           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/90 transition-colors">
@@ -297,7 +297,7 @@ export default function BookingForm() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-white/[0.08] bg-[#151412] cursor-pointer hover:border-indigo/30 transition-colors">
+                      <label className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-white/[0.08] bg-[#111820] cursor-pointer hover:border-indigo/30 transition-colors">
                         <Upload className="w-6 h-6 text-[#6b6560] mb-2" />
                         <span className="text-sm text-[#6b6560]">Click to upload</span>
                         <span className="text-[11px] text-[#4a4540] mt-1">PNG, JPG, WEBP up to 5MB</span>
@@ -318,7 +318,7 @@ export default function BookingForm() {
                 <div>
                   <label className="block text-sm text-[#a09890] mb-1.5">Description *</label>
                   <textarea required rows={4} value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); setValidationErrors({ ...validationErrors, description: '' }); }}
-                    className={`w-full px-4 py-3 rounded-lg bg-[#151412] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors resize-none ${validationErrors.description ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Describe your project in detail (at least 20 characters)..." />
+                    className={`w-full px-4 py-3 rounded-lg bg-[#111820] border text-white text-sm placeholder-[#6b6560] focus:outline-none transition-colors resize-none ${validationErrors.description ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Describe your project in detail (at least 20 characters)..." />
                   {validationErrors.description && <p className="text-red-400 text-[11px] mt-1">{validationErrors.description}</p>}
                 </div>
               </div>

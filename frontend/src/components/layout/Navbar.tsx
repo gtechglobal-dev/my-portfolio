@@ -30,7 +30,7 @@ export default function Navbar() {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-      scrolled ? 'bg-[#0c0b0a]/80 backdrop-blur-xl border-b border-white/[0.04]' : 'bg-transparent'
+      scrolled ? 'bg-[#0a0f14]/80 backdrop-blur-xl border-b border-white/[0.04]' : 'bg-transparent'
     }`}>
       <div className="container flex items-center justify-between h-16 px-6 md:px-8">
         <Link to="/" className="flex items-center gap-2.5">
@@ -64,7 +64,7 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-white/[0.04] bg-[#0c0b0a]/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-white/[0.04] bg-[#0a0f14]/95 backdrop-blur-xl">
           <div className="px-6 py-3 space-y-0.5">
             {links.map((l) => (
               <Link key={l.to} to={l.to}

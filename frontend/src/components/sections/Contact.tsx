@@ -60,30 +60,30 @@ export default function Contact() {
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Name *</label>
                     <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Your name" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Your name" />
                   </div>
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Email *</label>
                     <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="you@email.com" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="you@email.com" />
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Phone</label>
                     <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="+234 900 000 0000" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="+234 900 000 0000" />
                   </div>
                   <div>
                     <label className="block text-sm text-[#a09890] mb-1.5">Subject *</label>
                     <input type="text" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Project discussion" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Project discussion" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm text-[#a09890] mb-1.5">Message *</label>
                   <textarea required rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none" placeholder="Tell us about your project..." />
+                    className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none" placeholder="Tell us about your project..." />
                 </div>
                 <button type="submit" disabled={sending} className="btn btn-primary">
                   {sending ? 'Sending...' : 'Send Message'} <Send className="w-4 h-4" />

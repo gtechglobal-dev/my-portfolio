@@ -82,11 +82,11 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0b0a] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#0a0f14] flex items-center justify-center p-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
             <LayoutDashboard className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
@@ -96,12 +96,12 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
           <div>
             <label htmlFor="admin-username" className="block text-sm text-[#a09890] mb-1.5">Username</label>
                             <input id="admin-username" name="admin-username" type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
+                              className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
           </div>
           <div>
             <label htmlFor="admin-password" className="block text-sm text-[#a09890] mb-1.5">Password</label>
                             <input id="admin-password" name="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
+                              className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button type="submit" disabled={loading}
@@ -157,7 +157,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [gfxTitle, setGfxTitle] = useState('');
   const [gfxCategory, setGfxCategory] = useState('Logo Design');
   const [gfxDescription, setGfxDescription] = useState('');
-  const [gfxColor, setGfxColor] = useState('#4f46e5');
+  const [gfxColor, setGfxColor] = useState('#38bdf8');
   const [gfxImage, setGfxImage] = useState<string | null>(null);
   const [gfxUploading, setGfxUploading] = useState(false);
   const [gfxStatus, setGfxStatus] = useState<{ type: string; message: string } | null>(null);
@@ -286,7 +286,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         setGfxTitle('');
         setGfxDescription('');
         setGfxImage(null);
-        setGfxColor('#4f46e5');
+        setGfxColor('#38bdf8');
         fetchData();
         setTimeout(() => setGfxStatus(null), 3000);
       } else {
@@ -323,11 +323,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   ];
 
   return (
-    <div className="min-h-screen bg-[#0c0b0a] flex">
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0f0f1a] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+    <div className="min-h-screen bg-[#0a0f14] flex">
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0d1117] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-violet-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-orange-500 flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-sm">Gtech Admin</span>
@@ -357,7 +357,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       </aside>
 
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-40 bg-[#0c0b0a]/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
+        <header className="sticky top-0 z-40 bg-[#0a0f14]/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#a09890]">
             <Menu className="w-5 h-5" />
           </button>
@@ -463,12 +463,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6560]" />
                         <input id="booking-search" name="booking-search" type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
+                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
                       </div>
                       <div className="relative">
                         <label htmlFor="booking-status-filter" className="sr-only">Filter by status</label>
                         <select id="booking-status-filter" name="booking-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                           <option value="">All Status</option>
                           <option value="pending">Pending</option>
                           <option value="approved">Approved</option>
@@ -555,17 +555,17 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                               <div>
                                                 <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">To</label>
                                                 <input id={`reply-to-${b.id}`} name={`reply-to-${b.id}`} type="text" value={b.clientEmail} readOnly
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs" />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs" />
                                               </div>
                                               <div>
                                                 <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Subject</label>
                                                 <input id={`reply-subject-${b.id}`} name={`reply-subject-${b.id}`} type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
                                               </div>
                                               <div>
                                                 <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1">Message</label>
                                                 <textarea id={`reply-message-${b.id}`} name={`reply-message-${b.id}`} rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
-                                                  className="w-full px-3 py-2 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
+                                                  className="w-full px-3 py-2 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
                                               </div>
                                               <div className="flex gap-2">
                                                 <button onClick={handleSendEmail} disabled={sendingEmail}
@@ -693,13 +693,13 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           <div>
                             <label htmlFor="gfx-title" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Title *</label>
                             <input id="gfx-title" name="gfx-title" type="text" value={gfxTitle} onChange={(e) => setGfxTitle(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors"
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors"
                               placeholder="e.g. Premium Logo Concept" />
                           </div>
                           <div>
                             <label htmlFor="gfx-category" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Category</label>
                             <select id="gfx-category" name="gfx-category" value={gfxCategory} onChange={(e) => setGfxCategory(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                               <option>Logo Design</option>
                               <option>Flyer Design</option>
                               <option>Banner Ad</option>
@@ -713,7 +713,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           <div>
                             <label htmlFor="gfx-description" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Description</label>
                             <textarea id="gfx-description" name="gfx-description" rows={3} value={gfxDescription} onChange={(e) => setGfxDescription(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#151412] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none"
+                              className="w-full px-4 py-2.5 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none"
                               placeholder="Brief description of the design..." />
                           </div>
                           <div>
@@ -728,7 +728,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="space-y-4">
                           <div>
                             <label htmlFor="gfx-image" className="text-[10px] text-[#a09890] uppercase tracking-wider block mb-1.5">Image * (max 5MB)</label>
-                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#151412]">
+                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#111820]">
                               {gfxImage ? (
                                 <img src={gfxImage} alt="Preview" className="w-full h-full object-contain rounded-xl p-2" />
                               ) : (
@@ -767,7 +767,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {graphics.map((d) => (
                             <div key={d.id} className="card p-0 overflow-hidden group">
-                              <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#0c0b0a] flex items-center justify-center p-2">
+                              <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#0a0f14] flex items-center justify-center p-2">
                                 <img src={d.image} alt={d.title} className="max-w-full max-h-full object-contain" />
                                 <button onClick={() => deleteGraphics(d.id)}
                                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">

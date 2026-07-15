@@ -17,7 +17,7 @@ export default function WebPricing() {
               transition={{ delay: i * 0.05, duration: 0.35 }}
               className={`card p-6 md:p-7 flex flex-col relative ${pkg.popular ? 'border-indigo/30' : ''}`}>
               {pkg.popular && (
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-indigo text-white text-[10px] font-semibold whitespace-nowrap">Most Popular</div>
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-semibold whitespace-nowrap">Most Popular</div>
               )}
               <h3 className="text-base md:text-lg font-semibold mb-2">{pkg.title}</h3>
               <div className="mb-5">

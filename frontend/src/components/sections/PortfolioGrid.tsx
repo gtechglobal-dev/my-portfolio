@@ -52,7 +52,7 @@ const projects = [
     url: 'https://royalyouths.onrender.com/',
     siteUrl: 'https://royalyouths.onrender.com/',
     image: '/screenshots/royal-youths.png',
-    color: '#4f46e5',
+    color: '#38bdf8',
     metric: '2K+ Active Users',
     status: 'live',
   },
@@ -64,7 +64,7 @@ const projects = [
     url: 'https://prestigemart.netlify.app/',
     siteUrl: 'https://prestigemart.netlify.app/',
     image: '/screenshots/prestige-mart.png',
-    color: '#7c3aed',
+    color: '#f97316',
     metric: 'Live & Active',
     status: 'live',
   },
@@ -136,7 +136,7 @@ const projects = [
     url: '#',
     siteUrl: '',
     image: null,
-    color: '#7c3aed',
+    color: '#38bdf8',
     metric: 'Under Development',
     status: 'coming',
   },
@@ -191,7 +191,7 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#151412] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[#111820] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
           {project.siteUrl || project.image ? (
@@ -321,7 +321,7 @@ export default function PortfolioGrid() {
                   </div>
                 )}
                 {p.status === 'coming' && (
-                  <div className="absolute inset-0 bg-[#0c0b0a]/60 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[#0a0f14]/60 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
                       <Clock className="w-3 h-3 text-violet-400" />
                       <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-wider">Under Development</span>

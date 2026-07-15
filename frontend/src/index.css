@@ -2,20 +2,20 @@
 
 @theme inline {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --color-indigo: #4f46e5;
-  --color-indigo-dark: #4338ca;
+  --color-indigo: #38bdf8;
+  --color-indigo-dark: #0284c7;
 }
 
 body {
   margin: 0;
-  background: #0c0b0a;
-  color: #f5f0eb;
+  background: #0a0f14;
+  color: #f0f4f8;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.25);
+  background: rgba(56, 189, 248, 0.25);
   color: #fff;
 }
 
@@ -26,22 +26,22 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, #38bdf8, #f97316);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .card {
-  background: #151412;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #111820;
+  border: 1px solid rgba(56, 189, 248, 0.06);
   border-radius: 10px;
   transition: border-color 0.2s;
 }
 
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.09);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border-color: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
 
 .btn {
@@ -60,24 +60,24 @@ body {
 }
 
 .btn-primary {
-  background: #4f46e5;
-  color: #fff;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #0a0f14;
 }
 
 .btn-primary:hover {
-  background: #4338ca;
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
   transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
-  color: #d4cfc5;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c8d6e0;
+  border: 1px solid rgba(56, 189, 248, 0.12);
 }
 
 .btn-outline:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #f5f0eb;
-  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(56, 189, 248, 0.25);
+  color: #f0f4f8;
+  background: rgba(56, 189, 248, 0.05);
 }

@@ -55,10 +55,10 @@ function GraphicsModal({ design, onClose }: { design: GraphicsDesign; onClose: (
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#151412] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[#111820] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
-          <div className="w-full bg-[#0c0b0a] rounded-t-2xl flex items-center justify-center p-4 min-h-[200px] max-h-[65vh]">
+          <div className="w-full bg-[#0a0f14] rounded-t-2xl flex items-center justify-center p-4 min-h-[200px] max-h-[65vh]">
             <img
               src={design.image}
               alt={design.title}
@@ -139,7 +139,7 @@ export default function GraphicsGallery() {
             className="card p-0 overflow-hidden cursor-pointer group"
           >
             <div
-              className="relative w-full aspect-[4/3] overflow-hidden bg-[#0c0b0a] flex items-center justify-center p-3"
+              className="relative w-full aspect-[4/3] overflow-hidden bg-[#0a0f14] flex items-center justify-center p-3"
             >
               <img
                 src={d.image}
