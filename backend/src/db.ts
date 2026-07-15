@@ -9,18 +9,26 @@ let db: ReturnType<MongoClient['db']> | null = null;
 export async function connectDB(): Promise<void> {
   if (db) return;
   if (!MONGODB_URI) {
-    console.warn('MONGODB_URI not set — using in-memory fallback');
+    console.warn('MONGODB_URI not set — data will not persist');
     return;
   }
-  client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  db = client.db(DB_NAME);
-  console.log(`Connected to MongoDB: ${DB_NAME}`);
+  try {
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(DB_NAME);
+    console.log(`Connected to MongoDB: ${DB_NAME}`);
+  } catch (err: any) {
+    console.error('MongoDB connection failed:', err.message);
+    db = null;
+  }
 }
 
-function getCollection<T extends { _id?: ObjectId }>(name: string): Collection<T> {
-  if (!db) throw new Error('MongoDB not connected. Set MONGODB_URI.');
-  return db.collection<T>(name);
+export function isDbConnected(): boolean {
+  return db !== null;
+}
+
+function getCollection<T extends { _id?: ObjectId }>(name: string): Collection<T> | null {
+  return db ? db.collection<T>(name) : null;
 }
 
 // ─── Booking ───────────────────────────────────────────────
@@ -42,17 +50,20 @@ export interface Booking {
 
 export async function readBookings(): Promise<Booking[]> {
   const col = getCollection<Booking>('bookings');
+  if (!col) return [];
   const docs = await col.find().sort({ createdAt: -1 }).toArray();
   return docs.map(({ _id, ...rest }) => rest);
 }
 
 export async function writeBooking(booking: Booking): Promise<void> {
   const col = getCollection<Booking>('bookings');
+  if (!col) { console.warn('No DB — booking not saved'); return; }
   await col.insertOne(booking as any);
 }
 
 export async function updateBooking(id: string, update: Partial<Booking>): Promise<Booking | null> {
   const col = getCollection<Booking>('bookings');
+  if (!col) return null;
   const doc = await col.findOneAndUpdate(
     { id },
     { $set: update },
@@ -65,6 +76,7 @@ export async function updateBooking(id: string, update: Partial<Booking>): Promi
 
 export async function deleteBooking(id: string): Promise<boolean> {
   const col = getCollection<Booking>('bookings');
+  if (!col) return false;
   const result = await col.deleteOne({ id });
   return result.deletedCount > 0;
 }
@@ -84,17 +96,20 @@ export interface Message {
 
 export async function readMessages(): Promise<Message[]> {
   const col = getCollection<Message>('messages');
+  if (!col) return [];
   const docs = await col.find().sort({ createdAt: -1 }).toArray();
   return docs.map(({ _id, ...rest }) => rest);
 }
 
 export async function writeMessage(msg: Message): Promise<void> {
   const col = getCollection<Message>('messages');
+  if (!col) { console.warn('No DB — message not saved'); return; }
   await col.insertOne(msg as any);
 }
 
 export async function markMessageRead(id: string): Promise<boolean> {
   const col = getCollection<Message>('messages');
+  if (!col) return false;
   const result = await col.updateOne({ id }, { $set: { read: true } });
   return result.modifiedCount > 0;
 }
