@@ -17,6 +17,8 @@ export async function connectDB(): Promise<void> {
     await client.connect();
     db = client.db(DB_NAME);
     console.log(`Connected to MongoDB: ${DB_NAME}`);
+    const bookingCount = await db.collection('bookings').countDocuments();
+    console.log(`Existing bookings in DB: ${bookingCount}`);
   } catch (err: any) {
     console.error('MongoDB connection failed:', err.message);
     db = null;
@@ -57,7 +59,7 @@ export async function readBookings(): Promise<Booking[]> {
 
 export async function writeBooking(booking: Booking): Promise<void> {
   const col = getCollection<Booking>('bookings');
-  if (!col) { console.warn('No DB — booking not saved'); return; }
+  if (!col) throw new Error('Database not connected');
   await col.insertOne(booking as any);
 }
 
@@ -103,7 +105,7 @@ export async function readMessages(): Promise<Message[]> {
 
 export async function writeMessage(msg: Message): Promise<void> {
   const col = getCollection<Message>('messages');
-  if (!col) { console.warn('No DB — message not saved'); return; }
+  if (!col) throw new Error('Database not connected');
   await col.insertOne(msg as any);
 }
 

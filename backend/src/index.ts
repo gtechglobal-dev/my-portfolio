@@ -4,7 +4,7 @@ import cors from 'cors';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
-import { connectDB } from './db.js';
+import { connectDB, isDbConnected } from './db.js';
 import bookingsRouter from './routes/bookings.js';
 import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
@@ -40,7 +40,7 @@ app.use('/api/resume', resumeRouter);
 app.use('/api/graphics', graphicsRouter);
 
 app.get('/api/health', (_, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', db: isDbConnected(), timestamp: new Date().toISOString() });
 });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
