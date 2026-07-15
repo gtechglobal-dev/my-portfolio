@@ -87,6 +87,7 @@ export default function BookingForm() {
     const cat = searchParams.get('category');
     if (cat === 'web-development' || cat === 'graphics-design') setCategory(cat);
     if (pkg) setSelectedPkg(pkg);
+    if (pkg && cat) setStep(3);
   }, [searchParams]);
 
   const packages = category === 'web-development' ? webDevPackages : graphicsPackages;
