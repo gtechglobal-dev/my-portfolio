@@ -153,7 +153,7 @@ export default function ResumePage() {
               transition={{ duration: 0.4, delay: 0.15 }}
               className="card p-6 md:p-7"
             >
-              <SectionTitle>Professional Summary</SectionTitle>
+              <SectionTitle>SUMMARY</SectionTitle>
               <p className="text-sm text-[#c4c4d4] leading-relaxed">
                 Results-driven full-stack developer and founder of Gtech Global, a digital agency specializing in web development,
                 mobile applications, UI/UX design, and brand identity. Proven track record of delivering high-quality digital
