@@ -22,6 +22,10 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
     console.error(`JSON parse error on ${_req.method} ${_req.url}`);
     return res.status(400).json({ error: 'Invalid JSON in request body' });
   }
+  console.error('Unhandled error:', err.message || err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
   next(err);
 });
 

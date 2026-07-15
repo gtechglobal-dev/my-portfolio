@@ -42,26 +42,31 @@ router.post("/login", (req: Request, res: Response) => {
 });
 
 router.get("/stats", authMiddleware, async (req: AuthRequest, res: Response) => {
-  const bookings = await getBookings();
-  const messages = await getMessages();
+  try {
+    const bookings = await getBookings();
+    const messages = await getMessages();
 
-  const stats = {
-    totalBookings: bookings.length,
-    pendingBookings: bookings.filter((b) => b.status === "pending").length,
-    approvedBookings: bookings.filter((b) => b.status === "approved").length,
-    completedBookings: bookings.filter((b) => b.status === "completed").length,
-    cancelledBookings: bookings.filter((b) => b.status === "cancelled").length,
-    totalMessages: messages.length,
-    unreadMessages: messages.filter((m) => !m.read).length,
-    recentBookings: bookings
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      )
-      .slice(0, 5),
-  };
+    const stats = {
+      totalBookings: bookings.length,
+      pendingBookings: bookings.filter((b) => b.status === "pending").length,
+      approvedBookings: bookings.filter((b) => b.status === "approved").length,
+      completedBookings: bookings.filter((b) => b.status === "completed").length,
+      cancelledBookings: bookings.filter((b) => b.status === "cancelled").length,
+      totalMessages: messages.length,
+      unreadMessages: messages.filter((m) => !m.read).length,
+      recentBookings: bookings
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        .slice(0, 5),
+    };
 
-  res.json(stats);
+    res.json(stats);
+  } catch (err: any) {
+    console.error("Stats fetch failed:", err.message);
+    res.status(500).json({ error: "Failed to load stats" });
+  }
 });
 
 router.get("/verify", authMiddleware, (req: AuthRequest, res: Response) => {

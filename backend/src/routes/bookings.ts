@@ -109,39 +109,53 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const { status, category } = req.query;
+  try {
+    const { status, category } = req.query;
+    let bookings = await readBookings();
 
-  let bookings = await readBookings();
+    if (status && typeof status === 'string') {
+      bookings = bookings.filter((b) => b.status === status);
+    }
+    if (category && typeof category === 'string') {
+      bookings = bookings.filter((b) => b.serviceCategory === category);
+    }
 
-  if (status && typeof status === 'string') {
-    bookings = bookings.filter((b) => b.status === status);
+    res.json({ bookings, total: bookings.length });
+  } catch (err: any) {
+    console.error('Failed to fetch bookings:', err.message);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
   }
-  if (category && typeof category === 'string') {
-    bookings = bookings.filter((b) => b.serviceCategory === category);
-  }
-
-  res.json({ bookings, total: bookings.length });
 });
 
 router.patch('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const { status } = req.body;
-  if (!status || !['pending', 'approved', 'completed', 'cancelled'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status value' });
-  }
+  try {
+    const { status } = req.body;
+    if (!status || !['pending', 'approved', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
 
-  const updated = await updateBooking(req.params.id, { status });
-  if (!updated) {
-    return res.status(404).json({ error: 'Booking not found' });
+    const updated = await updateBooking(req.params.id, { status });
+    if (!updated) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    res.json({ success: true, booking: updated });
+  } catch (err: any) {
+    console.error('Failed to update booking:', err.message);
+    res.status(500).json({ error: 'Failed to update booking' });
   }
-  res.json({ success: true, booking: updated });
 });
 
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const deleted = await deleteBooking(req.params.id);
-  if (!deleted) {
-    return res.status(404).json({ error: 'Booking not found' });
+  try {
+    const deleted = await deleteBooking(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Failed to delete booking:', err.message);
+    res.status(500).json({ error: 'Failed to delete booking' });
   }
-  res.json({ success: true });
 });
 
 export default router;
