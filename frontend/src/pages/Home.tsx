@@ -91,7 +91,7 @@ export default function Home() {
               We craft premium <TypeWriter />
             </p>
             <div className="mt-10 md:mt-12 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <Link to="/portfolio" className="btn btn-primary w-full sm:w-auto">View Our Work</Link>
+              <a href="#our-services" className="btn btn-primary w-full sm:w-auto">Our Services</a>
               <Link to="/booking" className="btn btn-outline w-full sm:w-auto">Book a Call</Link>
             </div>
           </motion.div>

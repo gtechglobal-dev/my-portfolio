@@ -27,7 +27,7 @@ export default function Footer() {
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[72px] h-auto object-contain" />
           </div>
           <nav className="flex items-center gap-5 text-sm text-[#a09890]">
-            <Link to="/portfolio" className="hover:text-white transition-colors">Work</Link>
+            <Link to="/portfolio" className="hover:text-white transition-colors">Sample Jobs</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
             <Link to="/booking" className="hover:text-white transition-colors">Book</Link>
             <Link to="/resume" className="hover:text-white transition-colors">Resume</Link>
