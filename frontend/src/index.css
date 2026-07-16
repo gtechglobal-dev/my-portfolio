@@ -31,10 +31,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #38aecc, #183446);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #38aecc;
 }
 
 .card {
@@ -65,12 +62,12 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #38aecc, #2a9ab8);
+  background: #38aecc;
   color: #0a0f14;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #2a9ab8, #183446);
+  background: #2a9ab8;
   box-shadow: 0 4px 16px rgba(56, 174, 204, 0.35);
   transform: translateY(-1px);
 }

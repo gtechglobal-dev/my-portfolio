@@ -43,7 +43,7 @@ export default function Navbar() {
           )}
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/gtechlogo.png" alt="" className="w-7 md:w-8 object-contain" />
-            <img src="/gtechName2.png" alt="Gtech Global" className="w-[72px] md:w-20 h-auto object-contain hidden sm:block" />
+            <img src="/gtechName1.png" alt="Gtech Global" className="w-[72px] md:w-20 h-auto object-contain hidden sm:block" />
           </Link>
         </div>
 
