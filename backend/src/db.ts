@@ -1,6 +1,5 @@
 import { MongoClient, Collection, ObjectId } from 'mongodb';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 const DB_NAME = 'gtech-portfolio';
 
 let client: MongoClient | null = null;
@@ -8,6 +7,7 @@ let db: ReturnType<MongoClient['db']> | null = null;
 
 export async function connectDB(): Promise<void> {
   if (db) return;
+  const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
   if (!MONGODB_URI) {
     console.warn('MONGODB_URI not set — data will not persist');
     return;

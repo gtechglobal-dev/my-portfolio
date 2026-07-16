@@ -1,10 +1,16 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), 'backend', '.env') });
 import express from 'express';
 import cors from 'cors';
+import { connectDB, isDbConnected } from '../backend/src/db';
 import bookingsRouter from '../backend/src/routes/bookings';
 import adminRouter from '../backend/src/routes/admin';
 import contactRouter from '../backend/src/routes/contact';
 import resumeRouter from '../backend/src/routes/resume';
+
+await connectDB();
 
 const app = express();
 
