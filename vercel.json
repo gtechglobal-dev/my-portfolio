@@ -5,9 +5,6 @@
   "functions": {
     "api/**/*.ts": {
       "runtime": "@vercel/node@4"
-    },
-    "api/**/*.tsx": {
-      "runtime": "@vercel/node@4"
     }
   },
   "rewrites": [

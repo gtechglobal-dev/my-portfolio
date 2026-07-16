@@ -1,7 +1,7 @@
-const WA_API_URL = 'https://graph.facebook.com/v21.0';
+const WA_API_URL = 'https://graph.facebook.com/v23.0';
+
 const WA_PHONE_NUMBER_ID = process.env.WA_PHONE_NUMBER_ID || '';
 const WA_ACCESS_TOKEN = process.env.WA_ACCESS_TOKEN || '';
-const WA_TEMPLATE_NAME = process.env.WA_TEMPLATE_NAME || 'booking_notification';
 const NOTIFY_PHONE = '2347054867749';
 
 interface BookingNotification {
@@ -21,29 +21,18 @@ export async function sendBookingWhatsApp(booking: BookingNotification): Promise
 
   const catLabel = booking.serviceCategory === 'web-development' ? 'Web Development' : 'Graphics Design';
 
-  const body = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: NOTIFY_PHONE,
-    type: 'template',
-    template: {
-      name: WA_TEMPLATE_NAME,
-      language: { code: 'en' },
-      components: [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: booking.clientName },
-            { type: 'text', text: booking.clientEmail },
-            { type: 'text', text: booking.clientPhone },
-            { type: 'text', text: catLabel },
-            { type: 'text', text: booking.pkg || 'N/A' },
-            { type: 'text', text: booking.description.slice(0, 500) },
-          ],
-        },
-      ],
-    },
-  };
+  const body = [
+    '📋 *New Booking Alert*',
+    '',
+    `*Client:* ${booking.clientName}`,
+    `*Email:* ${booking.clientEmail}`,
+    `*Phone:* ${booking.clientPhone}`,
+    `*Category:* ${catLabel}`,
+    `*Package:* ${booking.pkg || 'N/A'}`,
+    '',
+    '*Description:*',
+    booking.description.slice(0, 500),
+  ].join('\n');
 
   try {
     const res = await fetch(`${WA_API_URL}/${WA_PHONE_NUMBER_ID}/messages`, {
@@ -52,7 +41,13 @@ export async function sendBookingWhatsApp(booking: BookingNotification): Promise
         Authorization: `Bearer ${WA_ACCESS_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: NOTIFY_PHONE,
+        type: 'text',
+        text: { body },
+      }),
     });
 
     const data = await res.json();
