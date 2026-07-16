@@ -33,3 +33,5 @@ services:
         sync: false
       - key: WA_TEMPLATE_NAME
         sync: false
+      - key: WA_BUSINESS_ACCOUNT_ID
+        sync: false
