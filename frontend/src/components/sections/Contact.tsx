@@ -113,7 +113,7 @@ export default function Contact() {
               </a>
             ))}
             <div className="card p-5 md:p-6">
-              <Link to="/booking" className="w-full py-3 rounded-lg bg-indigo text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-indigo-dark transition-all">
+              <Link to="/booking" className="w-full py-3 rounded-lg bg-indigo text-[#0a0f14] text-sm font-semibold flex items-center justify-center gap-2 hover:bg-indigo-dark transition-all">
                 Book a Project <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
