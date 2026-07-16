@@ -47,7 +47,7 @@ export default function Services() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-base md:text-lg font-bold">{pkg.title}</h4>
                         {pkg.popular && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#38aecc] text-white text-[10px] font-semibold flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-[#5cc8e8] text-white text-[10px] font-semibold flex items-center gap-1">
                             <Sparkles className="w-2.5 h-2.5" /> Popular
                           </span>
                         )}

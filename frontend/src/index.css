@@ -2,7 +2,7 @@
 
 @theme inline {
   --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
-  --color-indigo: #38aecc;
+  --color-indigo: #5cc8e8;
   --color-indigo-dark: #183446;
 }
 
@@ -20,7 +20,7 @@ body {
 }
 
 ::selection {
-  background: rgba(56, 174, 204, 0.25);
+  background: rgba(92, 200, 232, 0.25);
   color: #fff;
 }
 
@@ -31,18 +31,18 @@ body {
 }
 
 .gradient-text {
-  color: #38aecc;
+  color: #5cc8e8;
 }
 
 .card {
   background: #111820;
-  border: 1px solid rgba(56, 174, 204, 0.06);
+  border: 1px solid rgba(92, 200, 232, 0.06);
   border-radius: 10px;
   transition: border-color 0.2s;
 }
 
 .card:hover {
-  border-color: rgba(56, 174, 204, 0.12);
+  border-color: rgba(92, 200, 232, 0.12);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
 
@@ -62,24 +62,24 @@ body {
 }
 
 .btn-primary {
-  background: #38aecc;
+  background: #5cc8e8;
   color: #0a0f14;
 }
 
 .btn-primary:hover {
-  background: #2a9ab8;
-  box-shadow: 0 4px 16px rgba(56, 174, 204, 0.35);
+  background: #3aabc4;
+  box-shadow: 0 4px 16px rgba(92, 200, 232, 0.35);
   transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
-  color: #c8d6e0;
-  border: 1px solid rgba(56, 174, 204, 0.12);
+  color: #e0e8ec;
+  border: 1.5px solid rgba(92, 200, 232, 0.35);
 }
 
 .btn-outline:hover {
-  border-color: rgba(56, 174, 204, 0.25);
+  border-color: rgba(92, 200, 232, 0.55);
   color: #f0f4f8;
-  background: rgba(56, 174, 204, 0.05);
+  background: rgba(92, 200, 232, 0.08);
 }

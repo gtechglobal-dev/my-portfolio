@@ -50,7 +50,7 @@ export default function TypeWriter() {
       <motion.span
         animate={{ opacity: [1, 0] }}
         transition={{ duration: 0.6, repeat: Infinity, repeatType: 'reverse' }}
-        className="inline-block w-[2px] h-[1em] bg-[#38aecc] ml-0.5 align-middle"
+        className="inline-block w-[2px] h-[1em] bg-[#5cc8e8] ml-0.5 align-middle"
       />
     </span>
   );

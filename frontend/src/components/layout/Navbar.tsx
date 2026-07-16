@@ -60,7 +60,7 @@ export default function Navbar() {
           {extraLinks.map((l) => (
             <Link key={l.to} to={l.to}
               className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                pathname.startsWith(l.to) ? 'text-[#38aecc] bg-[#38aecc]/10' : 'text-[#6b6560] hover:text-[#38aecc]'
+                pathname.startsWith(l.to) ? 'text-[#5cc8e8] bg-[#5cc8e8]/10' : 'text-[#6b6560] hover:text-[#5cc8e8]'
               }`}>
               {l.label}
             </Link>
@@ -87,7 +87,7 @@ export default function Navbar() {
             {extraLinks.map((l) => (
               <Link key={l.to} to={l.to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith(l.to) ? 'text-[#38aecc] bg-[#38aecc]/10' : 'text-[#6b6560]'
+                  pathname.startsWith(l.to) ? 'text-[#5cc8e8] bg-[#5cc8e8]/10' : 'text-[#6b6560]'
                 }`}>
                 {l.label}
               </Link>
