@@ -160,7 +160,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [gfxTitle, setGfxTitle] = useState('');
   const [gfxCategory, setGfxCategory] = useState('Logo Design');
   const [gfxDescription, setGfxDescription] = useState('');
-  const [gfxColor, setGfxColor] = useState('#0090c1');
+  const [gfxColor, setGfxColor] = useState('#38aecc');
   const [gfxImages, setGfxImages] = useState<string[]>([]);
   const [gfxUploading, setGfxUploading] = useState(false);
   const [gfxUploadProgress, setGfxUploadProgress] = useState<string>('');
@@ -303,7 +303,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setGfxImages([]);
     setGfxTitle('');
     setGfxDescription('');
-    setGfxColor('#0090c1');
+    setGfxColor('#38aecc');
     setGfxUploadProgress('');
     fetchData();
     if (failCount === 0) {

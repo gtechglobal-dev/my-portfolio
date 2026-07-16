@@ -2,12 +2,13 @@
 
 @theme inline {
   --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
-  --color-indigo: #0090c1;
+  --color-indigo: #38aecc;
   --color-indigo-dark: #183446;
 }
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body {
@@ -19,7 +20,7 @@ body {
 }
 
 ::selection {
-  background: rgba(0, 144, 193, 0.25);
+  background: rgba(56, 174, 204, 0.25);
   color: #fff;
 }
 
@@ -30,7 +31,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #0090c1, #183446);
+  background: linear-gradient(135deg, #38aecc, #183446);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -38,13 +39,13 @@ body {
 
 .card {
   background: #111820;
-  border: 1px solid rgba(0, 144, 193, 0.06);
+  border: 1px solid rgba(56, 174, 204, 0.06);
   border-radius: 10px;
   transition: border-color 0.2s;
 }
 
 .card:hover {
-  border-color: rgba(0, 144, 193, 0.12);
+  border-color: rgba(56, 174, 204, 0.12);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
 
@@ -64,24 +65,24 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #0090c1, #007baa);
+  background: linear-gradient(135deg, #38aecc, #2a9ab8);
   color: #0a0f14;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #007baa, #183446);
-  box-shadow: 0 4px 16px rgba(0, 144, 193, 0.35);
+  background: linear-gradient(135deg, #2a9ab8, #183446);
+  box-shadow: 0 4px 16px rgba(56, 174, 204, 0.35);
   transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
   color: #c8d6e0;
-  border: 1px solid rgba(0, 144, 193, 0.12);
+  border: 1px solid rgba(56, 174, 204, 0.12);
 }
 
 .btn-outline:hover {
-  border-color: rgba(0, 144, 193, 0.25);
+  border-color: rgba(56, 174, 204, 0.25);
   color: #f0f4f8;
-  background: rgba(0, 144, 193, 0.05);
+  background: rgba(56, 174, 204, 0.05);
 }

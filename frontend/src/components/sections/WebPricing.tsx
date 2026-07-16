@@ -44,7 +44,7 @@ export default function WebPricing() {
               viewport={{ once: true, margin: '-30px' }} transition={{ delay: i * 0.05, duration: 0.4 }}
               className={`card p-6 md:p-8 relative overflow-hidden ${pkg.popular ? 'border-indigo/30' : ''}`}>
               {pkg.popular && (
-                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#0090c1] text-white text-[10px] font-semibold flex items-center gap-1">
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#38aecc] text-white text-[10px] font-semibold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Most Popular
                 </div>
               )}
