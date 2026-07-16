@@ -88,7 +88,7 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-[#183446] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
             <LayoutDashboard className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
@@ -160,7 +160,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [gfxTitle, setGfxTitle] = useState('');
   const [gfxCategory, setGfxCategory] = useState('Logo Design');
   const [gfxDescription, setGfxDescription] = useState('');
-  const [gfxColor, setGfxColor] = useState('#38bdf8');
+  const [gfxColor, setGfxColor] = useState('#0090c1');
   const [gfxImages, setGfxImages] = useState<string[]>([]);
   const [gfxUploading, setGfxUploading] = useState(false);
   const [gfxUploadProgress, setGfxUploadProgress] = useState<string>('');
@@ -303,7 +303,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setGfxImages([]);
     setGfxTitle('');
     setGfxDescription('');
-    setGfxColor('#38bdf8');
+    setGfxColor('#0090c1');
     setGfxUploadProgress('');
     fetchData();
     if (failCount === 0) {
@@ -344,7 +344,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0d1117] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-orange-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-[#183446] flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-sm">Gtech Admin</span>
