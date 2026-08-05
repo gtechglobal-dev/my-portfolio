@@ -25,8 +25,8 @@ export default function GraphicsPricing() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Graphics Design Pricing</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Professional design services at affordable rates.</p>
-          <div className="mt-4 inline-flex items-center gap-2 text-xs text-[#6b6560] bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
+          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a196b8]">Professional design services at affordable rates.</p>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs text-[#6b6180] bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             1 USD = ₦{rate.toLocaleString()} {loading ? '' : '(Live rate)'}
           </div>
@@ -38,17 +38,17 @@ export default function GraphicsPricing() {
               <h3 className="text-sm md:text-base font-semibold mb-2 leading-snug">{pkg.title}</h3>
               <div className="mb-4">
                 {pkg.id === 'other' ? (
-                  <div className="text-base md:text-lg font-bold text-emerald-400">Available</div>
+                  <div className="text-base md:text-lg font-bold text-[#ff7a2f]">Available</div>
                 ) : (
                   <>
                     <div className="text-base md:text-lg font-bold">₦{formatNgn(pkg.priceUsd, rate)}</div>
-                    <div className="text-[10px] text-[#6b6560]">${pkg.priceUsd} USD</div>
+                    <div className="text-[10px] text-[#6b6180]">${pkg.priceUsd} USD</div>
                   </>
                 )}
               </div>
               <ul className="space-y-1.5 mb-4">
                 {pkg.features.slice(0, 3).map((f) => (
-                  <li key={f} className="flex items-start gap-1.5 text-xs text-[#a09890]">
+                  <li key={f} className="flex items-start gap-1.5 text-xs text-[#a196b8]">
                     <Check className="w-2.5 h-2.5 text-indigo mt-0.5 shrink-0" />
                     <span className="leading-tight">{f}</span>
                   </li>

@@ -31,7 +31,7 @@ function renderOgImage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0a0f14',
+        backgroundColor: '#08060f',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -41,7 +41,7 @@ function renderOgImage() {
           position: 'absolute',
           inset: 0,
           backgroundImage:
-            'linear-gradient(rgba(92,200,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(92,200,232,0.04) 1px, transparent 1px)',
+            'linear-gradient(rgba(168,85,247,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.05) 1px, transparent 1px)',
           backgroundSize: '50px 50px',
         }}
       />
@@ -55,7 +55,7 @@ function renderOgImage() {
           width: '600px',
           height: '600px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(92,200,232,0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%)',
         }}
       />
 
@@ -66,7 +66,7 @@ function renderOgImage() {
           left: '0',
           right: '0',
           height: '4px',
-          background: 'linear-gradient(90deg, transparent, #5cc8e8, transparent)',
+          background: 'linear-gradient(90deg, transparent, #ff7a2f, transparent)',
         }}
       />
 
@@ -88,14 +88,14 @@ function renderOgImage() {
           }}
         >
           Gtech{' '}
-          <span style={{ color: '#5cc8e8' }}>Global</span>
+          <span style={{ color: '#a855f7' }}>Global</span>
         </div>
 
         <div
           style={{
             width: '80px',
             height: '3px',
-            backgroundColor: '#5cc8e8',
+            backgroundColor: '#ff7a2f',
             borderRadius: '2px',
             marginBottom: '24px',
           }}
@@ -104,7 +104,7 @@ function renderOgImage() {
         <div
           style={{
             fontSize: '24px',
-            color: '#8899aa',
+            color: '#9488ac',
             textAlign: 'center',
             maxWidth: '700px',
             lineHeight: '1.4',
@@ -120,14 +120,14 @@ function renderOgImage() {
             alignItems: 'center',
             padding: '10px 28px',
             borderRadius: '999px',
-            border: '1.5px solid rgba(92,200,232,0.3)',
-            backgroundColor: 'rgba(92,200,232,0.06)',
+            border: '1.5px solid rgba(168,85,247,0.35)',
+            backgroundColor: 'rgba(168,85,247,0.1)',
           }}
         >
           <div
             style={{
               fontSize: '18px',
-              color: '#5cc8e8',
+              color: '#a855f7',
               fontWeight: '500',
             }}
           >
@@ -143,7 +143,7 @@ function renderOgImage() {
           left: '0',
           right: '0',
           height: '4px',
-          background: 'linear-gradient(90deg, transparent, #5cc8e8, transparent)',
+          background: 'linear-gradient(90deg, transparent, #ff7a2f, transparent)',
         }}
       />
     </div>

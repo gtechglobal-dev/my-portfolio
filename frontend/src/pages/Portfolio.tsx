@@ -37,13 +37,13 @@ export default function Portfolio() {
             <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">
               <span className="gradient-text">Let's Create It!</span>
             </h2>
-            <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">
+            <p className="mt-3 text-[0.9375rem] md:text-base text-[#a196b8]">
               Real projects we've shipped. Real results we've delivered.
             </p>
           </motion.div>
 
           <div className="flex justify-center mb-10 md:mb-12">
-            <div className="inline-flex bg-[#111820] border border-white/[0.06] rounded-xl p-1 gap-1">
+            <div className="inline-flex bg-[#120d1f] border border-white/[0.06] rounded-xl p-1 gap-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -51,7 +51,7 @@ export default function Portfolio() {
                   className={`relative flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     activeTab === tab.id
                       ? 'text-white'
-                      : 'text-[#6b6560] hover:text-[#a09890]'
+                      : 'text-[#6b6180] hover:text-[#a196b8]'
                   }`}
                 >
                   {activeTab === tab.id && (

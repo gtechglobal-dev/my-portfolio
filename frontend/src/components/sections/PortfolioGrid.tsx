@@ -52,7 +52,7 @@ const projects = [
     url: 'https://royalyouths.onrender.com/',
     siteUrl: 'https://royalyouths.onrender.com/',
     image: '/screenshots/royal-youths.png',
-    color: '#5cc8e8',
+    color: '#a855f7',
     metric: '2K+ Active Users',
     status: 'live',
   },
@@ -64,7 +64,7 @@ const projects = [
     url: 'https://prestige-mall.onrender.com/',
     siteUrl: 'https://prestige-mall.onrender.com/',
     image: '/screenshots/prestige-mart.png',
-    color: '#183446',
+    color: '#2b0f4e',
     metric: 'Live & Active',
     status: 'live',
   },
@@ -76,7 +76,7 @@ const projects = [
     url: 'https://phronesisresultportal.gtechglobal.dev/',
     siteUrl: 'https://phronesisresultportal.gtechglobal.dev/',
     image: '/screenshots/school-results.png',
-    color: '#10b981',
+    color: '#ff7a2f',
     metric: 'Demo Available',
     status: 'live',
   },
@@ -100,7 +100,7 @@ const projects = [
     url: '#',
     siteUrl: '',
     image: null,
-    color: '#10b981',
+    color: '#ff7a2f',
     metric: 'Under Development',
     status: 'coming',
   },
@@ -124,7 +124,7 @@ const projects = [
     url: '#',
     siteUrl: '',
     image: null,
-    color: '#f472b6',
+    color: '#ff7a2f',
     metric: 'Under Development',
     status: 'coming',
   },
@@ -136,7 +136,7 @@ const projects = [
     url: '#',
     siteUrl: '',
     image: null,
-    color: '#5cc8e8',
+    color: '#a855f7',
     metric: 'Under Development',
     status: 'coming',
   },
@@ -191,11 +191,11 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#111820] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-[#120d1f] border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
           {project.siteUrl || project.image ? (
-            <div className="w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-[#1c1a18]">
+            <div className="w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-[#1a1426]">
               <DynamicScreenshot
                 siteUrl={project.siteUrl}
                 fallbackSrc={project.image}
@@ -232,7 +232,7 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         <div className="p-6 md:p-7">
           <span className="text-[11px] uppercase tracking-wider text-white/40">{project.category}</span>
           <h2 className="text-xl font-bold mt-1 mb-3">{project.title}</h2>
-          <p className="text-sm text-[#a09890] leading-relaxed mb-5">{project.desc}</p>
+          <p className="text-sm text-[#a196b8] leading-relaxed mb-5">{project.desc}</p>
           <div className="flex flex-wrap gap-1.5 mb-5">
             {project.tech.map((t) => (
               <span
@@ -307,7 +307,7 @@ export default function PortfolioGrid() {
                   </div>
                 )}
                 {p.status === 'coming' && (
-                  <div className="absolute inset-0 bg-[#0a0f14]/60 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[#08060f]/60 backdrop-blur-[2px] flex items-center justify-center">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
                       <Clock className="w-3 h-3 text-violet-400" />
                       <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-wider">Under Development</span>
@@ -324,7 +324,7 @@ export default function PortfolioGrid() {
               <div className="p-4 md:p-5">
                 <span className="text-[10px] uppercase tracking-wider text-white/40">{p.category}</span>
                 <h3 className="text-sm font-semibold mt-0.5 mb-1.5">{p.title}</h3>
-                <p className="text-xs text-[#a09890] leading-relaxed line-clamp-2 mb-3">{p.desc}</p>
+                <p className="text-xs text-[#a196b8] leading-relaxed line-clamp-2 mb-3">{p.desc}</p>
                 <div className="flex flex-wrap gap-1">
                   {p.tech.slice(0, 3).map((t) => (
                     <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] text-white/40">{t}</span>

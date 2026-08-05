@@ -19,14 +19,14 @@ function GithubIcon({ className }: { className?: string }) {
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/[0.04] bg-[#0a0f14]">
+    <footer className="border-t border-white/[0.04] bg-[#08060f]">
       <div className="container px-6 md:px-8 py-10 md:py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-2.5">
             <img src="/gtechlogo.png" alt="" className="w-7 object-contain" />
             <img src="/gtechName2.png" alt="Gtech Global" className="w-[72px] h-auto object-contain" />
           </div>
-          <nav className="flex items-center gap-5 text-sm text-[#a09890]">
+          <nav className="flex items-center gap-5 text-sm text-[#a196b8]">
             <Link to="/portfolio" className="hover:text-white transition-colors">Sample Jobs</Link>
             <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
             <Link to="/booking" className="hover:text-white transition-colors">Book</Link>
@@ -34,7 +34,7 @@ export default function Footer() {
             <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
           </nav>
         </div>
-        <div className="mt-6 pt-5 border-t border-white/[0.04] flex flex-col items-center gap-3 text-xs text-[#6b6560]">
+        <div className="mt-6 pt-5 border-t border-white/[0.04] flex flex-col items-center gap-3 text-xs text-[#6b6180]">
           <span>&copy; {new Date().getFullYear()} Gtech Global.</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a href={siteConfig.social.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">

@@ -44,46 +44,46 @@ export default function Contact() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Contact Us</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a09890]">Have a project in mind? Let's discuss how we can help.</p>
+          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a196b8]">Have a project in mind? Let's discuss how we can help.</p>
         </div>
         <div className="grid lg:grid-cols-2 gap-8 md:gap-10 max-w-4xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             {sent ? (
               <div className="card p-8 md:p-10 text-center">
                 <div className="text-xl font-bold mb-2">Message Sent!</div>
-                <p className="text-sm text-[#a09890] mb-6">We'll get back to you soon.</p>
+                <p className="text-sm text-[#a196b8] mb-6">We'll get back to you soon.</p>
                 <button onClick={() => setSent(false)} className="btn btn-outline">Send Another</button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#a09890] mb-1.5">Name *</label>
+                    <label className="block text-sm text-[#a196b8] mb-1.5">Name *</label>
                     <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Your name" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Your name" />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#a09890] mb-1.5">Email *</label>
+                    <label className="block text-sm text-[#a196b8] mb-1.5">Email *</label>
                     <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="you@email.com" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="you@email.com" />
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#a09890] mb-1.5">Phone</label>
+                    <label className="block text-sm text-[#a196b8] mb-1.5">Phone</label>
                     <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="+234 900 000 0000" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="+234 900 000 0000" />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#a09890] mb-1.5">Subject *</label>
+                    <label className="block text-sm text-[#a196b8] mb-1.5">Subject *</label>
                     <input type="text" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                      className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Project discussion" />
+                      className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Project discussion" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-[#a09890] mb-1.5">Message *</label>
+                  <label className="block text-sm text-[#a196b8] mb-1.5">Message *</label>
                   <textarea required rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg bg-[#111820] border border-white/[0.06] text-white text-sm placeholder-[#6b6560] focus:border-indigo/40 focus:outline-none transition-colors resize-none" placeholder="Tell us about your project..." />
+                    className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors resize-none" placeholder="Tell us about your project..." />
                 </div>
                 <button type="submit" disabled={sending} className="btn btn-primary">
                   {sending ? 'Sending...' : 'Send Message'} <Send className="w-4 h-4" />
@@ -107,13 +107,13 @@ export default function Contact() {
                   <item.icon className="w-[18px] h-[18px] text-indigo" />
                 </div>
                 <div>
-                  <div className="text-xs text-[#a09890]">{item.label}</div>
+                  <div className="text-xs text-[#a196b8]">{item.label}</div>
                   <div className="text-sm font-medium">{item.value}</div>
                 </div>
               </a>
             ))}
             <div className="card p-5 md:p-6">
-              <Link to="/booking" className="w-full py-3 rounded-lg bg-indigo text-[#0a0f14] text-sm font-semibold flex items-center justify-center gap-2 hover:bg-indigo-dark transition-all">
+              <Link to="/booking" className="w-full py-3 rounded-lg bg-accent text-[#08060f] text-sm font-semibold flex items-center justify-center gap-2 hover:bg-accent/90 transition-all">
                 Book a Project <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
