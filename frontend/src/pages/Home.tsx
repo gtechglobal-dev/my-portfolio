@@ -5,124 +5,97 @@ import CtaSection from '../components/sections/CtaSection';
 import TypeWriter from '../components/sections/TypeWriter';
 import { Target, Lightbulb, Rocket } from 'lucide-react';
 
-const particles = Array.from({ length: 30 }, (_, i) => ({
+const orbs = [
+  { top: '16%', left: '10%', size: 12, color: '168,85,247', dur: 5, delay: 0 },
+  { top: '24%', left: '78%', size: 8, color: '255,122,47', dur: 6.5, delay: 0.8 },
+  { top: '58%', left: '84%', size: 10, color: '168,85,247', dur: 5.5, delay: 1.6 },
+  { top: '70%', left: '16%', size: 9, color: '255,122,47', dur: 6, delay: 0.4 },
+  { top: '42%', left: '46%', size: 6, color: '255,122,47', dur: 7, delay: 2 },
+  { top: '10%', left: '55%', size: 6, color: '168,85,247', dur: 6.8, delay: 1.2 },
+];
+
+const sparkles = Array.from({ length: 26 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: Math.random() * 3 + 1.5,
+  size: Math.random() * 2.5 + 1,
+  dur: Math.random() * 3 + 2,
   delay: Math.random() * 3,
-  duration: Math.random() * 6 + 4,
-}));
-
-const hexCodes = ['0x3F', '0xA7', '0xE2', '0x1B', '0xD4', '0x9C', '0x55', '0xF0'];
-
-const scanLines = [0, 1, 2];
-
-const dataStreams = Array.from({ length: 8 }, (_, i) => ({
-  id: i,
-  x: 8 + i * 12,
-  delay: Math.random() * 3,
-  duration: Math.random() * 2 + 2.5,
+  color: i % 3 === 0 ? '#ff7a2f' : i % 3 === 1 ? '#a855f7' : '#ffffff',
 }));
 
 export default function Home() {
   return (
     <>
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(168,85,247,0.14)_0%,rgba(255,122,47,0.05)_45%,transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(168,85,247,0.16)_0%,rgba(255,122,47,0.06)_45%,transparent_65%)]" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.045)_1px,transparent_1px)] bg-[size:50px_50px]" />
-
-          {scanLines.map((i) => (
-            <motion.div key={`scan-${i}`}
-              className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a855f7]/30 to-transparent"
-              style={{ top: `${20 + i * 25}%` }}
-              animate={{ opacity: [0, 0.8, 0], scaleX: [0.2, 1, 0.2] }}
-              transition={{ duration: 3, delay: i * 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          ))}
-
-          {dataStreams.map((s) => (
-            <motion.div key={`stream-${s.id}`}
-              className="absolute w-px bg-gradient-to-b from-transparent via-[#a855f7]/25 to-transparent"
-              style={{ left: `${s.x}%`, height: '120px' }}
-              animate={{ y: ['-100%', '800%'], opacity: [0, 0.7, 0] }}
-              transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: 'linear' }}
-            />
-          ))}
-
-          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] md:w-[600px] md:h-[600px] rounded-full border border-[#a855f7]/[0.12]"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#ff7a2f]/70" />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 rounded-full bg-[#a855f7]/50" />
-            <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#a855f7]/40" />
-          </motion.div>
-
-          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] md:w-[450px] md:h-[450px] rounded-full border border-dashed border-[#ff7a2f]/[0.12]"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-[#a855f7]/50 rotate-45" />
-          </motion.div>
-
-          <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 md:w-44 md:h-44 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.18) 0%, transparent 70%)' }}
-            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.9, 0.5] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          <motion.div
+            className="absolute -top-40 -left-40 w-[34rem] h-[34rem] rounded-full bg-[#a855f7]/25 blur-3xl"
+            animate={{ x: [0, 60, -20, 0], y: [0, 40, 80, 0], scale: [1, 1.15, 0.95, 1] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute -bottom-48 -right-32 w-[38rem] h-[38rem] rounded-full bg-[#ff7a2f]/20 blur-3xl"
+            animate={{ x: [0, -50, 30, 0], y: [0, -40, -90, 0], scale: [1, 0.9, 1.15, 1] }}
+            transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[26rem] h-[26rem] rounded-full bg-[#7c3aed]/15 blur-3xl"
+            animate={{ scale: [1, 1.25, 1], opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute top-1/4 left-1/3 w-64 h-64 rounded-full bg-[#ff7a2f]/15 blur-3xl"
+            animate={{ x: [0, 80, -40, 0], y: [0, -60, 30, 0], opacity: [0.5, 0.9, 0.5] }}
+            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          {particles.map((p) => (
-            <motion.div key={p.id}
-              className={`absolute rounded-full ${p.id % 3 === 0 ? 'bg-[#ff7a2f]' : 'bg-[#a855f7]'}`}
-              style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size }}
-              animate={{ y: [0, -20, 0], opacity: [0.15, 0.55, 0.15] }}
-              transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
+          <motion.div
+            className="absolute inset-x-[-50%] top-0 h-full opacity-20"
+            style={{
+              background: 'linear-gradient(100deg, transparent 20%, rgba(168,85,247,0.4) 45%, rgba(255,122,47,0.4) 55%, transparent 80%)',
+              filter: 'blur(50px)',
+            }}
+            animate={{ x: ['-30%', '30%'] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          />
+
+          {orbs.map((orb, i) => (
+            <motion.div
+              key={`orb-${i}`}
+              className="absolute rounded-full"
+              style={{
+                top: orb.top,
+                left: orb.left,
+                width: orb.size,
+                height: orb.size,
+                background: `rgba(${orb.color},0.55)`,
+                boxShadow: `0 0 ${orb.size * 4}px rgba(${orb.color},0.45), 0 0 ${orb.size * 10}px rgba(${orb.color},0.15)`,
+              }}
+              animate={{ y: [0, -28, 0], opacity: [0.35, 0.85, 0.35], scale: [1, 1.12, 1] }}
+              transition={{ duration: orb.dur, delay: orb.delay, repeat: Infinity, ease: 'easeInOut' }}
             />
           ))}
 
-          {hexCodes.map((code, i) => {
-            const angle = (i / hexCodes.length) * 360;
-            const radius = 250;
-            const x = Math.cos((angle * Math.PI) / 180) * radius;
-            const y = Math.sin((angle * Math.PI) / 180) * radius;
-            return (
-              <motion.div key={code}
-                className="absolute top-1/2 left-1/2 text-[#a855f7]/20 text-xs font-mono"
-                style={{ x: x - 10, y: y - 8 }}
-                animate={{ opacity: [0.08, 0.25, 0.08] }}
-                transition={{ duration: 2.5 + i * 0.4, delay: i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                {code}
-              </motion.div>
-            );
-          })}
-
-          <motion.div className="absolute top-[10%] left-[8%] w-2 h-2 rounded-full bg-[#a855f7]/40"
-            animate={{ y: [0, -25, 0], scale: [1, 1.4, 1] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute top-[18%] right-[12%] w-2.5 h-2.5 rounded-sm bg-[#ff7a2f]/30 rotate-45"
-            animate={{ y: [0, 20, 0], rotate: [45, 135, 45] }} transition={{ duration: 4.5, delay: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute bottom-[22%] left-[10%] w-1.5 h-1.5 rounded-full bg-[#a855f7]/35"
-            animate={{ y: [0, -18, 0] }} transition={{ duration: 3.5, delay: 1, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute bottom-[12%] right-[8%] w-2 h-2 rounded-full bg-[#ff7a2f]/30"
-            animate={{ y: [0, 22, 0], x: [0, -8, 0] }} transition={{ duration: 5, delay: 0.3, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute top-[60%] right-[5%] w-1.5 h-1.5 bg-[#a855f7]/20 rotate-12"
-            animate={{ y: [0, -16, 0], rotate: [12, 60, 12] }} transition={{ duration: 4, delay: 1.5, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute top-[45%] left-[5%] w-2 h-2 rounded-full bg-[#a855f7]/20"
-            animate={{ y: [0, 14, 0], x: [0, 6, 0] }} transition={{ duration: 3.8, delay: 2, repeat: Infinity, ease: 'easeInOut' }} />
-
-          <motion.div className="absolute top-[15%] right-[25%] w-56 h-px bg-gradient-to-r from-transparent via-[#a855f7]/20 to-transparent"
-            animate={{ opacity: [0, 0.7, 0], scaleX: [0.2, 1, 0.2] }} transition={{ duration: 4, delay: 0.5, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute bottom-[20%] left-[20%] w-64 h-px bg-gradient-to-r from-transparent via-[#ff7a2f]/15 to-transparent"
-            animate={{ opacity: [0, 0.6, 0], scaleX: [0.3, 1, 0.3] }} transition={{ duration: 5, delay: 2, repeat: Infinity, ease: 'easeInOut' }} />
-          <motion.div className="absolute top-[70%] right-[30%] w-40 h-px bg-gradient-to-r from-transparent via-[#a855f7]/12 to-transparent"
-            animate={{ opacity: [0, 0.5, 0], scaleX: [0.4, 1, 0.4] }} transition={{ duration: 6, delay: 1, repeat: Infinity, ease: 'easeInOut' }} />
+          {sparkles.map((s) => (
+            <motion.div
+              key={`sparkle-${s.id}`}
+              className="absolute rounded-full"
+              style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, background: s.color }}
+              animate={{ opacity: [0, 0.9, 0], scale: [0.6, 1.3, 0.6] }}
+              transition={{ duration: s.dur, delay: s.delay, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
         </div>
 
         <div className="container px-6 md:px-8 py-20 md:py-28 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
             className="flex flex-col items-center text-center">
-            <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain" />
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}>
+              <img src="/gtechName2.png" alt="Gtech Global" className="w-[180px] md:w-[220px] h-auto mb-8 md:mb-10 object-contain drop-shadow-[0_0_25px_rgba(168,85,247,0.35)]" />
+            </motion.div>
             <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold leading-[1.15] tracking-[-0.01em] max-w-3xl">
               Welcome to <span className="bg-gradient-to-r from-[#a855f7] to-[#ff7a2f] bg-clip-text text-transparent">Gtech Global</span>
             </h1>
