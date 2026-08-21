@@ -4,8 +4,9 @@ import {
   LogIn, LogOut, LayoutDashboard, CalendarCheck, MessageSquare,
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
-  Palette, Upload, Image as ImageIcon, Download, FileText,
+  Palette, Upload, Image as ImageIcon, Download, FileText, Bot,
 } from 'lucide-react';
+import CryptoBot from '../components/admin/CryptoBot';
 
 const API = '/api';
 
@@ -138,9 +139,9 @@ function formatPhoneForWhatsApp(phone: string): string {
 }
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics';
-  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume'];
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
+  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'crypto';
+  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume', 'crypto'];
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -330,9 +331,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     return true;
   });
 
-  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume';
+  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto';
   const navItems: { id: NavId; label: string; icon: any; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'crypto', label: 'Crypto Bot', icon: Bot },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: stats?.pendingBookings },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats?.unreadMessages },
     { id: 'graphics', label: 'Graphics', icon: Palette },
@@ -473,6 +475,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     </div>
                   </div>
                 )}
+
+                {tab === 'crypto' && <CryptoBot token={token} />}
 
                 {tab === 'bookings' && (
                   <div className="space-y-4">

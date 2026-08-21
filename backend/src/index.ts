@@ -10,6 +10,7 @@ import adminRouter from './routes/admin.js';
 import contactRouter from './routes/contact.js';
 import resumeRouter from './routes/resume.js';
 import graphicsRouter from './routes/graphics.js';
+import cryptoRouter from './routes/crypto.js';
 import ogRouter from './routes/og.js';
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/resume', resumeRouter);
 app.use('/api/graphics', graphicsRouter);
+app.use('/api/crypto', cryptoRouter);
 app.use('/api/og', ogRouter);
 
 app.get('/api/health', (_, res) => {
