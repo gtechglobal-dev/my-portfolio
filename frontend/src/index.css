@@ -3,8 +3,12 @@
 @theme inline {
   --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
   --color-indigo: #a855f7;
-  --color-indigo-dark: #2b0f4e;
+  --color-indigo-dark: #7c3aed;
   --color-accent: #ff7a2f;
+  --color-ink: #050505;
+  --color-surface: #131316;
+  --color-muted: #9a9ea7;
+  --color-faint: #5e626b;
 }
 
 html {
@@ -14,8 +18,8 @@ html {
 
 body {
   margin: 0;
-  background: #08060f;
-  color: #f5f3fa;
+  background: #050505;
+  color: #f5f5f5;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -31,24 +35,20 @@ body {
   width: 100%;
 }
 
-.gradient-text {
-  background: linear-gradient(90deg, #a855f7, #ff7a2f);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+.accent-text {
+  color: var(--color-indigo);
 }
 
 .card {
-  background: #120d1f;
-  border: 1px solid rgba(168, 85, 247, 0.08);
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   transition: border-color 0.2s;
 }
 
 .card:hover {
-  border-color: rgba(168, 85, 247, 0.18);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  border-color: rgba(168, 85, 247, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 .btn {
@@ -62,24 +62,30 @@ body {
   font-size: 0.875rem;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transform: translateZ(0);
+  will-change: transform;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
   text-decoration: none;
 }
 
 .btn-primary {
   background: #a855f7;
-  color: #08060f;
+  color: #050505;
 }
 
 .btn-primary:hover {
-  background: #9333ea;
-  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.45);
-  transform: translateY(-1px);
+  background: #7c3aed;
+  box-shadow: 0 6px 22px rgba(168, 85, 247, 0.55);
+  transform: translateY(-2px) scale(1.02);
 }
 
 .btn-outline {
   background: transparent;
-  color: #e6e2ee;
+  color: #e6e6e6;
   border: 1.5px solid rgba(168, 85, 247, 0.4);
 }
 
@@ -87,11 +93,12 @@ body {
   border-color: #ff7a2f;
   color: #fff;
   background: rgba(168, 85, 247, 0.1);
+  transform: translateY(-2px) scale(1.02);
 }
 
 .btn-accent {
   background: #ff7a2f;
-  color: #08060f;
+  color: #050505;
 }
 
 .btn-accent:hover {
