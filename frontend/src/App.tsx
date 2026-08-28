@@ -10,10 +10,12 @@ import Contact from './pages/Contact'
 import Blog from './pages/Blog'
 import Admin from './pages/Admin'
 import Resume from './pages/Resume'
+import Verify from './pages/Verify'
 
 export default function App() {
   const { pathname } = useLocation()
   const isAdmin = pathname.startsWith('/admin')
+  const isVerify = pathname.startsWith('/verify')
 
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
@@ -21,8 +23,12 @@ export default function App() {
     return <Admin />
   }
 
+  if (isVerify) {
+    return <Verify />
+  }
+
   return (
-    <div className="min-h-screen bg-[#08060f] text-[#f5f3fa] flex flex-col">
+    <div className="min-h-screen bg-ink text-[#f5f5f5] flex flex-col">
       <Navbar />
       <main className="flex-1">
         <Routes>

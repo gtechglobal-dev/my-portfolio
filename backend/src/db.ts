@@ -125,3 +125,107 @@ export async function getBookings(): Promise<Booking[]> {
 export async function getMessages(): Promise<Message[]> {
   return readMessages();
 }
+
+// ─── Book (QR verification) ────────────────────────────────
+
+export interface Book {
+  _id?: ObjectId;
+  id: string;
+  title: string;
+  author: string;
+  isbn?: string;
+  publisher: string;
+  year?: string;
+  edition?: string;
+  description: string;
+  category: string;
+  createdAt: string;
+}
+
+export async function readBooks(): Promise<Book[]> {
+  const col = getCollection<Book>('books');
+  if (!col) return [];
+  const docs = await col.find().sort({ createdAt: -1 }).toArray();
+  return docs.map(({ _id, ...rest }) => rest);
+}
+
+export async function findBook(id: string): Promise<Book | null> {
+  const col = getCollection<Book>('books');
+  if (!col) return null;
+  const doc = await col.findOne({ id });
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function writeBook(book: Book): Promise<void> {
+  const col = getCollection<Book>('books');
+  if (!col) throw new Error('Database not connected');
+  await col.insertOne(book as any);
+}
+
+export async function deleteBook(id: string): Promise<boolean> {
+  const col = getCollection<Book>('books');
+  if (!col) return false;
+  const result = await col.deleteOne({ id });
+  return result.deletedCount > 0;
+}
+
+// ─── QR Code ───────────────────────────────────────────────
+
+export interface QrCode {
+  _id?: ObjectId;
+  id: string;
+  code: string;
+  serial: string;
+  bookId: string;
+  bookTitle: string;
+  status: 'pending' | 'active';
+  activatedAt: string | null;
+  createdAt: string;
+}
+
+export async function readQrCodes(filter?: Partial<QrCode>): Promise<QrCode[]> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return [];
+  const query: Record<string, any> = {};
+  if (filter?.bookId) query.bookId = filter.bookId;
+  if (filter?.status) query.status = filter.status;
+  const docs = await col.find(query).sort({ createdAt: 1 }).toArray();
+  return docs.map(({ _id, ...rest }) => rest);
+}
+
+export async function findQrCode(code: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const doc = await col.findOne({ code });
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function writeQrCode(q: QrCode): Promise<void> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) throw new Error('Database not connected');
+  await col.insertOne(q as any);
+}
+
+export async function activateQrCode(code: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const doc = await col.findOneAndUpdate(
+    { code },
+    { $set: { status: 'active', activatedAt: new Date().toISOString() } },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function deleteQrCodesByBook(bookId: string): Promise<number> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return 0;
+  const result = await col.deleteMany({ bookId });
+  return result.deletedCount || 0;
+}

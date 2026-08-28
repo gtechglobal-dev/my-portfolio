@@ -5,8 +5,10 @@ import {
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
   Palette, Upload, Image as ImageIcon, Download, FileText, Bot,
+  QrCode,
 } from 'lucide-react';
 import CryptoBot from '../components/admin/CryptoBot';
+import QRCodeSystem from '../components/admin/QRCodeSystem';
 
 const API = '/api';
 
@@ -85,26 +87,26 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#08060f] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-ink flex items-center justify-center p-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo to-[#2b0f4e] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
+          <div className="w-14 h-14 rounded-2xl bg-indigo flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo/20">
             <LayoutDashboard className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
-          <p className="text-sm text-[#a196b8] mt-1">Gtech Global Dashboard</p>
+          <p className="text-sm text-muted mt-1">Gtech Global Dashboard</p>
         </div>
         <form onSubmit={handleSubmit} className="card p-6 space-y-4">
           <div>
-            <label htmlFor="admin-username" className="block text-sm text-[#a196b8] mb-1.5">Username</label>
+            <label htmlFor="admin-username" className="block text-sm text-muted mb-1.5">Username</label>
                             <input id="admin-username" name="admin-username" type="text" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
+                              className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" placeholder="admin" />
           </div>
           <div>
-            <label htmlFor="admin-password" className="block text-sm text-[#a196b8] mb-1.5">Password</label>
+            <label htmlFor="admin-password" className="block text-sm text-muted mb-1.5">Password</label>
                             <input id="admin-password" name="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
+                              className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button type="submit" disabled={loading}
@@ -125,7 +127,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
       </div>
       <div>
         <div className="text-2xl font-bold">{value}</div>
-        <div className="text-xs text-[#a196b8]">{label}</div>
+        <div className="text-xs text-muted">{label}</div>
       </div>
     </motion.div>
   );
@@ -139,9 +141,9 @@ function formatPhoneForWhatsApp(phone: string): string {
 }
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'crypto';
-  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume', 'crypto'];
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
+  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'crypto' | 'qrcode';
+  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume', 'crypto', 'qrcode'];
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -331,10 +333,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     return true;
   });
 
-  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto';
+  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode';
   const navItems: { id: NavId; label: string; icon: any; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'crypto', label: 'Crypto Bot', icon: Bot },
+    { id: 'qrcode', label: 'QR Codes', icon: QrCode },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: stats?.pendingBookings },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats?.unreadMessages },
     { id: 'graphics', label: 'Graphics', icon: Palette },
@@ -342,16 +345,16 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   ];
 
   return (
-    <div className="min-h-screen bg-[#08060f] flex">
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0b0812] border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+    <div className="min-h-screen bg-ink flex">
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-ink border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo to-[#2b0f4e] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-indigo flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-sm">Gtech Admin</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-[#a196b8]">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -359,7 +362,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           {navItems.map((item) => (
             <button key={item.id} onClick={() => { setTab(item.id); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                tab === item.id ? 'bg-indigo/10 text-indigo' : 'text-[#a196b8] hover:text-white hover:bg-white/[0.03]'
+                tab === item.id ? 'bg-indigo/10 text-indigo' : 'text-muted hover:text-white hover:bg-white/[0.03]'
               }`}>
               <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
@@ -376,12 +379,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       </aside>
 
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-40 bg-[#08060f]/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#a196b8]">
+        <header className="sticky top-0 z-40 bg-ink/80 backdrop-blur-xl border-b border-white/[0.04] px-6 h-14 flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted">
             <Menu className="w-5 h-5" />
           </button>
           <h2 className="text-sm font-semibold capitalize">{tab}</h2>
-          <div className="ml-auto flex items-center gap-2 text-xs text-[#6b6180]">
+          <div className="ml-auto flex items-center gap-2 text-xs text-faint">
             <button onClick={fetchData} className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] transition-colors" title="Refresh data">
               Refresh
             </button>
@@ -414,14 +417,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         </button>
                       </div>
                       {stats.recentBookings.length === 0 ? (
-                        <p className="text-sm text-[#6b6180] text-center py-6">No bookings yet</p>
+                        <p className="text-sm text-faint text-center py-6">No bookings yet</p>
                       ) : (
                         <div className="space-y-2">
                           {stats.recentBookings.map((b) => (
                             <div key={b.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
                               <div>
                                 <div className="text-sm font-medium">{b.clientName}</div>
-                                <div className="text-xs text-[#a196b8]">{b.serviceCategory.replace('-', ' ')}</div>
+                                <div className="text-xs text-muted">{b.serviceCategory.replace('-', ' ')}</div>
                               </div>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                 b.status === 'pending' ? 'bg-violet-500/10 text-violet-400' :
@@ -459,7 +462,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               { label: 'Cancelled', value: stats.cancelledBookings, color: 'bg-red-500' },
                             ].map((s) => (
                               <div key={s.label} className="flex items-center gap-3">
-                                <span className="text-xs text-[#a196b8] w-16">{s.label}</span>
+                                <span className="text-xs text-muted w-16">{s.label}</span>
                                 <div className="flex-1 h-2 rounded-full bg-white/[0.04] overflow-hidden">
                                   <div className={`h-full rounded-full ${s.color} transition-all`}
                                     style={{ width: `${(s.value / stats.totalBookings) * 100}%` }} />
@@ -469,7 +472,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-[#6b6180] text-center py-4">No data yet</p>
+                          <p className="text-sm text-faint text-center py-4">No data yet</p>
                         )}
                       </div>
                     </div>
@@ -478,32 +481,34 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
                 {tab === 'crypto' && <CryptoBot token={token} />}
 
+                {tab === 'qrcode' && <QRCodeSystem token={token} />}
+
                 {tab === 'bookings' && (
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="relative flex-1 min-w-[200px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6180]" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
                         <input id="booking-search" name="booking-search" type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
+                          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" placeholder="Search bookings..." />
                       </div>
                       <div className="relative">
                         <label htmlFor="booking-status-filter" className="sr-only">Filter by status</label>
                         <select id="booking-status-filter" name="booking-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                          className="appearance-none px-4 py-2.5 pr-8 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                           <option value="">All Status</option>
                           <option value="pending">Pending</option>
                           <option value="approved">Approved</option>
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
-                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6180] pointer-events-none" />
+                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint pointer-events-none" />
                       </div>
                     </div>
 
                     {filteredBookings.length === 0 ? (
                       <div className="card p-10 text-center">
-                        <CalendarCheck className="w-10 h-10 text-[#6b6180] mx-auto mb-3" />
-                        <p className="text-sm text-[#a196b8]">No bookings found</p>
+                        <CalendarCheck className="w-10 h-10 text-faint mx-auto mb-3" />
+                        <p className="text-sm text-muted">No bookings found</p>
                       </div>
                     ) : (
                       <div className="card overflow-hidden">
@@ -511,12 +516,12 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-white/[0.04] bg-white/[0.02]">
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Client</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Category</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Package</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Budget</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Status</th>
-                                <th className="text-left px-4 py-3 text-[10px] text-[#a196b8] uppercase tracking-wider font-medium">Date</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Client</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Category</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Package</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Budget</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Status</th>
+                                <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Date</th>
                                 <th className="w-12 px-4 py-3"></th>
                               </tr>
                             </thead>
@@ -535,11 +540,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                     }}>
                                     <td className="px-4 py-3">
                                       <div className="font-medium text-sm">{b.clientName}</div>
-                                      <div className="text-[10px] text-[#6b6180]">{b.clientEmail}</div>
+                                      <div className="text-[10px] text-faint">{b.clientEmail}</div>
                                     </td>
-                                    <td className="px-4 py-3 text-[#a196b8] text-xs capitalize">{b.serviceCategory.replace('-', ' ')}</td>
-                                    <td className="px-4 py-3 text-[#a196b8] text-xs">{b.package || 'N/A'}</td>
-                                    <td className="px-4 py-3 text-[#a196b8] text-xs">{b.budget}</td>
+                                    <td className="px-4 py-3 text-muted text-xs capitalize">{b.serviceCategory.replace('-', ' ')}</td>
+                                    <td className="px-4 py-3 text-muted text-xs">{b.package || 'N/A'}</td>
+                                    <td className="px-4 py-3 text-muted text-xs">{b.budget}</td>
                                     <td className="px-4 py-3">
                                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                         b.status === 'pending' ? 'bg-violet-500/10 text-violet-400' :
@@ -547,9 +552,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                         b.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                                       }`}>{b.status}</span>
                                     </td>
-                                    <td className="px-4 py-3 text-[#6b6180] text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-4 py-3 text-faint text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
                                     <td className="px-4 py-3">
-                                      <ChevronDown className={`w-4 h-4 text-[#a196b8] transition-transform ${expandedId === b.id ? 'rotate-180' : ''}`} />
+                                      <ChevronDown className={`w-4 h-4 text-muted transition-transform ${expandedId === b.id ? 'rotate-180' : ''}`} />
                                     </td>
                                   </tr>
                                   {expandedId === b.id && (
@@ -559,26 +564,26 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                           {!expandedBooking ? (
                                             <div className="flex items-center gap-2 py-4">
                                               <div className="w-4 h-4 border-2 border-indigo border-t-transparent rounded-full animate-spin" />
-                                              <span className="text-xs text-[#6b6180]">Loading details...</span>
+                                              <span className="text-xs text-faint">Loading details...</span>
                                             </div>
                                           ) : (
                                             <>
                                               <div className="grid md:grid-cols-2 gap-4">
                                                 <div>
-                                                  <div className="text-[10px] text-[#a196b8] uppercase tracking-wider mb-1">Description</div>
-                                                  <p className="text-xs leading-relaxed text-[#c0c0d0]">{expandedBooking.description}</p>
+                                                  <div className="text-[10px] text-muted uppercase tracking-wider mb-1">Description</div>
+                                                  <p className="text-xs leading-relaxed text-[#c5c5ca]">{expandedBooking.description}</p>
                                                 </div>
                                                 <div>
-                                                  <div className="text-[10px] text-[#a196b8] uppercase tracking-wider mb-1">Contact</div>
+                                                  <div className="text-[10px] text-muted uppercase tracking-wider mb-1">Contact</div>
                                                   <div className="space-y-1.5">
                                                     <a href={`mailto:${expandedBooking.clientEmail}`} className="flex items-center gap-2 text-xs text-indigo hover:text-indigo/80 transition-colors">
                                                       <Mail className="w-3.5 h-3.5" /> {expandedBooking.clientEmail}
                                                     </a>
-                                                    <div className="flex items-center gap-2 text-xs text-[#a196b8]">
+                                                    <div className="flex items-center gap-2 text-xs text-muted">
                                                       <Phone className="w-3.5 h-3.5" /> {expandedBooking.clientPhone}
                                                     </div>
                                                   </div>
-                                                  <div className="mt-2 text-[10px] text-[#6b6180]">
+                                                  <div className="mt-2 text-[10px] text-faint">
                                                     Submitted: {new Date(expandedBooking.createdAt).toLocaleString()}
                                                   </div>
                                                 </div>
@@ -588,11 +593,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                                 <>
                                                   <hr className="border-white/[0.04]" />
                                                   <div>
-                                                    <div className="text-[10px] text-[#a196b8] uppercase tracking-wider mb-2">Sample References ({expandedBooking.sampleImages.length})</div>
+                                                    <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Sample References ({expandedBooking.sampleImages.length})</div>
                                                     <div className="flex flex-wrap gap-2">
                                                       {expandedBooking.sampleImages.map((img, i) => (
                                                         <a key={i} href={img} target="_blank" rel="noopener noreferrer"
-                                                          className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-[#120d1f] hover:border-indigo/30 transition-colors">
+                                                          className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-surface hover:border-indigo/30 transition-colors">
                                                           <img src={img} alt={`Sample ${i + 1}`} className="w-full h-full object-contain p-1" />
                                                         </a>
                                                       ))}
@@ -606,19 +611,19 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                               {replyingTo === b.id ? (
                                                 <div className="space-y-3 max-w-lg">
                                                   <div>
-                                                    <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1">To</label>
+                                                    <label htmlFor={`reply-to-${b.id}`} className="text-[10px] text-muted uppercase tracking-wider block mb-1">To</label>
                                                     <input id={`reply-to-${b.id}`} name={`reply-to-${b.id}`} type="text" value={b.clientEmail} readOnly
-                                                      className="w-full px-3 py-2 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-xs" />
+                                                      className="w-full px-3 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs" />
                                                   </div>
                                                   <div>
-                                                    <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1">Subject</label>
+                                                    <label htmlFor={`reply-subject-${b.id}`} className="text-[10px] text-muted uppercase tracking-wider block mb-1">Subject</label>
                                                     <input id={`reply-subject-${b.id}`} name={`reply-subject-${b.id}`} type="text" value={replySubject} onChange={(e) => setReplySubject(e.target.value)}
-                                                      className="w-full px-3 py-2 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
+                                                      className="w-full px-3 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none" placeholder="Subject" />
                                                   </div>
                                                   <div>
-                                                    <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1">Message</label>
+                                                    <label htmlFor={`reply-message-${b.id}`} className="text-[10px] text-muted uppercase tracking-wider block mb-1">Message</label>
                                                     <textarea id={`reply-message-${b.id}`} name={`reply-message-${b.id}`} rows={4} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)}
-                                                      className="w-full px-3 py-2 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
+                                                      className="w-full px-3 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none resize-none" placeholder="Type your reply..." />
                                                   </div>
                                                   <div className="flex gap-2">
                                                     <button onClick={handleSendEmail} disabled={sendingEmail}
@@ -626,7 +631,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                                       {sendingEmail ? 'Sending...' : 'Send Reply'} <Mail className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button onClick={() => setReplyingTo(null)}
-                                                      className="px-4 py-2 rounded-lg bg-white/[0.04] text-[#a196b8] text-xs hover:text-white transition-colors">
+                                                      className="px-4 py-2 rounded-lg bg-white/[0.04] text-muted text-xs hover:text-white transition-colors">
                                                       Cancel
                                                     </button>
                                                   </div>
@@ -693,8 +698,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     <div className="space-y-2">
                       {messages.length === 0 ? (
                         <div className="card p-10 text-center">
-                          <MessageSquare className="w-10 h-10 text-[#6b6180] mx-auto mb-3" />
-                          <p className="text-sm text-[#a196b8]">No messages yet</p>
+                          <MessageSquare className="w-10 h-10 text-faint mx-auto mb-3" />
+                          <p className="text-sm text-muted">No messages yet</p>
                         </div>
                       ) : (
                         messages.map((m) => (
@@ -704,9 +709,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               <h4 className="text-sm font-semibold">{m.name}</h4>
                               {!m.read && <span className="w-2 h-2 rounded-full bg-indigo" />}
                             </div>
-                            <p className="text-xs text-[#a196b8]">{m.subject}</p>
-                            <p className="text-xs text-[#6b6180] mt-1 line-clamp-2">{m.message}</p>
-                            <div className="text-[10px] text-[#6b6180] mt-1">{new Date(m.createdAt).toLocaleString()}</div>
+                            <p className="text-xs text-muted">{m.subject}</p>
+                            <p className="text-xs text-faint mt-1 line-clamp-2">{m.message}</p>
+                            <div className="text-[10px] text-faint mt-1">{new Date(m.createdAt).toLocaleString()}</div>
                           </button>
                         ))
                       )}
@@ -716,20 +721,20 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         <div className="card p-5 sticky top-20">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold">{selectedMsg.name}</h3>
-                            <button onClick={() => setSelectedMsg(null)} className="text-[#6b6180] hover:text-white text-xs">Close</button>
+                            <button onClick={() => setSelectedMsg(null)} className="text-faint hover:text-white text-xs">Close</button>
                           </div>
                           <div className="space-y-3 text-sm">
-                            <div><span className="text-[#a196b8] text-xs">Email:</span> <a href={`mailto:${selectedMsg.email}`} className="text-indigo text-xs">{selectedMsg.email}</a></div>
-                            <div><span className="text-[#a196b8] text-xs">Subject:</span> <span className="text-xs">{selectedMsg.subject}</span></div>
-                            <div><span className="text-[#a196b8] text-xs">Date:</span> <span className="text-xs">{new Date(selectedMsg.createdAt).toLocaleString()}</span></div>
+                            <div><span className="text-muted text-xs">Email:</span> <a href={`mailto:${selectedMsg.email}`} className="text-indigo text-xs">{selectedMsg.email}</a></div>
+                            <div><span className="text-muted text-xs">Subject:</span> <span className="text-xs">{selectedMsg.subject}</span></div>
+                            <div><span className="text-muted text-xs">Date:</span> <span className="text-xs">{new Date(selectedMsg.createdAt).toLocaleString()}</span></div>
                             <hr className="border-white/[0.04]" />
                             <p className="text-sm leading-relaxed">{selectedMsg.message}</p>
                           </div>
                         </div>
                       ) : (
                         <div className="card p-10 text-center">
-                          <MessageSquare className="w-10 h-10 text-[#6b6180] mx-auto mb-3" />
-                          <p className="text-sm text-[#a196b8]">Select a message to read</p>
+                          <MessageSquare className="w-10 h-10 text-faint mx-auto mb-3" />
+                          <p className="text-sm text-muted">Select a message to read</p>
                         </div>
                       )}
                     </div>
@@ -746,15 +751,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="gfx-title" className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1.5">Title *</label>
+                            <label htmlFor="gfx-title" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Title *</label>
                             <input id="gfx-title" name="gfx-title" type="text" value={gfxTitle} onChange={(e) => setGfxTitle(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors"
+                              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors"
                               placeholder="e.g. Premium Logo Concept" />
                           </div>
                           <div>
-                            <label htmlFor="gfx-category" className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1.5">Category</label>
+                            <label htmlFor="gfx-category" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Category</label>
                             <select id="gfx-category" name="gfx-category" value={gfxCategory} onChange={(e) => setGfxCategory(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
+                              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                               <option>Logo Design</option>
                               <option>Flyer Design</option>
                               <option>Banner Ad</option>
@@ -766,27 +771,27 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                             </select>
                           </div>
                           <div>
-                            <label htmlFor="gfx-description" className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1.5">Description</label>
+                            <label htmlFor="gfx-description" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Description</label>
                             <textarea id="gfx-description" name="gfx-description" rows={3} value={gfxDescription} onChange={(e) => setGfxDescription(e.target.value)}
-                              className="w-full px-4 py-2.5 rounded-lg bg-[#120d1f] border border-white/[0.06] text-white text-sm placeholder-[#6b6180] focus:border-indigo/40 focus:outline-none transition-colors resize-none"
+                              className="w-full px-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors resize-none"
                               placeholder="Brief description of the design..." />
                           </div>
                           <div>
-                            <label htmlFor="gfx-color" className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1.5">Accent Color</label>
+                            <label htmlFor="gfx-color" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Accent Color</label>
                             <div className="flex items-center gap-3">
                               <input id="gfx-color" name="gfx-color" type="color" value={gfxColor} onChange={(e) => setGfxColor(e.target.value)}
                                 className="w-10 h-10 rounded-lg border border-white/[0.06] cursor-pointer bg-transparent" />
-                              <span className="text-xs text-[#6b6180]">{gfxColor}</span>
+                              <span className="text-xs text-faint">{gfxColor}</span>
                             </div>
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div>
-                            <label htmlFor="gfx-image" className="text-[10px] text-[#a196b8] uppercase tracking-wider block mb-1.5">Images * (max 5MB each, up to 10)</label>
+                            <label htmlFor="gfx-image" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Images * (max 5MB each, up to 10)</label>
                             {gfxImages.length > 0 && (
                               <div className="grid grid-cols-3 gap-2 mb-3">
                                 {gfxImages.map((img, i) => (
-                                  <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-[#120d1f]">
+                                  <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-surface">
                                     <img src={img} alt={`Preview ${i + 1}`} className="w-full h-24 object-contain p-1" />
                                     <button onClick={() => removeGfxImage(i)}
                                       className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
@@ -796,11 +801,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                 ))}
                               </div>
                             )}
-                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-[#120d1f] py-6">
+                            <label htmlFor="gfx-image" className="flex flex-col items-center justify-center w-full border-2 border-dashed border-white/[0.08] rounded-xl cursor-pointer hover:border-indigo/30 transition-colors bg-surface py-6">
                               <div className="text-center">
-                                <ImageIcon className="w-8 h-8 text-[#6b6180] mx-auto mb-2" />
-                                <p className="text-xs text-[#6b6180]">{gfxImages.length === 0 ? 'Click to select images' : 'Add more images'}</p>
-                                <p className="text-[10px] text-[#6b6180] mt-1">PNG, JPG, WebP — multiple files allowed</p>
+                                <ImageIcon className="w-8 h-8 text-faint mx-auto mb-2" />
+                                <p className="text-xs text-faint">{gfxImages.length === 0 ? 'Click to select images' : 'Add more images'}</p>
+                                <p className="text-[10px] text-faint mt-1">PNG, JPG, WebP — multiple files allowed</p>
                               </div>
                               <input id="gfx-image" name="gfx-image" type="file" accept="image/*" multiple onChange={handleGfxImageChange} className="hidden" />
                             </label>
@@ -820,18 +825,18 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
                     <div>
                       <h3 className="text-sm font-semibold mb-4">
-                        Uploaded Designs <span className="text-[#6b6180] font-normal">({graphics.length})</span>
+                        Uploaded Designs <span className="text-faint font-normal">({graphics.length})</span>
                       </h3>
                       {graphics.length === 0 ? (
                         <div className="card p-10 text-center">
-                          <Palette className="w-10 h-10 text-[#6b6180] mx-auto mb-3" />
-                          <p className="text-sm text-[#a196b8]">No designs uploaded yet</p>
+                          <Palette className="w-10 h-10 text-faint mx-auto mb-3" />
+                          <p className="text-sm text-muted">No designs uploaded yet</p>
                         </div>
                       ) : (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {graphics.map((d) => (
                             <div key={d.id} className="card p-0 overflow-hidden group">
-                              <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#08060f] flex items-center justify-center p-2">
+                              <div className="relative w-full aspect-[4/3] overflow-hidden bg-ink flex items-center justify-center p-2">
                                 <img src={d.image} alt={d.title} className="max-w-full max-h-full object-contain" />
                                 <button onClick={() => deleteGraphics(d.id)}
                                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">
@@ -841,7 +846,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               <div className="p-3">
                                 <span className="text-[9px] uppercase tracking-wider text-white/40">{d.category}</span>
                                 <h4 className="text-xs font-semibold mt-0.5">{d.title}</h4>
-                                <div className="text-[9px] text-[#6b6180] mt-1">{new Date(d.createdAt).toLocaleDateString()}</div>
+                                <div className="text-[9px] text-faint mt-1">{new Date(d.createdAt).toLocaleDateString()}</div>
                               </div>
                             </div>
                           ))}
@@ -862,7 +867,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       </a>
                     </div>
                     <div className="card p-6">
-                      <p className="text-sm text-[#a196b8]">Download the resume PDF to share with clients or employers.</p>
+                      <p className="text-sm text-muted">Download the resume PDF to share with clients or employers.</p>
                       <a href="/api/resume/download" target="_blank" rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 mt-4 text-sm text-indigo hover:underline">
                         <Download className="w-4 h-4" /> Open Resume PDF
