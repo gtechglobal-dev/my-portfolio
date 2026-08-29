@@ -648,58 +648,59 @@ export default function QRCodeSystem({ token }: { token: string }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredCodes.map((c) => (
-                          <>
-                            <tr key={c.id} className={`border-b border-white/[0.04] transition-colors ${c.flagged ? 'bg-rose-500/[0.04] hover:bg-rose-500/[0.07]' : 'hover:bg-white/[0.02]'}`}>
-                              <td className="px-4 py-3 font-medium text-xs">
-                                <div className="flex items-center gap-1.5">
-                                  <span>{c.serial}</span>
-                                  {c.flagged && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
-                                </div>
-                                {c.flagged && c.flagReason && (
-                                  <div title={c.flagReason} className="text-[10px] text-rose-300/80 mt-0.5 max-w-[260px] truncate">{c.flagReason}</div>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-muted text-xs">{c.bookTitle}</td>
-                              <td className="px-4 py-3">
-                                {c.flagged ? (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-300">Flagged</span>
-                                ) : c.status === 'active' ? (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Active</span>
-                                ) : c.status === 'revoked' ? (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/50">Revoked</span>
-                                ) : (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-400">Pending</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-faint text-xs">
-                                {c.verifyCount || 0}
-                                {c.lastVerifiedAt && (
-                                  <div className="text-[10px]">{new Date(c.lastVerifiedAt).toLocaleString()}</div>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-faint text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
-                              <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
-                                    <Copy className="w-3.5 h-3.5" />
+{filteredCodes.map((c) => (
+                            <>
+                              <tr key={c.id} className={`border-b border-white/[0.04] transition-colors ${c.flagged ? 'bg-rose-500/[0.04] hover:bg-rose-500/[0.07]' : 'hover:bg-white/[0.02]'}`}>
+                                <td className="px-4 py-3 font-medium text-xs">
+                                  <button onClick={() => fetchCodeDetail(c.code)} className="flex items-center gap-1.5 w-full text-left hover:text-indigo-400 transition-colors focus:outline-none">
+                                    <span className="truncate">{c.serial}</span>
+                                    {c.flagged && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                                    <ChevronDown className={detailCode === c.code ? 'w-3.5 h-3.5 rotate-180 shrink-0' : 'w-3.5 h-3.5 shrink-0 text-faint'} />
                                   </button>
-                                  <button onClick={() => fetchCodeDetail(c.code)} title="View scan details" className="text-muted hover:text-indigo-400 transition-colors">
-                                    <ChevronDown className={detailCode === c.code ? 'w-3.5 h-3.5 rotate-180' : 'w-3.5 h-3.5'} />
-                                  </button>
-                                  <button onClick={() => revokeRecord(c)} title={c.status === 'revoked' ? 'Revoked — click to undo (re-activate)' : 'Revoke this code'}
-                                    className="text-muted hover:text-rose-400 transition-colors">
-                                    <ShieldOff className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button onClick={() => deleteRecord(c)} title="Delete this code permanently"
-                                    className="text-muted hover:text-red-400 transition-colors">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                            {detailCode === c.code && (
+                                  {c.flagged && c.flagReason && (
+                                    <div title={c.flagReason} className="text-[10px] text-rose-300/80 mt-0.5 max-w-[260px] truncate">{c.flagReason}</div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-muted text-xs">{c.bookTitle}</td>
+                                <td className="px-4 py-3">
+                                  {c.flagged ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-300">Flagged</span>
+                                  ) : c.status === 'active' ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Active</span>
+                                  ) : c.status === 'revoked' ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/50">Revoked</span>
+                                  ) : (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-400">Pending</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-faint text-xs">
+                                  {c.verifyCount || 0}
+                                  {c.lastVerifiedAt && (
+                                    <div className="text-[10px]">{new Date(c.lastVerifiedAt).toLocaleString()}</div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-faint text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
+                                <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => fetchCodeDetail(c.code)} title="View scan details" className="text-muted hover:text-indigo-400 transition-colors">
+                                      <ChevronDown className={detailCode === c.code ? 'w-3.5 h-3.5 rotate-180' : 'w-3.5 h-3.5'} />
+                                    </button>
+                                    <button onClick={() => revokeRecord(c)} title={c.status === 'revoked' ? 'Revoked — click to undo (re-activate)' : 'Revoke this code'}
+                                      className="text-muted hover:text-rose-400 transition-colors">
+                                      <ShieldOff className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => deleteRecord(c)} title="Delete this code permanently"
+                                      className="text-muted hover:text-red-400 transition-colors">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {detailCode === c.code && (
                               <tr className="bg-white/[0.02] border-b border-white/[0.04]">
                                 <td colSpan={7} className="px-4 py-3">
                                   {detailLoading ? (
