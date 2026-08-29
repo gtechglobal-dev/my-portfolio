@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X, AlertTriangle, Phone, Mail } from 'lucide-react';
 
 const API = '/api';
 
@@ -32,7 +32,7 @@ function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; val
   if (!value || !value.trim()) return null;
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-white/[0.05] last:border-0">
-      <Icon className="w-4 h-4 text-indigo mt-0.5 shrink-0" />
+      <Icon className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-muted">{label}</div>
         <div className="text-sm text-white/90">{value}</div>
@@ -78,12 +78,12 @@ export default function Verify() {
       <header className="w-full border-b border-white/[0.05]">
         <div className="container flex items-center justify-between py-4 px-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <div className="font-bold leading-tight">Okson Publishers</div>
-              <div className="text-[10px] text-muted">Book Authenticity Verification</div>
+              <div className="font-bold leading-tight text-white">Okson Publishers</div>
+              <div className="text-[10px] text-emerald-400">Book Authenticity Verification</div>
             </div>
           </div>
           <button onClick={handleClose} className="flex items-center gap-1.5 text-xs text-muted hover:text-white transition-colors">
@@ -95,7 +95,7 @@ export default function Verify() {
       <main className="flex-1 container flex items-start justify-center px-6 py-16">
         {loading ? (
           <div className="card p-12 flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 text-indigo animate-spin" />
+            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
             <p className="text-sm text-muted">Verifying code...</p>
           </div>
         ) : error ? (
@@ -103,6 +103,20 @@ export default function Verify() {
             <ShieldX className="w-12 h-12 text-rose-500 mx-auto mb-4" />
             <h1 className="text-lg font-bold mb-2">Verification Unavailable</h1>
             <p className="text-sm text-muted">{error}</p>
+            <div className="mt-6 pt-6 border-t border-white/[0.05]">
+              <p className="text-xs text-muted mb-2">Contact us for assistance:</p>
+              <div className="flex flex-col items-center gap-2 text-sm">
+                <a href="tel:08034802717" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0803 480 2717
+                </a>
+                <a href="tel:09054867749" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0905 486 7749
+                </a>
+                <a href="mailto:oksonpublishers@gmail.com" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Mail className="w-4 h-4" /> oksonpublishers@gmail.com
+                </a>
+              </div>
+            </div>
           </div>
         ) : result?.status === 'revoked' ? (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -116,7 +130,21 @@ export default function Verify() {
             {result?.code?.serial && (
               <div className="text-xs text-faint">Serial: <span className="text-white/80">{result.code.serial}</span></div>
             )}
-            <button onClick={handleClose} className="btn btn-primary mt-6 text-sm flex items-center justify-center gap-2">
+            <div className="mt-6 pt-6 border-t border-white/[0.05]">
+              <p className="text-xs text-muted mb-2">Report suspicious activity:</p>
+              <div className="flex flex-col items-center gap-2 text-sm">
+                <a href="tel:08034802717" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0803 480 2717
+                </a>
+                <a href="tel:09054867749" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0905 486 7749
+                </a>
+                <a href="mailto:oksonpublishers@gmail.com" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Mail className="w-4 h-4" /> oksonpublishers@gmail.com
+                </a>
+              </div>
+            </div>
+            <button onClick={handleClose} className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-medium hover:bg-emerald-500/30 transition-colors">
               Close <X className="w-4 h-4" />
             </button>
           </motion.div>
@@ -132,7 +160,21 @@ export default function Verify() {
             {result?.code?.serial && (
               <div className="text-xs text-faint">Serial: <span className="text-white/80">{result.code.serial}</span></div>
             )}
-            <button onClick={handleClose} className="btn btn-primary mt-6 text-sm flex items-center justify-center gap-2">
+            <div className="mt-6 pt-6 border-t border-white/[0.05]">
+              <p className="text-xs text-muted mb-2">Contact us for assistance:</p>
+              <div className="flex flex-col items-center gap-2 text-sm">
+                <a href="tel:08034802717" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0803 480 2717
+                </a>
+                <a href="tel:09054867749" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Phone className="w-4 h-4" /> 0905 486 7749
+                </a>
+                <a href="mailto:oksonpublishers@gmail.com" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                  <Mail className="w-4 h-4" /> oksonpublishers@gmail.com
+                </a>
+              </div>
+            </div>
+            <button onClick={handleClose} className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-medium hover:bg-emerald-500/30 transition-colors">
               Close <X className="w-4 h-4" />
             </button>
           </motion.div>
@@ -176,12 +218,12 @@ export default function Verify() {
               {result.book ? (
                 <>
                   <div className="flex items-start gap-4 mb-2">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo/15 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-7 h-7 text-indigo" />
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-7 h-7 text-emerald-400" />
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-xl font-bold leading-tight">{result.book.title}</h2>
-                      <div className="text-sm text-indigo mt-0.5">by {result.book.author}</div>
+                      <div className="text-sm text-emerald-400 mt-0.5">by {result.book.author}</div>
                     </div>
                   </div>
 
@@ -213,6 +255,21 @@ export default function Verify() {
                   This verification is provided by <span className="text-white/70">Okson Publishers</span>.
                   Ensure you are scanning the code printed on the official book cover.
                 </p>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-white/[0.05]">
+                <p className="text-xs text-muted mb-3">Have complaints or suspect fraud? Contact Okson Publishers:</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm">
+                  <a href="tel:08034802717" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                    <Phone className="w-4 h-4" /> 0803 480 2717
+                  </a>
+                  <a href="tel:09054867749" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                    <Phone className="w-4 h-4" /> 0905 486 7749
+                  </a>
+                  <a href="mailto:oksonpublishers@gmail.com" className="flex items-center gap-2 text-white/80 hover:text-emerald-400 transition-colors">
+                    <Mail className="w-4 h-4" /> oksonpublishers@gmail.com
+                  </a>
+                </div>
               </div>
 
               <button onClick={handleClose} className="mt-5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] py-2.5 text-sm text-white/80 hover:border-white/20 hover:text-white transition-colors">
