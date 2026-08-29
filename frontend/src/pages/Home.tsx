@@ -5,7 +5,7 @@ import CtaSection from '../components/sections/CtaSection';
 import TypeWriter from '../components/sections/TypeWriter';
 import { Target, Lightbulb, Rocket, Sparkles } from 'lucide-react';
 
-const embers = Array.from({ length: 40 }, (_, i) => ({
+const embers = Array.from({ length: 18 }, (_, i) => ({
   id: i,
   left: Math.random() * 100,
   bottom: Math.random() * 20,
@@ -34,7 +34,7 @@ export default function Home() {
                 'radial-gradient(65% 60% at 50% 78%, rgba(124,58,237,0.28) 0%, transparent 60%)',
               filter: 'blur(22px)',
             }}
-            animate={{ rotate: [0, 12, -8, 0], scale: [1, 1.12, 0.96, 1] }}
+            animate={{ scale: [1, 1.06, 0.98, 1] }}
             transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
@@ -50,8 +50,8 @@ export default function Home() {
               maskImage: 'radial-gradient(circle, black 40%, transparent 72%)',
               WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 72%)',
             }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
 
@@ -113,7 +113,7 @@ export default function Home() {
             filter: 'blur(18px)',
             left: '-30%',
           }}
-          animate={{ left: ['-30%', '130%'] }}
+          animate={{ x: ['0vw', '150vw'] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', repeatDelay: 4 }}
         />
 

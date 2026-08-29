@@ -59,7 +59,7 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
             className="card p-8 max-w-md w-full relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-[#6b6180] hover:text-white transition-colors">
+            <button onClick={onClose} className="absolute top-4 right-4 text-faint hover:text-white transition-colors">
               <X className="w-5 h-5" />
             </button>
             {children}
@@ -179,7 +179,7 @@ export default function BookingForm() {
   };
 
   return (
-    <section className="min-h-screen bg-[#08060f] pt-28 pb-24">
+    <section className="min-h-screen bg-ink pt-28 pb-24">
       <Modal open={showModal} onClose={() => { setShowModal(false); if (submitted) resetForm(); }}>
         {submitted ? (
           <div className="text-center">
@@ -187,15 +187,15 @@ export default function BookingForm() {
               <Check className="w-7 h-7 text-emerald-400" />
             </div>
             <h3 className="text-xl font-bold mb-2">Booking Submitted!</h3>
-            <p className="text-sm text-[#a196b8] mb-2">We'll review your details and get back to you shortly.</p>
-            <div className="bg-[#120d1f] rounded-lg p-4 mt-4 text-left text-sm space-y-1">
-              <p><span className="text-[#a196b8]">Name:</span> {form.name}</p>
-              <p><span className="text-[#a196b8]">Email:</span> {form.email}</p>
-              <p><span className="text-[#a196b8]">Phone:</span> {selectedCountry.dial} {form.phone}</p>
-              <p><span className="text-[#a196b8]">Country:</span> {selectedCountry.flag} {selectedCountry.name}</p>
-              <p><span className="text-[#a196b8]">Category:</span> {category === 'web-development' ? 'Web Development' : 'Graphics Design'}</p>
-              {selectedPkgData && selectedPkg !== 'other' && <p><span className="text-[#a196b8]">Package:</span> {selectedPkgData.title} — ${selectedPkgData.priceUsd} USD</p>}
-              {selectedPkg === 'other' && <p><span className="text-[#a196b8]">Package:</span> Other Designs (Custom)</p>}
+            <p className="text-sm text-muted mb-2">We'll review your details and get back to you shortly.</p>
+            <div className="bg-surface rounded-lg p-4 mt-4 text-left text-sm space-y-1">
+              <p><span className="text-muted">Name:</span> {form.name}</p>
+              <p><span className="text-muted">Email:</span> {form.email}</p>
+              <p><span className="text-muted">Phone:</span> {selectedCountry.dial} {form.phone}</p>
+              <p><span className="text-muted">Country:</span> {selectedCountry.flag} {selectedCountry.name}</p>
+              <p><span className="text-muted">Category:</span> {category === 'web-development' ? 'Web Development' : 'Graphics Design'}</p>
+              {selectedPkgData && selectedPkg !== 'other' && <p><span className="text-muted">Package:</span> {selectedPkgData.title} — ${selectedPkgData.priceUsd} USD</p>}
+              {selectedPkg === 'other' && <p><span className="text-muted">Package:</span> Other Designs (Custom)</p>}
             </div>
             <div className="flex gap-3 mt-6 justify-center">
               <button onClick={resetForm} className="btn btn-primary">Book Another</button>
@@ -208,7 +208,7 @@ export default function BookingForm() {
               <AlertTriangle className="w-7 h-7 text-red-400" />
             </div>
             <h3 className="text-xl font-bold mb-2">Submission Failed</h3>
-            <p className="text-sm text-[#a196b8]">{error}</p>
+            <p className="text-sm text-muted">{error}</p>
             <div className="flex gap-3 mt-6 justify-center">
               <button onClick={() => setShowModal(false)} className="btn btn-primary">Try Again</button>
             </div>
@@ -219,7 +219,7 @@ export default function BookingForm() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Book a Project</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a196b8]">Tell us about your project and we'll get started.</p>
+          <p className="mt-3 text-[0.9375rem] md:text-base text-muted">Tell us about your project and we'll get started.</p>
         </div>
         <div className="max-w-xl mx-auto">
           {step === 1 && (
@@ -231,7 +231,7 @@ export default function BookingForm() {
                     className="card p-6 md:p-8 text-center transition-all cursor-pointer hover:border-indigo/30">
                     <div className="text-3xl mb-3">{c === 'web-development' ? '💻' : '🎨'}</div>
                     <h4 className="text-base font-semibold">{c === 'web-development' ? 'Web Development' : 'Graphics Design'}</h4>
-                    <p className="text-sm text-[#a196b8] mt-1">{c === 'web-development' ? 'Apps & websites' : 'Flyers & branding'}</p>
+                    <p className="text-sm text-muted mt-1">{c === 'web-development' ? 'Apps & websites' : 'Flyers & branding'}</p>
                   </button>
                 ))}
               </div>
@@ -248,7 +248,7 @@ export default function BookingForm() {
                     <h4 className="text-sm font-semibold mb-2">{pkg.title}</h4>
                     {pkg.id !== 'other' ? (
                       <>
-                        <div className="text-base font-bold">${pkg.priceUsd} <span className="text-sm font-normal text-[#6b6180]">USD</span></div>
+                        <div className="text-base font-bold">${pkg.priceUsd} <span className="text-sm font-normal text-faint">USD</span></div>
                         <div className="text-xs text-indigo">₦{formatNgn(pkg.priceUsd, rate)}</div>
                       </>
                     ) : (
@@ -266,57 +266,57 @@ export default function BookingForm() {
               <div className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#a196b8] mb-1.5">Name *</label>
+                    <label className="block text-sm text-muted mb-1.5">Name *</label>
                     <input type="text" required value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setValidationErrors({ ...validationErrors, name: '' }); }}
-                      className={`w-full px-4 py-3 rounded-lg bg-[#120d1f] border text-white text-sm placeholder-[#6b6180] focus:outline-none transition-colors ${validationErrors.name ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Your name" />
+                      className={`w-full px-4 py-3 rounded-lg bg-surface border text-white text-sm placeholder-faint focus:outline-none transition-colors ${validationErrors.name ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Your name" />
                     {validationErrors.name && <p className="text-red-400 text-[11px] mt-1">{validationErrors.name}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm text-[#a196b8] mb-1.5">Email *</label>
+                    <label className="block text-sm text-muted mb-1.5">Email *</label>
                     <input type="email" required value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setValidationErrors({ ...validationErrors, email: '' }); }}
-                      className={`w-full px-4 py-3 rounded-lg bg-[#120d1f] border text-white text-sm placeholder-[#6b6180] focus:outline-none transition-colors ${validationErrors.email ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="you@email.com" />
+                      className={`w-full px-4 py-3 rounded-lg bg-surface border text-white text-sm placeholder-faint focus:outline-none transition-colors ${validationErrors.email ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="you@email.com" />
                     {validationErrors.email && <p className="text-red-400 text-[11px] mt-1">{validationErrors.email}</p>}
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[#a196b8] mb-1.5">Country *</label>
+                    <label className="block text-sm text-muted mb-1.5">Country *</label>
                     <div className="relative">
                       <select value={form.country} onChange={(e) => { setForm({ ...form, country: e.target.value }); setValidationErrors({ ...validationErrors, country: '' }); }}
-                        className={`w-full px-4 py-3 rounded-lg bg-[#120d1f] border text-white text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${validationErrors.country ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`}>
+                        className={`w-full px-4 py-3 rounded-lg bg-surface border text-white text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${validationErrors.country ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`}>
                         {countries.map((c) => (
                           <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b6180] pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint pointer-events-none" />
                     </div>
                     {validationErrors.country && <p className="text-red-400 text-[11px] mt-1">{validationErrors.country}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm text-[#a196b8] mb-1.5">Phone *</label>
+                    <label className="block text-sm text-muted mb-1.5">Phone *</label>
                     <div className="flex">
-                      <span className="flex items-center px-3 py-3 rounded-l-lg bg-[#161021] border border-r-0 border-white/[0.06] text-sm text-[#a196b8] shrink-0 select-none">
+                      <span className="flex items-center px-3 py-3 rounded-l-lg bg-surface border border-r-0 border-white/[0.06] text-sm text-muted shrink-0 select-none">
                         {selectedCountry.flag} {selectedCountry.dial}
                       </span>
                       <input type="tel" required value={form.phone}
                         onChange={(e) => { const digits = e.target.value.replace(/\D/g, '').slice(0, 15); setForm({ ...form, phone: digits }); setValidationErrors({ ...validationErrors, phone: '' }); }}
-                        className={`w-full px-4 py-3 rounded-r-lg bg-[#120d1f] border text-white text-sm placeholder-[#6b6180] focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder={selectedCountry.hint} />
+                        className={`w-full px-4 py-3 rounded-r-lg bg-surface border text-white text-sm placeholder-faint focus:outline-none transition-colors ${validationErrors.phone ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder={selectedCountry.hint} />
                     </div>
                     {validationErrors.phone ? (
                       <p className="text-red-400 text-[11px] mt-1">{validationErrors.phone}</p>
                     ) : (
-                      <p className="text-[10px] text-[#6b6180] mt-1">{selectedCountry.hint}</p>
+                      <p className="text-[10px] text-faint mt-1">{selectedCountry.hint}</p>
                     )}
                   </div>
                 </div>
                 {category === 'graphics-design' && (
                   <div>
-                    <label className="block text-sm text-[#a196b8] mb-1.5">Upload Samples (optional)</label>
-                    <p className="text-[11px] text-[#6b6180] mb-2">Upload reference images of what you want designed (max 3)</p>
+                    <label className="block text-sm text-muted mb-1.5">Upload Samples (optional)</label>
+                    <p className="text-[11px] text-faint mb-2">Upload reference images of what you want designed (max 3)</p>
                     {samplePreviews.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         {samplePreviews.map((img, i) => (
-                          <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-[#120d1f]">
+                          <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-surface">
                             <img src={img} alt={`Sample ${i + 1}`} className="w-full h-28 object-contain p-1" />
                             <button onClick={() => setSamplePreviews((prev) => prev.filter((_, j) => j !== i))}
                               className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
@@ -326,10 +326,10 @@ export default function BookingForm() {
                         ))}
                       </div>
                     )}
-                    <label className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-white/[0.08] bg-[#120d1f] cursor-pointer hover:border-indigo/30 transition-colors py-5">
-                      <Upload className="w-5 h-5 text-[#6b6180] mb-1" />
-                      <span className="text-xs text-[#6b6180]">{samplePreviews.length === 0 ? 'Click to upload images' : 'Add more images'}</span>
-                      <span className="text-[10px] text-[#463e58] mt-0.5">PNG, JPG, WEBP — max 5MB each</span>
+                    <label className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-white/[0.08] bg-surface cursor-pointer hover:border-indigo/30 transition-colors py-5">
+                      <Upload className="w-5 h-5 text-faint mb-1" />
+                      <span className="text-xs text-faint">{samplePreviews.length === 0 ? 'Click to upload images' : 'Add more images'}</span>
+                      <span className="text-[10px] text-faint mt-0.5">PNG, JPG, WEBP — max 5MB each</span>
                       <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden"
                         onChange={(e) => {
                           const files = e.target.files;
@@ -348,9 +348,9 @@ export default function BookingForm() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm text-[#a196b8] mb-1.5">Description *</label>
+                  <label className="block text-sm text-muted mb-1.5">Description *</label>
                   <textarea required rows={4} value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); setValidationErrors({ ...validationErrors, description: '' }); }}
-                    className={`w-full px-4 py-3 rounded-lg bg-[#120d1f] border text-white text-sm placeholder-[#6b6180] focus:outline-none transition-colors resize-none ${validationErrors.description ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Describe your project in detail (at least 20 characters)..." />
+                    className={`w-full px-4 py-3 rounded-lg bg-surface border text-white text-sm placeholder-faint focus:outline-none transition-colors resize-none ${validationErrors.description ? 'border-red-500/40' : 'border-white/[0.06] focus:border-indigo/40'}`} placeholder="Describe your project in detail (at least 20 characters)..." />
                   {validationErrors.description && <p className="text-red-400 text-[11px] mt-1">{validationErrors.description}</p>}
                 </div>
               </div>

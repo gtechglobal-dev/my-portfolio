@@ -31,8 +31,8 @@ export default function WebPricing() {
       <div className="container px-6 md:px-8">
         <div className="text-center max-w-xl mx-auto mb-12 md:mb-14">
           <h2 className="text-[1.75rem] md:text-[2.25rem] font-bold tracking-[-0.01em]">Web Development Pricing</h2>
-          <p className="mt-3 text-[0.9375rem] md:text-base text-[#a196b8]">Choose the right package for your project.</p>
-          <div className="mt-4 inline-flex items-center gap-2 text-xs text-[#6b6180] bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
+          <p className="mt-3 text-[0.9375rem] md:text-base text-muted">Choose the right package for your project.</p>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs text-faint bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/[0.06]">
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             1 USD = ₦{rate.toLocaleString()} {rateSource === 'live' ? '(Live rate)' : '(Estimated)'}
           </div>
@@ -52,13 +52,13 @@ export default function WebPricing() {
               <div className="flex flex-col md:flex-row md:items-start gap-6">
                 <div className="md:w-1/3">
                   <h3 className="text-lg md:text-xl font-bold mb-1">{pkg.title}</h3>
-                  <p className="text-sm text-[#a196b8] mb-4">{pkg.desc}</p>
+                  <p className="text-sm text-muted mb-4">{pkg.desc}</p>
                   <div className="mb-4">
-                    <div className="text-xs text-[#6b6180] mb-1">Starting from</div>
+                    <div className="text-xs text-faint mb-1">Starting from</div>
                     <div className="text-2xl md:text-3xl font-bold">₦{formatNgn(pkg.priceUsd, rate)}</div>
-                    <div className="text-sm text-[#6b6180]">${pkg.priceUsd.toLocaleString()} USD</div>
+                    <div className="text-sm text-faint">${pkg.priceUsd.toLocaleString()} USD</div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-[#6b6180]">
+                  <div className="flex items-center gap-1.5 text-xs text-faint">
                     <Clock className="w-3.5 h-3.5" />
                     Delivery: {pkg.delivery}
                   </div>
@@ -66,19 +66,19 @@ export default function WebPricing() {
 
                 <div className="md:w-2/3 md:border-l md:border-white/[0.06] md:pl-8">
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#6b6180] mb-2">Perfect for</h4>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-faint mb-2">Perfect for</h4>
                     <div className="flex flex-wrap gap-2">
                       {pkg.perfectFor.map((p) => (
-                        <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-[#a196b8] border border-white/[0.06]">{p}</span>
+                        <span key={p} className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-muted border border-white/[0.06]">{p}</span>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#6b6180] mb-2">Includes</h4>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-faint mb-2">Includes</h4>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                       {pkg.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm text-[#a196b8] list-none">
+                        <li key={f} className="flex items-start gap-2 text-sm text-muted list-none">
                           <Check className="w-3.5 h-3.5 text-indigo mt-0.5 shrink-0" />
                           <span>{f}</span>
                         </li>
@@ -104,16 +104,16 @@ export default function WebPricing() {
           className="max-w-4xl mx-auto mt-16">
           <div className="text-center mb-8">
             <h3 className="text-xl md:text-2xl font-bold tracking-[-0.01em]">Optional Add-ons</h3>
-            <p className="mt-2 text-sm text-[#a196b8]">Enhance your package with extra features.</p>
+            <p className="mt-2 text-sm text-muted">Enhance your package with extra features.</p>
           </div>
           <div className="card overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-white/[0.04]">
               {webDevAddons.map((addon) => (
-                <div key={addon.service} className="bg-[#120d1f] p-4 flex flex-col justify-between">
-                  <span className="text-sm text-[#a196b8] mb-2">{addon.service}</span>
+                <div key={addon.service} className="bg-surface p-4 flex flex-col justify-between">
+                  <span className="text-sm text-muted mb-2">{addon.service}</span>
                   <div>
                     <span className="text-sm font-semibold">₦{formatNgn(addon.priceUsd, rate)}</span>
-                    <span className="text-xs text-[#6b6180] ml-1.5">${addon.priceUsd}{addon.perMonth ? '/mo' : ''} USD</span>
+                    <span className="text-xs text-faint ml-1.5">${addon.priceUsd}{addon.perMonth ? '/mo' : ''} USD</span>
                   </div>
                 </div>
               ))}

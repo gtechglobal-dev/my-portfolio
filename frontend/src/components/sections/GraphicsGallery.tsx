@@ -55,10 +55,10 @@ function GraphicsModal({ design, onClose }: { design: GraphicsDesign; onClose: (
         animate="show"
         exit="exit"
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#120d1f] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-surface border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
-          <div className="w-full bg-[#08060f] rounded-t-2xl flex items-center justify-center p-4 min-h-[200px] max-h-[65vh]">
+          <div className="w-full bg-ink rounded-t-2xl flex items-center justify-center p-4 min-h-[200px] max-h-[65vh]">
             <img
               src={design.image}
               alt={design.title}
@@ -76,7 +76,7 @@ function GraphicsModal({ design, onClose }: { design: GraphicsDesign; onClose: (
           <span className="text-[11px] uppercase tracking-wider text-white/40">{design.category}</span>
           <h2 className="text-xl font-bold mt-1 mb-3">{design.title}</h2>
           {design.description && (
-            <p className="text-sm text-[#a196b8] leading-relaxed mb-5">{design.description}</p>
+            <p className="text-sm text-muted leading-relaxed mb-5">{design.description}</p>
           )}
           <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05]">
             <Eye className="w-3.5 h-3.5" style={{ color: design.color }} />
@@ -114,9 +114,9 @@ export default function GraphicsGallery() {
   if (designs.length === 0) {
     return (
       <div className="text-center py-20">
-        <Palette className="w-12 h-12 text-[#6b6180] mx-auto mb-4" />
+        <Palette className="w-12 h-12 text-faint mx-auto mb-4" />
         <h3 className="text-lg font-semibold mb-2">No Designs Yet</h3>
-        <p className="text-sm text-[#a196b8]">Graphics designs will appear here once uploaded from the admin panel.</p>
+        <p className="text-sm text-muted">Graphics designs will appear here once uploaded from the admin panel.</p>
       </div>
     );
   }
@@ -139,14 +139,14 @@ export default function GraphicsGallery() {
             className="card p-0 overflow-hidden cursor-pointer group"
           >
             <div
-              className="relative w-full aspect-[4/3] overflow-hidden bg-[#08060f] flex items-center justify-center p-3"
+              className="relative w-full aspect-[4/3] overflow-hidden bg-ink flex items-center justify-center p-3"
             >
               <img
                 src={d.image}
                 alt={d.title}
                 className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/[0.06]">
                   <Eye className="w-3 h-3 text-white/70" />
@@ -159,7 +159,7 @@ export default function GraphicsGallery() {
               <span className="text-[10px] uppercase tracking-wider text-white/40">{d.category}</span>
               <h3 className="text-sm font-semibold mt-0.5 mb-1.5">{d.title}</h3>
               {d.description && (
-                <p className="text-xs text-[#a196b8] leading-relaxed line-clamp-2">{d.description}</p>
+                <p className="text-xs text-muted leading-relaxed line-clamp-2">{d.description}</p>
               )}
             </div>
           </motion.div>

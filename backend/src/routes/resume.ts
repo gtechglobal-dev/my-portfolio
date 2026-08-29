@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 
 const router = Router();
 
-const INDIGO = '#4f46e5';
-const DARK = '#1e1b4b';
+const INDIGO = '#a855f7';
+const DARK = '#0a0a0a';
 const GRAY = '#6b7280';
 
 function getLogoBuffer(): Buffer | null {

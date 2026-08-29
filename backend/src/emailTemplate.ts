@@ -45,7 +45,7 @@ export function buildEmailHtml(message: string, subject: string = ''): string {
       <td align="center">
         <table role="presentation" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
           <tr>
-            <td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 40px;text-align:center;">
+            <td style="background:#a855f7;padding:32px 40px;text-align:center;">
               ${subject ? `<div style="font-size:18px;font-weight:700;color:#ffffff;">${escapeHtml(subject)}</div>` : ''}
             </td>
           </tr>
@@ -58,7 +58,7 @@ export function buildEmailHtml(message: string, subject: string = ''): string {
           </tr>
           <tr>
             <td style="padding:0 40px 24px;text-align:center;">
-              ${logo ? `<img src="${logo}" alt="Gtech Global" style="display:inline-block;border:0;max-width:200px;height:auto;" />` : '<div style="font-size:24px;font-weight:800;color:#4f46e5;letter-spacing:-0.5px;">GTECH GLOBAL</div>'}
+              ${logo ? `<img src="${logo}" alt="Gtech Global" style="display:inline-block;border:0;max-width:200px;height:auto;" />` : '<div style="font-size:24px;font-weight:800;color:#a855f7;letter-spacing:-0.5px;">GTECH GLOBAL</div>'}
             </td>
           </tr>
           <tr>
@@ -73,7 +73,7 @@ export function buildEmailHtml(message: string, subject: string = ''): string {
                   <td style="font-size:13px;color:#9ca3af;line-height:1.6;text-align:center;">
                     <div style="font-weight:500;color:#6b7280;">Professional Web Development &amp; Digital Services</div>
                     <div style="margin-top:8px;">
-                      <a href="mailto:gtechglobal.dev@gmail.com" style="color:#4f46e5;text-decoration:none;font-weight:500;">gtechglobal.dev@gmail.com</a>
+                      <a href="mailto:gtechglobal.dev@gmail.com" style="color:#a855f7;text-decoration:none;font-weight:500;">gtechglobal.dev@gmail.com</a>
                     </div>
                     <div style="margin-top:16px;font-size:11px;color:#d1d5db;">
                       This email was sent in response to your booking enquiry.

@@ -31,13 +31,13 @@ export default function Navbar() {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-[#0b0812] shadow-lg shadow-black/20 border-b border-white/[0.06]' : 'bg-[#0b0812]/85 backdrop-blur-xl'
+      scrolled ? 'bg-ink shadow-lg shadow-black/20 border-b border-white/[0.06]' : 'bg-ink/85 backdrop-blur-xl'
     }`}>
       <div className="container flex items-center justify-between h-16 px-6 md:px-8">
         <div className="flex items-center gap-2.5">
           {pathname !== '/' && (
             <button onClick={() => navigate(-1)}
-              className="p-1.5 -ml-1 rounded-md text-[#9488ac] hover:text-white hover:bg-white/[0.06] transition-colors">
+              className="p-1.5 -ml-1 rounded-md text-muted hover:text-white hover:bg-white/[0.06] transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
@@ -51,7 +51,7 @@ export default function Navbar() {
           {links.map((l) => (
             <Link key={l.to} to={l.to}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                pathname === l.to ? 'text-white bg-white/[0.08]' : 'text-[#9488ac] hover:text-white'
+                pathname === l.to ? 'text-white bg-white/[0.08]' : 'text-muted hover:text-white'
               }`}>
               {l.label}
             </Link>
@@ -60,25 +60,25 @@ export default function Navbar() {
           {extraLinks.map((l) => (
             <Link key={l.to} to={l.to}
               className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                pathname.startsWith(l.to) ? 'text-[#a855f7] bg-[#a855f7]/10' : 'text-[#8b7fa8] hover:text-[#a855f7]'
+                pathname.startsWith(l.to) ? 'text-[#a855f7] bg-[#a855f7]/10' : 'text-muted hover:text-[#a855f7]'
               }`}>
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-[#9488ac] hover:text-white transition-colors">
+        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-muted hover:text-white transition-colors">
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-white/[0.06] bg-[#0b0812]">
+        <div className="md:hidden border-t border-white/[0.06] bg-ink">
           <div className="px-6 py-3 space-y-0.5">
             {links.map((l) => (
               <Link key={l.to} to={l.to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === l.to ? 'text-white bg-white/[0.08]' : 'text-[#9488ac]'
+                  pathname === l.to ? 'text-white bg-white/[0.08]' : 'text-muted'
                 }`}>
                 {l.label}
               </Link>
@@ -87,7 +87,7 @@ export default function Navbar() {
             {extraLinks.map((l) => (
               <Link key={l.to} to={l.to}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith(l.to) ? 'text-[#a855f7] bg-[#a855f7]/10' : 'text-[#8b7fa8]'
+                  pathname.startsWith(l.to) ? 'text-[#a855f7] bg-[#a855f7]/10' : 'text-muted'
                 }`}>
                 {l.label}
               </Link>

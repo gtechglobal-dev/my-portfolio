@@ -45,7 +45,7 @@ export default function TypeWriter() {
   }, [tick, phase]);
 
   return (
-    <span className="gradient-text">
+    <span className="accent-text">
       {currentWord.slice(0, charIdx)}
       <motion.span
         animate={{ opacity: [1, 0] }}

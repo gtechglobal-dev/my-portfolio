@@ -87,7 +87,7 @@ interface NewsItem {
 const SIGNAL_STYLES: Record<TradeSignal['signal'], { label: string; cls: string; barCls: string }> = {
   STRONG_BUY: { label: 'Strong Buy', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', barCls: 'bg-emerald-500' },
   BUY: { label: 'Buy', cls: 'bg-green-500/10 text-green-400 border-green-500/20', barCls: 'bg-green-500' },
-  NEUTRAL: { label: 'Neutral', cls: 'bg-white/[0.06] text-[#a196b8] border-white/10', barCls: 'bg-[#6b6180]' },
+  NEUTRAL: { label: 'Neutral', cls: 'bg-white/[0.06] text-muted border-white/10', barCls: 'bg-faint' },
   SELL: { label: 'Sell / Avoid', cls: 'bg-orange-500/10 text-orange-400 border-orange-500/20', barCls: 'bg-orange-500' },
   STRONG_SELL: { label: 'Strong Sell', cls: 'bg-red-500/10 text-red-400 border-red-500/30', barCls: 'bg-red-500' },
 };
@@ -129,7 +129,7 @@ function ChangeChip({ value }: { value: number }) {
 function VerdictIcon({ verdict }: { verdict: string }) {
   if (verdict === 'bullish') return <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
   if (verdict === 'bearish') return <TrendingDown className="w-3.5 h-3.5 text-red-400 shrink-0" />;
-  return <Minus className="w-3.5 h-3.5 text-[#6b6180] shrink-0" />;
+  return <Minus className="w-3.5 h-3.5 text-faint shrink-0" />;
 }
 
 function FearGreedCard({ fg }: { fg: NonNullable<PulseData['fearGreed']> }) {
@@ -140,11 +140,11 @@ function FearGreedCard({ fg }: { fg: NonNullable<PulseData['fearGreed']> }) {
     <div className="card p-5">
       <div className="flex items-center gap-2 mb-3">
         <Gauge className="w-4 h-4 text-indigo" />
-        <span className="text-xs text-[#a196b8]">Fear &amp; Greed Index</span>
+        <span className="text-xs text-muted">Fear &amp; Greed Index</span>
       </div>
       <div className="flex items-end gap-3">
         <div className={`text-4xl font-bold leading-none ${color}`}>{v}</div>
-        <div className="text-sm text-[#c0c0d0] pb-0.5">{fg.classification}</div>
+        <div className="text-sm text-[#c5c5ca] pb-0.5">{fg.classification}</div>
       </div>
       <div className="mt-3 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
         <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${v}%` }} />
@@ -157,7 +157,7 @@ function FearGreedCard({ fg }: { fg: NonNullable<PulseData['fearGreed']> }) {
           </div>
         ))}
       </div>
-      <div className="text-[10px] text-[#6b6180] mt-1">Last 8 days</div>
+      <div className="text-[10px] text-faint mt-1">Last 8 days</div>
     </div>
   );
 }
@@ -169,17 +169,17 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
     <motion.div layout className="card overflow-hidden">
       <button onClick={onToggle} className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors">
         <div className="flex items-center gap-3">
-          <img src={s.image} alt={s.name} className="w-9 h-9 rounded-full bg-[#120d1f]" />
+          <img src={s.image} alt={s.name} className="w-9 h-9 rounded-full bg-surface" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm truncate">{s.symbol}</span>
-              <span className="text-[10px] text-[#6b6180]">#{s.marketCapRank}</span>
+              <span className="text-[10px] text-faint">#{s.marketCapRank}</span>
             </div>
-            <div className="text-xs text-[#a196b8] truncate">{fmtPrice(s.price)} · <ChangeChip value={s.priceChange24h} /></div>
+            <div className="text-xs text-muted truncate">{fmtPrice(s.price)} · <ChangeChip value={s.priceChange24h} /></div>
           </div>
           <div className="ml-auto flex items-center gap-3 shrink-0">
             <div className="hidden sm:block w-24">
-              <div className="flex justify-between text-[10px] text-[#6b6180] mb-1">
+              <div className="flex justify-between text-[10px] text-faint mb-1">
                 <span>confidence</span><span>{s.confidence}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
@@ -190,7 +190,7 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
             <span className={`text-xs font-bold w-10 text-right ${bullish ? 'text-emerald-400' : 'text-red-400'}`}>
               {s.score > 0 ? '+' : ''}{s.score}
             </span>
-            <ChevronDown className={`w-4 h-4 text-[#a196b8] transition-transform ${expanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
       </button>
@@ -200,7 +200,7 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18 }} className="overflow-hidden">
             <div className="px-4 pb-4 space-y-4 border-t border-white/[0.04] pt-4">
-              <div className="flex flex-wrap items-center gap-2 text-[10px] text-[#6b6180]">
+              <div className="flex flex-wrap items-center gap-2 text-[10px] text-faint">
                 <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {s.interval} candles · {s.candleSource}</span>
                 <span className="inline-flex items-center gap-1"><Activity className="w-3 h-3" /> trend: {s.trendLabel}</span>
                 <span className="inline-flex items-center gap-1"><CircleDot className="w-3 h-3" /> analyzed {timeAgo(new Date(s.analyzedAt).getTime())}</span>
@@ -221,19 +221,19 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
               )}
 
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-[#a196b8] mb-2">Evidence — technical indicators</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted mb-2">Evidence — technical indicators</div>
                 <div className="space-y-2">
                   {s.indicators.map((ind) => (
                     <div key={ind.name} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <VerdictIcon verdict={ind.verdict} />
                         <span className="text-xs font-medium">{ind.name}</span>
-                        <span className="ml-auto text-xs text-[#a196b8]">{ind.value}</span>
-                        <span className={`text-[10px] font-semibold w-9 text-right ${ind.vote > 0 ? 'text-emerald-400' : ind.vote < 0 ? 'text-red-400' : 'text-[#6b6180]'}`}>
+                        <span className="ml-auto text-xs text-muted">{ind.value}</span>
+                        <span className={`text-[10px] font-semibold w-9 text-right ${ind.vote > 0 ? 'text-emerald-400' : ind.vote < 0 ? 'text-red-400' : 'text-faint'}`}>
                           {ind.vote > 0 ? '+' : ''}{ind.vote}
                         </span>
                       </div>
-                      <p className="text-[11px] leading-relaxed text-[#a196b8] pl-5.5">{ind.evidence}</p>
+                      <p className="text-[11px] leading-relaxed text-muted pl-5.5">{ind.evidence}</p>
                     </div>
                   ))}
                 </div>
@@ -241,7 +241,7 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
 
               {s.risk && s.risk.stopLoss !== null && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#a196b8] mb-2 flex items-center gap-1">
+                  <div className="text-[10px] uppercase tracking-wider text-muted mb-2 flex items-center gap-1">
                     <Target className="w-3 h-3" /> Trade plan (risk-managed)
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -253,19 +253,19 @@ function SignalCard({ s, expanded, onToggle }: { s: TradeSignal; expanded: boole
                       { label: 'TP 3 (3R)', value: fmtPrice(s.risk.takeProfit3!), cls: 'text-emerald-400' },
                     ].map((x) => (
                       <div key={x.label} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-2.5">
-                        <div className="text-[10px] text-[#6b6180]">{x.label}</div>
+                        <div className="text-[10px] text-faint">{x.label}</div>
                         <div className={`text-xs font-semibold mt-0.5 ${x.cls}`}>{x.value}</div>
                       </div>
                     ))}
                   </div>
-                  <div className="text-[10px] text-[#6b6180] mt-2">
+                  <div className="text-[10px] text-faint mt-2">
                     Support {fmtPrice(s.risk.support)} · Resistance {fmtPrice(s.risk.resistance)} · Volatility (ATR) {s.risk.atrPercent.toFixed(2)}% · R:R 1:{s.risk.riskRewardRatio}
                   </div>
                 </div>
               )}
 
               {s.signal === 'NEUTRAL' && (
-                <div className="rounded-lg bg-white/[0.03] p-3 text-xs text-[#a196b8] flex items-start gap-2">
+                <div className="rounded-lg bg-white/[0.03] p-3 text-xs text-muted flex items-start gap-2">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-indigo" />
                   No tradeable edge right now. The bot recommends staying flat until indicators align.
                 </div>
@@ -355,12 +355,12 @@ export default function CryptoBot({ token }: { token: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo to-[#2b0f4e] flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-indigo flex items-center justify-center">
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="text-sm font-semibold">Crypto Signal Bot</h3>
-            <p className="text-[10px] text-[#6b6180]">
+            <p className="text-[10px] text-faint">
               Live market analysis · {scan ? `${scan.signals.length} coins scanned` : 'initializing…'}
               {lastScan ? ` · updated ${timeAgo(lastScan)}` : ''}
             </p>
@@ -371,13 +371,13 @@ export default function CryptoBot({ token }: { token: string }) {
           <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
             {(['1h', '4h', '1d'] as const).map((tf) => (
               <button key={tf} onClick={() => setInterval_(tf)}
-                className={`px-3 py-1.5 text-xs transition-colors ${interval_ === tf ? 'bg-indigo text-white' : 'bg-transparent text-[#a196b8] hover:text-white'}`}>
+                className={`px-3 py-1.5 text-xs transition-colors ${interval_ === tf ? 'bg-indigo text-white' : 'bg-transparent text-muted hover:text-white'}`}>
                 {tf}
               </button>
             ))}
           </div>
           <button onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${autoRefresh ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' : 'bg-white/[0.04] text-[#a196b8] border-white/[0.08] hover:text-white'}`}>
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${autoRefresh ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' : 'bg-white/[0.04] text-muted border-white/[0.08] hover:text-white'}`}>
             <Zap className="w-3.5 h-3.5" /> Auto 5m {autoRefresh ? 'ON' : 'OFF'}
           </button>
           <button onClick={() => runScan()} disabled={scanning}
@@ -404,22 +404,22 @@ export default function CryptoBot({ token }: { token: string }) {
       {pulse && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {pulse.fearGreed ? <FearGreedCard fg={pulse.fearGreed} /> : (
-            <div className="card p-5 text-xs text-[#6b6180]">Fear &amp; Greed unavailable</div>
+            <div className="card p-5 text-xs text-faint">Fear &amp; Greed unavailable</div>
           )}
           <div className="card p-5">
             <div className="flex items-center gap-2 mb-3">
               <Activity className="w-4 h-4 text-indigo" />
-              <span className="text-xs text-[#a196b8]">Total Market Cap</span>
+              <span className="text-xs text-muted">Total Market Cap</span>
             </div>
             <div className="text-2xl font-bold">{fmtCompact(pulse.global?.totalMarketCapUsd ?? 0)}</div>
             {pulse.global && <div className="mt-1"><ChangeChip value={pulse.global.marketCapChange24h} /></div>}
-            <div className="text-[10px] text-[#6b6180] mt-2">Vol 24h {fmtCompact(pulse.global?.totalVolumeUsd ?? 0)}</div>
+            <div className="text-[10px] text-faint mt-2">Vol 24h {fmtCompact(pulse.global?.totalVolumeUsd ?? 0)}</div>
           </div>
           {[pulse.btc, pulse.eth].map((c, i) => c && (
             <div key={i} className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <img src={c.image} alt={c.name} className="w-4 h-4 rounded-full" />
-                <span className="text-xs text-[#a196b8]">{c.name}</span>
+                <span className="text-xs text-muted">{c.name}</span>
               </div>
               <div className="text-2xl font-bold">{fmtPrice(c.price)}</div>
               <div className="mt-1"><ChangeChip value={c.change24h} /></div>
@@ -440,10 +440,10 @@ export default function CryptoBot({ token }: { token: string }) {
               {scan.regime.label} regime
             </span>
           </div>
-          <p className="text-xs text-[#a196b8] flex-1 min-w-[240px]">{scan.regime.description}</p>
+          <p className="text-xs text-muted flex-1 min-w-[240px]">{scan.regime.description}</p>
           <div className="flex items-center gap-4 text-xs">
             <span className="text-emerald-400">{buys} buy zone</span>
-            <span className="text-[#6b6180]">{(scan.signals.length - buys - sells)} neutral</span>
+            <span className="text-faint">{(scan.signals.length - buys - sells)} neutral</span>
             <span className="text-red-400">{sells} avoid</span>
           </div>
         </div>
@@ -457,12 +457,12 @@ export default function CryptoBot({ token }: { token: string }) {
           {!scan && !scanError ? (
             <div className="card p-10 text-center">
               <div className="w-6 h-6 border-2 border-indigo border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs text-[#6b6180] mt-3">Scanning the market…</p>
+              <p className="text-xs text-faint mt-3">Scanning the market…</p>
             </div>
           ) : scan && scan.signals.length === 0 ? (
             <div className="card p-10 text-center">
-              <Bot className="w-10 h-10 text-[#6b6180] mx-auto mb-3" />
-              <p className="text-sm text-[#a196b8]">No signals produced{scan.failed.length ? ` — ${scan.failed.length} coin(s) had no data` : ''}</p>
+              <Bot className="w-10 h-10 text-faint mx-auto mb-3" />
+              <p className="text-sm text-muted">No signals produced{scan.failed.length ? ` — ${scan.failed.length} coin(s) had no data` : ''}</p>
             </div>
           ) : (
             scan?.signals.map((s) => (
@@ -478,16 +478,16 @@ export default function CryptoBot({ token }: { token: string }) {
               <Flame className="w-4 h-4 text-accent" /> Trending Now
             </h3>
             {trending.length === 0 ? (
-              <p className="text-xs text-[#6b6180] py-3 text-center">Loading trending coins…</p>
+              <p className="text-xs text-faint py-3 text-center">Loading trending coins…</p>
             ) : (
               <div className="space-y-2">
                 {trending.slice(0, 7).map((t, i) => (
                   <div key={t.id} className="flex items-center gap-2.5">
-                    <span className="text-[10px] text-[#6b6180] w-3">{i + 1}</span>
+                    <span className="text-[10px] text-faint w-3">{i + 1}</span>
                     <img src={t.thumb} alt={t.name} className="w-6 h-6 rounded-full" />
                     <div className="min-w-0">
                       <div className="text-xs font-medium truncate">{t.name}</div>
-                      <div className="text-[10px] text-[#6b6180]">{t.symbol}{t.rank ? ` · rank #${t.rank}` : ''}</div>
+                      <div className="text-[10px] text-faint">{t.symbol}{t.rank ? ` · rank #${t.rank}` : ''}</div>
                     </div>
                   </div>
                 ))}
@@ -524,16 +524,16 @@ export default function CryptoBot({ token }: { token: string }) {
               <Newspaper className="w-4 h-4 text-indigo" /> Latest Crypto News
             </h3>
             {news.length === 0 ? (
-              <p className="text-xs text-[#6b6180] py-3 text-center">Loading news feed…</p>
+              <p className="text-xs text-faint py-3 text-center">Loading news feed…</p>
             ) : (
               <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
                 {news.map((n) => (
                   <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer"
                     className="flex gap-2.5 group">
-                    {n.imageUrl && <img src={n.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 bg-[#120d1f]" />}
+                    {n.imageUrl && <img src={n.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 bg-surface" />}
                     <div className="min-w-0">
                       <div className="text-xs font-medium leading-snug line-clamp-2 group-hover:text-indigo transition-colors">{n.title}</div>
-                      <div className="text-[10px] text-[#6b6180] mt-1">{n.source} · {timeAgo(n.publishedOn)}</div>
+                      <div className="text-[10px] text-faint mt-1">{n.source} · {timeAgo(n.publishedOn)}</div>
                     </div>
                   </a>
                 ))}
@@ -548,11 +548,11 @@ export default function CryptoBot({ token }: { token: string }) {
       </div>
 
       <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-[#6b6180] shrink-0 mt-0.5" />
-        <p className="text-[11px] leading-relaxed text-[#6b6180]">
+        <Info className="w-4 h-4 text-faint shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-faint">
           Signals are generated algorithmically from real-time market data (CoinGecko, Binance/OKX order book candles,
           Fear &amp; Greed index) using RSI, MACD, moving-average structure, Bollinger Bands, volume and volatility analysis.
-          They are informational only — <span className="text-[#a196b8]">not financial advice.</span> Always do your own research
+          They are informational only — <span className="text-muted">not financial advice.</span> Always do your own research
           and never risk more than you can afford to lose.
         </p>
       </div>

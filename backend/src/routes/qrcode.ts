@@ -22,8 +22,7 @@ const router = Router();
 const BASE_URL =
   process.env.QR_BASE_URL ||
   process.env.FRONTEND_URL ||
-  process.env.CORS_ORIGIN ||
-  "http://localhost:5173";
+  "https://gtechglobal.dev";
 
 function toShortCode(title: string): string {
   const clean = title

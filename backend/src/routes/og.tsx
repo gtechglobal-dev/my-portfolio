@@ -31,7 +31,7 @@ function renderOgImage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#08060f',
+        backgroundColor: '#050505',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -40,9 +40,7 @@ function renderOgImage() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage:
-            'linear-gradient(rgba(168,85,247,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.05) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
+          backgroundColor: 'rgba(168,85,247,0.05)',
         }}
       />
 
@@ -55,7 +53,7 @@ function renderOgImage() {
           width: '600px',
           height: '600px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%)',
+          backgroundColor: 'rgba(168,85,247,0.14)',
         }}
       />
 
@@ -66,7 +64,7 @@ function renderOgImage() {
           left: '0',
           right: '0',
           height: '4px',
-          background: 'linear-gradient(90deg, transparent, #ff7a2f, transparent)',
+          backgroundColor: '#ff7a2f',
         }}
       />
 
@@ -104,7 +102,7 @@ function renderOgImage() {
         <div
           style={{
             fontSize: '24px',
-            color: '#9488ac',
+            color: '#9a9ea7',
             textAlign: 'center',
             maxWidth: '700px',
             lineHeight: '1.4',
@@ -143,7 +141,7 @@ function renderOgImage() {
           left: '0',
           right: '0',
           height: '4px',
-          background: 'linear-gradient(90deg, transparent, #ff7a2f, transparent)',
+          backgroundColor: '#ff7a2f',
         }}
       />
     </div>

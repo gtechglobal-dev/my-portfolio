@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck } from 'lucide-react';
+import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X } from 'lucide-react';
 
 const API = '/api';
 
@@ -44,11 +44,15 @@ export default function Verify() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState('');
+  const [closeHint, setCloseHint] = useState(false);
 
   useEffect(() => {
     if (!code) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     setLoading(true);
-    fetch(`${API}/qrcode/verify/${code}`)
+    setError('');
+    fetch(`${API}/qrcode/verify/${code}`, { signal: controller.signal })
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) {
@@ -58,8 +62,14 @@ export default function Verify() {
         setResult(data);
       })
       .catch(() => setError('Could not connect to the verification server. Please try again.'))
-      .finally(() => setLoading(false));
+      .finally(() => { clearTimeout(timer); setLoading(false); });
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [code]);
+
+  const handleClose = () => {
+    window.close();
+    setTimeout(() => setCloseHint(true), 600);
+  };
 
   return (
     <div className="min-h-screen bg-ink text-[#f5f5f5] flex flex-col">
@@ -74,7 +84,9 @@ export default function Verify() {
               <div className="text-[10px] text-muted">Book Authenticity Verification</div>
             </div>
           </div>
-          <Link to="/" className="text-xs text-muted hover:text-white transition-colors">Visit Okson Publishers</Link>
+          <button onClick={handleClose} className="flex items-center gap-1.5 text-xs text-muted hover:text-white transition-colors">
+            <X className="w-4 h-4" /> Close
+          </button>
         </div>
       </header>
 
@@ -102,7 +114,9 @@ export default function Verify() {
             {result?.code?.serial && (
               <div className="text-xs text-faint">Serial: <span className="text-white/80">{result.code.serial}</span></div>
             )}
-            <Link to="/" className="btn btn-primary mt-6 text-sm">Continue</Link>
+            <button onClick={handleClose} className="btn btn-primary mt-6 text-sm flex items-center justify-center gap-2">
+              Close <X className="w-4 h-4" />
+            </button>
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl w-full">
@@ -170,12 +184,22 @@ export default function Verify() {
                   Ensure you are scanning the code printed on the official book cover.
                 </p>
               </div>
-            </div>
 
-            <Link to="/" className="block text-center text-sm text-indigo hover:text-indigo/80 transition-colors">← Back to Okson Publishers</Link>
+              <button onClick={handleClose} className="mt-5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-white/[0.06] py-2.5 text-sm text-white/80 hover:border-white/20 hover:text-white transition-colors">
+                Close Page <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </motion.div>
         )}
       </main>
+
+      {closeHint && (
+        <div className="fixed bottom-4 inset-x-0 flex justify-center px-6 z-50">
+          <div className="text-[11px] text-muted bg-surface/95 border border-white/[0.06] rounded-lg px-3 py-2 shadow-lg">
+            If the window didn't close automatically, you can close this tab now.
+          </div>
+        </div>
+      )}
     </div>
   );
 }

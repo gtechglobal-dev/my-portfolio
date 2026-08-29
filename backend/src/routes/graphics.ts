@@ -26,7 +26,7 @@ router.get("/", async (_req, res: Response) => {
       category: r.context?.category || "Other",
       description: r.context?.description || "",
       image: r.secure_url,
-      color: r.context?.color || "#4f46e5",
+      color: r.context?.color || "#a855f7",
       createdAt: r.created_at,
     }));
 
@@ -52,7 +52,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
 
     const uploadResult = await cloudinary.uploader.upload(image, {
       folder: FOLDER,
-      context: `title=${title}|category=${category}|description=${description || ""}|color=${color || "#4f46e5"}`,
+      context: `title=${title}|category=${category}|description=${description || ""}|color=${color || "#a855f7"}`,
       tags: [category],
     });
 
@@ -62,7 +62,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
       category,
       description: description || "",
       image: uploadResult.secure_url,
-      color: color || "#4f46e5",
+      color: color || "#a855f7",
       createdAt: uploadResult.created_at,
     };
 
