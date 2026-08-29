@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X, AlertTriangle, Phone, Mail } from 'lucide-react';
 
@@ -41,8 +40,11 @@ function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; val
   );
 }
 
-export default function Verify() {
-  const { code } = useParams<{ code: string }>();
+interface VerifyProps {
+  code: string;
+}
+
+export default function Verify({ code }: VerifyProps) {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState('');
