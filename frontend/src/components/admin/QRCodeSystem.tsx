@@ -64,7 +64,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [status, setStatus] = useState<{ type: string; message: string } | null>(null);
 
   const [selectedBookId, setSelectedBookId] = useState('');
-  const [genCount, setGenCount] = useState(10);
+  const [genCount, setGenCount] = useState('10');
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<Array<{ serial: string; code: string; qr: string }>>([]);
 
@@ -138,7 +138,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setGenerated([]);
     try {
       const res = await fetch(`${API}/qrcode/${selectedBookId}/generate`, {
-        method: 'POST', headers, body: JSON.stringify({ count: genCount }),
+        method: 'POST', headers, body: JSON.stringify({ count: parseInt(genCount, 10) || 1 }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -420,19 +420,19 @@ export default function QRCodeSystem({ token }: { token: string }) {
                   </div>
                   <div>
                     <label htmlFor="qr-count" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Number of Codes</label>
-                    <input id="qr-count" name="qr-count" type="number" min={1} max={500} value={genCount} onChange={(e) => setGenCount(parseInt(e.target.value, 10) || 1)}
+                    <input id="qr-count" name="qr-count" type="number" min={1} max={500} value={genCount} onChange={(e) => setGenCount(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors" />
                   </div>
                   <div className="lg:col-span-2 flex items-end">
                     <button onClick={handleGenerate} disabled={generating || !selectedBookId}
                       className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold hover:bg-indigo-dark transition-all disabled:opacity-50">
                       {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                      {generating ? 'Generating...' : `Generate ${genCount} Code${genCount !== 1 ? 's' : ''}`}
+                      {generating ? 'Generating...' : `Generate ${parseInt(genCount, 10) || 1} Code${parseInt(genCount, 10) !== 1 ? 's' : ''}`}
                     </button>
                   </div>
                 </div>
                 <p className="text-[11px] text-faint mt-3">
-                  Codes are generated with unique random tokens and serial numbers (e.g. WISDOM-00001). They start as <span className="text-amber-400">pending</span> and must be activated in the "Activate Codes" section before readers can verify them.
+                  Codes are generated with unique random tokens and unguessable serial numbers (e.g. OKSON-AB1234). They start as <span className="text-amber-400">pending</span> and must be activated in the "Activate Codes" section before readers can verify them.
                 </p>
                 {status?.type === 'success' && <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{status.message}</p>}
                 {status?.type === 'error' && <p className="text-xs text-red-400 mt-2 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{status.message}</p>}

@@ -36,6 +36,16 @@ function makeToken(): string {
   return randomBytes(12).toString("hex");
 }
 
+// Random undecypherable serial suffix like "AB1234" (2 letters + 4 digits)
+function makeSerialSuffix(): string {
+  const letters = Array.from(
+    { length: 2 },
+    () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]
+  ).join("");
+  const digits = String(Math.floor(1000 + Math.random() * 9000));
+  return `${letters}${digits}`;
+}
+
 // ─── Register a book (admin) ───────────────────────────────
 
 router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -107,12 +117,16 @@ router.post("/:id/generate", authMiddleware, async (req: AuthRequest, res: Respo
 
     const existing = await readQrCodes({ bookId: id });
     const shortCode = toShortCode(book.title);
-    const startSerial = existing.length + 1;
+    const usedSerials = new Set(existing.map((c) => c.serial));
 
     const generated: Array<{ serial: string; code: string; qr: string }> = [];
 
     for (let i = 0; i < count; i++) {
-      const serial = `${shortCode}-${String(startSerial + i).padStart(5, "0")}`;
+      let serial = `${shortCode}-${makeSerialSuffix()}`;
+      while (usedSerials.has(serial)) {
+        serial = `${shortCode}-${makeSerialSuffix()}`;
+      }
+      usedSerials.add(serial);
       const code = makeToken();
 
       await writeQrCode({
