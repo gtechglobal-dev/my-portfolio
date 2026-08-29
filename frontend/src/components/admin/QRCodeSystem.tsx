@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
-  XCircle, Download, Loader2, ChevronDown,   BadgeCheck, Layers, X, Check,
+  XCircle, Download, Loader2, ChevronDown,   BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle,
 } from 'lucide-react';
 
 const API = '/api';
@@ -26,8 +26,14 @@ interface QrRecord {
   serial: string;
   bookId: string;
   bookTitle: string;
-  status: 'pending' | 'active';
+  status: 'pending' | 'active' | 'revoked';
+  flagged?: boolean;
+  flagReason?: string | null;
+  flaggedAt?: string | null;
   activatedAt: string | null;
+  verifyCount?: number;
+  lastVerifiedAt?: string | null;
+  recentScans?: Array<{ ip: string; at: string }>;
   createdAt: string;
 }
 
@@ -72,7 +78,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [activating, setActivating] = useState(false);
   const [activationMsg, setActivationMsg] = useState<{ type: string; message: string } | null>(null);
 
-  const [codesFilter, setCodesFilter] = useState<'' | 'pending' | 'active'>('');
+  const [codesFilter, setCodesFilter] = useState<'' | 'pending' | 'active' | 'flagged' | 'revoked'>('');
   const [bookFilter, setBookFilter] = useState('');
   const [codesSearch, setCodesSearch] = useState('');
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -256,7 +262,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
   };
 
   const filteredCodes = codes.filter((c) => {
-    if (codesFilter && c.status !== codesFilter) return false;
+    if (codesFilter === 'flagged') {
+      if (!c.flagged) return false;
+    } else if (codesFilter && c.status !== codesFilter) {
+      return false;
+    }
     if (bookFilter && c.bookId !== bookFilter) return false;
     if (codesSearch) {
       const q = codesSearch.toLowerCase();
@@ -264,6 +274,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
     }
     return true;
   });
+
+  const flaggedCount = codes.filter((c) => c.flagged).length;
+  const revokedCount = codes.filter((c) => c.status === 'revoked').length;
 
   const selectedBook = books.find((b) => b.id === selectedBookId);
 
@@ -280,6 +293,24 @@ export default function QRCodeSystem({ token }: { token: string }) {
           Refresh
         </button>
       </div>
+
+      {flaggedCount > 0 && (
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-rose-300">
+              {flaggedCount} code{flaggedCount > 1 ? 's' : ''} flagged for suspicious verification activity
+            </div>
+            <p className="text-xs text-rose-200/70 mt-0.5">
+              Same serial scanned from multiple locations or abnormally often — likely an unauthorized duplicate print.
+              Review them under All Codes and revoke any that look fraudulent.
+            </p>
+          </div>
+          <button onClick={() => { setSubTab('codes'); setCodesFilter('flagged'); }} className="shrink-0 text-xs text-rose-300 hover:text-rose-200 underline underline-offset-2">
+            Review
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {subTabs.map((t) => (
@@ -533,6 +564,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
           {/* ALL CODES */}
           {subTab === 'codes' && (
             <div className="space-y-4">
+              {revokedCount > 0 && (
+                <p className="text-[11px] text-faint">
+                  {revokedCount} inactive revoked code{revokedCount > 1 ? 's' : ''} (scans show them as revoked).
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
@@ -542,8 +578,10 @@ export default function QRCodeSystem({ token }: { token: string }) {
                 <select id="codes-filter" name="codes-filter" value={codesFilter} onChange={(e) => setCodesFilter(e.target.value as any)}
                   className="px-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
                   <option value="">All Status</option>
+                  <option value="flagged">Flagged (Suspicious)</option>
                   <option value="pending">Pending</option>
                   <option value="active">Active</option>
+                  <option value="revoked">Revoked</option>
                 </select>
                 <select id="codes-book" name="codes-book" value={bookFilter} onChange={(e) => setBookFilter(e.target.value)}
                   className="px-4 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
@@ -568,27 +606,54 @@ export default function QRCodeSystem({ token }: { token: string }) {
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Serial</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Book</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Status</th>
+                          <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Scans</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Created</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Activated</th>
-                          <th className="w-12 px-4 py-3"></th>
+                          <th className="w-20 px-4 py-3"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredCodes.map((c) => (
-                          <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 font-medium text-xs">{c.serial}</td>
+                          <tr key={c.id} className={`border-b border-white/[0.04] transition-colors ${c.flagged ? 'bg-rose-500/[0.04] hover:bg-rose-500/[0.07]' : 'hover:bg-white/[0.02]'}`}>
+                            <td className="px-4 py-3 font-medium text-xs">
+                              <div className="flex items-center gap-1.5">
+                                <span>{c.serial}</span>
+                                {c.flagged && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                              </div>
+                              {c.flagged && c.flagReason && (
+                                <div title={c.flagReason} className="text-[10px] text-rose-300/80 mt-0.5 max-w-[260px] truncate">{c.flagReason}</div>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-muted text-xs">{c.bookTitle}</td>
                             <td className="px-4 py-3">
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-                              }`}>{c.status === 'active' ? 'Active' : 'Pending'}</span>
+                              {c.flagged ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-300">Flagged</span>
+                              ) : c.status === 'active' ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Active</span>
+                              ) : c.status === 'revoked' ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/50">Revoked</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-400">Pending</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-faint text-xs">
+                              {c.verifyCount || 0}
+                              {c.lastVerifiedAt && (
+                                <div className="text-[10px]">{new Date(c.lastVerifiedAt).toLocaleString()}</div>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-faint text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
                             <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
                             <td className="px-4 py-3">
-                              <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
-                                <Copy className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => revokeRecord(c)} title={c.status === 'revoked' ? 'Revoked — click to undo (re-activate)' : 'Revoke this code'}
+                                  className="text-muted hover:text-rose-400 transition-colors">
+                                  <ShieldOff className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -621,6 +686,45 @@ export default function QRCodeSystem({ token }: { token: string }) {
         fetchData();
       } else {
         setActivationMsg({ type: 'error', message: data.error || 'Failed to activate code' });
+      }
+    } catch {
+      setActivationMsg({ type: 'error', message: 'Could not connect to server' });
+    }
+  }
+
+  async function revokeRecord(record: QrRecord) {
+    if (record.status === 'revoked') {
+      if (!confirm(`Re-activate ${record.serial}? It will verify as authentic again.`)) return;
+      try {
+        const res = await fetch(`${API}/qrcode/codes/${record.code}/activate`, {
+          method: 'POST', headers,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setActivationMsg({ type: 'success', message: `Code ${record.serial} re-activated.` });
+          fetchData();
+        } else {
+          setActivationMsg({ type: 'error', message: data.error || 'Failed to re-activate code' });
+        }
+      } catch {
+        setActivationMsg({ type: 'error', message: 'Could not connect to server' });
+      }
+      return;
+    }
+    const reason = record.flagged
+      ? 'Revoke this flagged/suspicious code? It will no longer verify as authentic.'
+      : `Revoke ${record.serial}? It will no longer verify as authentic and can be re-activated later if needed.`;
+    if (!confirm(reason)) return;
+    try {
+      const res = await fetch(`${API}/qrcode/codes/${record.code}`, {
+        method: 'DELETE', headers,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActivationMsg({ type: 'success', message: `Code ${record.serial} revoked.` });
+        fetchData();
+      } else {
+        setActivationMsg({ type: 'error', message: data.error || 'Failed to revoke code' });
       }
     } catch {
       setActivationMsg({ type: 'error', message: 'Could not connect to server' });

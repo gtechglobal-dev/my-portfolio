@@ -12,6 +12,8 @@ import {
   findQrCode,
   writeQrCode,
   activateQrCode,
+  revokeQrCode,
+  recordVerification,
   deleteQrCodesByBook,
   type Book,
   type QrCode,
@@ -189,7 +191,33 @@ router.post("/codes/:code/activate", authMiddleware, async (req: AuthRequest, re
   }
 });
 
+// ─── Revoke / delete a code (admin) ──────────────────────────
+
+router.delete("/codes/:code", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { code } = req.params;
+    const record = await findQrCode(code);
+    if (!record) {
+      return res.status(404).json({ error: "Code not found" });
+    }
+    if (record.status === "revoked") {
+      return res.json({ success: true, alreadyRevoked: true, code: record });
+    }
+    const updated = await revokeQrCode(code);
+    res.json({ success: true, code: updated });
+  } catch (err: any) {
+    console.error("Revoke code failed:", err.message);
+    res.status(500).json({ error: "Failed to revoke code" });
+  }
+});
+
 // ─── Public verify (any user scans QR) ─────────────────────
+
+function clientIp(req: AuthRequest): string {
+  const xff = (req.headers["x-forwarded-for"] as string) || "";
+  const ip = xff.split(",")[0].trim() || req.socket?.remoteAddress || req.ip || "unknown";
+  return ip.startsWith("::ffff:") ? ip.slice(7) : ip;
+}
 
 router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
   try {
@@ -201,6 +229,15 @@ router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
 
     const book = await findBook(record.bookId);
 
+    if (record.status === "revoked") {
+      return res.json({
+        active: false,
+        status: "revoked",
+        code: { serial: record.serial, createdAt: record.createdAt, activatedAt: record.activatedAt },
+        book,
+      });
+    }
+
     if (record.status !== "active") {
       return res.json({
         active: false,
@@ -210,10 +247,24 @@ router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
       });
     }
 
+    let updated = record;
+    try {
+      updated = (await recordVerification(code, clientIp(req))) || record;
+    } catch (err: any) {
+      console.error("Verification log failed:", err.message);
+    }
+
     res.json({
       active: true,
-      status: record.status,
-      code: { serial: record.serial, activatedAt: record.activatedAt },
+      status: "active",
+      code: {
+        serial: updated.serial,
+        activatedAt: updated.activatedAt,
+        verifyCount: updated.verifyCount || 0,
+        lastVerifiedAt: updated.lastVerifiedAt || null,
+      },
+      flagged: !!updated.flagged,
+      flagReason: updated.flagReason || null,
       book,
     });
   } catch (err: any) {

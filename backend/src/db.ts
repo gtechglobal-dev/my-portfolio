@@ -180,8 +180,14 @@ export interface QrCode {
   serial: string;
   bookId: string;
   bookTitle: string;
-  status: 'pending' | 'active';
+  status: 'pending' | 'active' | 'revoked';
+  flagged?: boolean;
+  flagReason?: string | null;
+  flaggedAt?: string | null;
   activatedAt: string | null;
+  verifyCount?: number;
+  lastVerifiedAt?: string | null;
+  recentScans?: Array<{ ip: string; at: string }>;
   createdAt: string;
 }
 
@@ -207,7 +213,15 @@ export async function findQrCode(code: string): Promise<QrCode | null> {
 export async function writeQrCode(q: QrCode): Promise<void> {
   const col = getCollection<QrCode>('qrcodes');
   if (!col) throw new Error('Database not connected');
-  await col.insertOne(q as any);
+  await col.insertOne({
+    ...q,
+    flagged: q.flagged ?? false,
+    flagReason: q.flagReason ?? null,
+    flaggedAt: q.flaggedAt ?? null,
+    verifyCount: q.verifyCount ?? 0,
+    lastVerifiedAt: q.lastVerifiedAt ?? null,
+    recentScans: q.recentScans ?? [],
+  } as any);
 }
 
 export async function activateQrCode(code: string): Promise<QrCode | null> {
@@ -220,6 +234,66 @@ export async function activateQrCode(code: string): Promise<QrCode | null> {
   );
   if (!doc) return null;
   const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function revokeQrCode(code: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const doc = await col.findOneAndUpdate(
+    { code },
+    { $set: { status: 'revoked' } },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+const SUSPICION_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_WINDOW_SCANS = 10;
+
+export async function recordVerification(code: string, ip: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const now = new Date().toISOString();
+  const nowMs = Date.now();
+  const scan = { ip, at: now };
+
+  const doc = await col.findOne({ code });
+  if (!doc) return null;
+
+  const recent = (doc.recentScans || [])
+    .filter((s) => nowMs - new Date(s.at).getTime() <= SUSPICION_WINDOW_MS);
+  recent.push(scan);
+  const capped = recent.slice(-10);
+
+  const distinctIps = new Set(capped.map((s) => s.ip)).size;
+  const scanCount = capped.length;
+
+  const becameFlagged = !doc.flagged && (distinctIps >= 2 || scanCount >= MAX_WINDOW_SCANS);
+
+  const set: Record<string, any> = {
+    verifyCount: (doc.verifyCount || 0) + 1,
+    lastVerifiedAt: now,
+    recentScans: capped,
+  };
+  if (becameFlagged) {
+    set.flagged = true;
+    set.flagReason =
+      distinctIps >= 2
+        ? 'This serial was scanned from multiple locations within a short time — possible unauthorized duplicate.'
+        : 'Unusually high number of scans detected for this serial — possible unauthorized duplicate.';
+    set.flaggedAt = now;
+  }
+
+  const updated = await col.findOneAndUpdate(
+    { code },
+    { $set: set },
+    { returnDocument: 'after' },
+  );
+  if (!updated) return null;
+  const { _id, ...rest } = updated;
   return rest;
 }
 

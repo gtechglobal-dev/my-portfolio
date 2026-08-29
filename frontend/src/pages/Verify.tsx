@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X } from 'lucide-react';
+import { ShieldCheck, ShieldX, BookOpen, Loader2, Calendar, Hash, Users, FileText, BadgeCheck, X, AlertTriangle } from 'lucide-react';
 
 const API = '/api';
 
@@ -21,8 +21,10 @@ interface BookInfo {
 interface VerifyResult {
   active: boolean;
   status?: string;
-  code?: { serial: string; activatedAt?: string | null; createdAt?: string };
+  code?: { serial: string; activatedAt?: string | null; createdAt?: string; verifyCount?: number; lastVerifiedAt?: string | null };
   book?: BookInfo | null;
+  flagged?: boolean;
+  flagReason?: string | null;
   error?: string;
 }
 
@@ -102,6 +104,22 @@ export default function Verify() {
             <h1 className="text-lg font-bold mb-2">Verification Unavailable</h1>
             <p className="text-sm text-muted">{error}</p>
           </div>
+        ) : result?.status === 'revoked' ? (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            className="card p-10 max-w-md w-full text-center border-rose-500/30">
+            <ShieldX className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+            <h1 className="text-lg font-bold mb-2">Code Revoked</h1>
+            <p className="text-sm text-muted mb-4">
+              This QR code has been revoked by the publisher and is no longer valid.
+              If you purchased a book carrying this code, it may be an unauthorized or counterfeit copy.
+            </p>
+            {result?.code?.serial && (
+              <div className="text-xs text-faint">Serial: <span className="text-white/80">{result.code.serial}</span></div>
+            )}
+            <button onClick={handleClose} className="btn btn-primary mt-6 text-sm flex items-center justify-center gap-2">
+              Close <X className="w-4 h-4" />
+            </button>
+          </motion.div>
         ) : !result || result.status === 'invalid' || !result.active ? (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
             className="card p-10 max-w-md w-full text-center border-amber-500/30">
@@ -128,6 +146,18 @@ export default function Verify() {
               <p className="text-sm text-muted mb-5">
                 This QR code has been verified as genuine and corresponds to the registered publication below.
               </p>
+
+              {result.flagged && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-amber-300">Suspicious Activity Detected</div>
+                    <p className="text-xs text-amber-200/80 mt-0.5">
+                      {result.flagReason || 'This serial has been scanned from multiple locations.'} This could mean one of these codes has been copied or printed without authorization. If you did not buy an original copy, contact the publisher.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2 mb-6">
                 <div className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">
