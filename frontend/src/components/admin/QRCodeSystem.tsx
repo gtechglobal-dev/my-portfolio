@@ -20,6 +20,17 @@ interface Book {
   createdAt: string;
 }
 
+interface ScanRecord {
+  ip: string;
+  at: string;
+  userAgent?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  country?: string;
+  city?: string;
+}
+
 interface QrRecord {
   id: string;
   code: string;
@@ -33,7 +44,7 @@ interface QrRecord {
   activatedAt: string | null;
   verifyCount?: number;
   lastVerifiedAt?: string | null;
-  recentScans?: Array<{ ip: string; at: string }>;
+  recentScans?: ScanRecord[];
   createdAt: string;
 }
 
@@ -82,6 +93,10 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [bookFilter, setBookFilter] = useState('');
   const [codesSearch, setCodesSearch] = useState('');
   const [downloading, setDownloading] = useState<string | null>(null);
+
+  const [detailCode, setDetailCode] = useState<string | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<{ code: QrRecord; book: Book | null } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -189,6 +204,26 @@ export default function QRCodeSystem({ token }: { token: string }) {
       setActivationMsg({ type: 'error', message: 'Could not connect to server' });
     }
     setActivating(false);
+  };
+
+  const fetchCodeDetail = async (code: string) => {
+    if (detailCode === code) {
+      setDetailCode(null);
+      setDetailData(null);
+      return;
+    }
+    setDetailLoading(true);
+    setDetailCode(code);
+    try {
+      const res = await fetch(`${API}/qrcode/codes/${code}/detail`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setDetailData({ code: data.code, book: data.book });
+      }
+    } catch (err) {
+      console.error('Failed to load code detail:', err);
+    }
+    setDetailLoading(false);
   };
 
   const downloadGenerated = async () => {
@@ -609,57 +644,140 @@ export default function QRCodeSystem({ token }: { token: string }) {
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Scans</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Created</th>
                           <th className="text-left px-4 py-3 text-[10px] text-muted uppercase tracking-wider font-medium">Activated</th>
-                          <th className="w-20 px-4 py-3"></th>
+                          <th className="w-28 px-4 py-3"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredCodes.map((c) => (
-                          <tr key={c.id} className={`border-b border-white/[0.04] transition-colors ${c.flagged ? 'bg-rose-500/[0.04] hover:bg-rose-500/[0.07]' : 'hover:bg-white/[0.02]'}`}>
-                            <td className="px-4 py-3 font-medium text-xs">
-                              <div className="flex items-center gap-1.5">
-                                <span>{c.serial}</span>
-                                {c.flagged && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
-                              </div>
-                              {c.flagged && c.flagReason && (
-                                <div title={c.flagReason} className="text-[10px] text-rose-300/80 mt-0.5 max-w-[260px] truncate">{c.flagReason}</div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-muted text-xs">{c.bookTitle}</td>
-                            <td className="px-4 py-3">
-                              {c.flagged ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-300">Flagged</span>
-                              ) : c.status === 'active' ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Active</span>
-                              ) : c.status === 'revoked' ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/50">Revoked</span>
-                              ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-400">Pending</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-faint text-xs">
-                              {c.verifyCount || 0}
-                              {c.lastVerifiedAt && (
-                                <div className="text-[10px]">{new Date(c.lastVerifiedAt).toLocaleString()}</div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-faint text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
-                                  <Copy className="w-3.5 h-3.5" />
-                                </button>
-                                <button onClick={() => revokeRecord(c)} title={c.status === 'revoked' ? 'Revoked — click to undo (re-activate)' : 'Revoke this code'}
-                                  className="text-muted hover:text-rose-400 transition-colors">
-                                  <ShieldOff className="w-3.5 h-3.5" />
-                                </button>
-                                <button onClick={() => deleteRecord(c)} title="Delete this code permanently"
-                                  className="text-muted hover:text-red-400 transition-colors">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                          <>
+                            <tr key={c.id} className={`border-b border-white/[0.04] transition-colors ${c.flagged ? 'bg-rose-500/[0.04] hover:bg-rose-500/[0.07]' : 'hover:bg-white/[0.02]'}`}>
+                              <td className="px-4 py-3 font-medium text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{c.serial}</span>
+                                  {c.flagged && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                                </div>
+                                {c.flagged && c.flagReason && (
+                                  <div title={c.flagReason} className="text-[10px] text-rose-300/80 mt-0.5 max-w-[260px] truncate">{c.flagReason}</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-muted text-xs">{c.bookTitle}</td>
+                              <td className="px-4 py-3">
+                                {c.flagged ? (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-rose-500/15 text-rose-300">Flagged</span>
+                                ) : c.status === 'active' ? (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400">Active</span>
+                                ) : c.status === 'revoked' ? (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/50">Revoked</span>
+                                ) : (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-400">Pending</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-faint text-xs">
+                                {c.verifyCount || 0}
+                                {c.lastVerifiedAt && (
+                                  <div className="text-[10px]">{new Date(c.lastVerifiedAt).toLocaleString()}</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-faint text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
+                              <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={() => fetchCodeDetail(c.code)} title="View scan details" className="text-muted hover:text-indigo-400 transition-colors">
+                                    <ChevronDown className={detailCode === c.code ? 'w-3.5 h-3.5 rotate-180' : 'w-3.5 h-3.5'} />
+                                  </button>
+                                  <button onClick={() => revokeRecord(c)} title={c.status === 'revoked' ? 'Revoked — click to undo (re-activate)' : 'Revoke this code'}
+                                    className="text-muted hover:text-rose-400 transition-colors">
+                                    <ShieldOff className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={() => deleteRecord(c)} title="Delete this code permanently"
+                                    className="text-muted hover:text-red-400 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {detailCode === c.code && (
+                              <tr className="bg-white/[0.02] border-b border-white/[0.04]">
+                                <td colSpan={7} className="px-4 py-3">
+                                  {detailLoading ? (
+                                    <div className="flex items-center justify-center py-8">
+                                      <Loader2 className="w-6 h-6 text-indigo animate-spin" />
+                                      <span className="ml-2 text-sm text-muted">Loading scan details...</span>
+                                    </div>
+                                  ) : detailData ? (
+                                    <div className="border-t border-white/[0.04] pt-4">
+                                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                        <div className="col-span-1 md:col-span-2">
+                                          <h4 className="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2">
+                                            <BookOpen className="w-4 h-4" /> {detailData.book?.title || 'Unknown Book'}
+                                            <span className="text-xs text-muted">by {detailData.book?.author || 'Unknown'}</span>
+                                          </h4>
+                                          <div className="text-xs text-muted space-y-1">
+                                            <div>ISBN: {detailData.book?.isbn || '—'}</div>
+                                            <div>Publisher: {detailData.book?.publisher || '—'}</div>
+                                            <div>Category: {detailData.book?.category || '—'}</div>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-emerald-400 mb-2">Code Info</h4>
+                                          <div className="text-xs text-muted space-y-1">
+                                            <div>Serial: <span className="text-white/80">{detailData.code.serial}</span></div>
+                                            <div>Status: <span className="text-white/80 capitalize">{detailData.code.status}</span></div>
+                                            <div>Total Scans: <span className="text-white/80">{detailData.code.verifyCount || 0}</span></div>
+                                            <div>Created: <span className="text-white/80">{new Date(detailData.code.createdAt).toLocaleString()}</span></div>
+                                            {detailData.code.activatedAt && (
+                                              <div>Activated: <span className="text-white/80">{new Date(detailData.code.activatedAt).toLocaleString()}</span></div>
+                                            )}
+                                            {detailData.code.flagged && (
+                                              <div className="text-rose-300">Flagged: {detailData.code.flagReason}</div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="col-span-1 md:col-span-3">
+                                          <h4 className="text-sm font-semibold text-emerald-400 mb-2">Scan History ({detailData.code.recentScans?.length || 0})</h4>
+                                          {detailData.code.recentScans && detailData.code.recentScans.length > 0 ? (
+                                            <div className="overflow-x-auto">
+                                              <table className="w-full text-xs">
+                                                <thead>
+                                                  <tr className="border-b border-white/[0.04] text-left text-muted">
+                                                    <th className="px-3 py-2">Date & Time</th>
+                                                    <th className="px-3 py-2">IP Address</th>
+                                                    <th className="px-3 py-2">Device</th>
+                                                    <th className="px-3 py-2">Browser</th>
+                                                    <th className="px-3 py-2">OS</th>
+                                                    <th className="px-3 py-2">User Agent</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {detailData.code.recentScans.slice().reverse().map((scan, idx) => (
+                                                    <tr key={idx} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
+                                                      <td className="px-3 py-2 text-faint">{new Date(scan.at).toLocaleString()}</td>
+                                                      <td className="px-3 py-2 text-faint font-mono">{scan.ip}</td>
+                                                      <td className="px-3 py-2">{scan.device || 'Unknown'}</td>
+                                                      <td className="px-3 py-2">{scan.browser || 'Unknown'}</td>
+                                                      <td className="px-3 py-2">{scan.os || 'Unknown'}</td>
+                                                      <td className="px-3 py-2 text-faint max-w-[200px] truncate" title={scan.userAgent || ''}>{scan.userAgent || '—'}</td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm text-muted text-center py-4">No scan history available</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-muted text-center py-4">Failed to load details</p>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         ))}
                       </tbody>
                     </table>

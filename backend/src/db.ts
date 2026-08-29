@@ -173,6 +173,17 @@ export async function deleteBook(id: string): Promise<boolean> {
 
 // ─── QR Code ───────────────────────────────────────────────
 
+export interface ScanRecord {
+  ip: string;
+  at: string;
+  userAgent?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  country?: string;
+  city?: string;
+}
+
 export interface QrCode {
   _id?: ObjectId;
   id: string;
@@ -187,7 +198,7 @@ export interface QrCode {
   activatedAt: string | null;
   verifyCount?: number;
   lastVerifiedAt?: string | null;
-  recentScans?: Array<{ ip: string; at: string }>;
+  recentScans?: ScanRecord[];
   createdAt: string;
 }
 
@@ -260,12 +271,58 @@ export async function deleteQrCode(code: string): Promise<boolean> {
 const SUSPICION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_WINDOW_SCANS = 10;
 
-export async function recordVerification(code: string, ip: string): Promise<QrCode | null> {
+function parseUserAgent(ua: string): { device: string; browser: string; os: string } {
+  let device = 'Unknown';
+  let browser = 'Unknown';
+  let os = 'Unknown';
+
+  if (!ua) return { device, browser, os };
+
+  const uaLower = ua.toLowerCase();
+
+  // Device
+  if (uaLower.includes('mobile') || uaLower.includes('android') || uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) {
+    device = 'Mobile';
+  } else if (uaLower.includes('tablet')) {
+    device = 'Tablet';
+  } else {
+    device = 'Desktop';
+  }
+
+  // Browser
+  if (uaLower.includes('edg/')) browser = 'Edge';
+  else if (uaLower.includes('chrome') || uaLower.includes('crios')) browser = 'Chrome';
+  else if (uaLower.includes('firefox') || uaLower.includes('fxios')) browser = 'Firefox';
+  else if (uaLower.includes('safari') && !uaLower.includes('chrome')) browser = 'Safari';
+  else if (uaLower.includes('opera') || uaLower.includes('opr/')) browser = 'Opera';
+  else if (uaLower.includes('samsungbrowser')) browser = 'Samsung Browser';
+
+  // OS
+  if (uaLower.includes('windows')) os = 'Windows';
+  else if (uaLower.includes('mac os') || uaLower.includes('macos')) os = 'macOS';
+  else if (uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) os = 'iOS';
+  else if (uaLower.includes('android')) os = 'Android';
+  else if (uaLower.includes('linux')) os = 'Linux';
+
+  return { device, browser, os };
+}
+
+export async function recordVerification(code: string, ip: string, userAgent?: string): Promise<QrCode | null> {
   const col = getCollection<QrCode>('qrcodes');
   if (!col) return null;
   const now = new Date().toISOString();
   const nowMs = Date.now();
-  const scan = { ip, at: now };
+
+  const { device, browser, os } = parseUserAgent(userAgent || '');
+
+  const scan: ScanRecord = {
+    ip,
+    at: now,
+    userAgent,
+    device,
+    browser,
+    os,
+  };
 
   const doc = await col.findOne({ code });
   if (!doc) return null;

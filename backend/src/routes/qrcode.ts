@@ -164,6 +164,27 @@ router.get("/codes", authMiddleware, async (_req: AuthRequest, res: Response) =>
   }
 });
 
+// ─── Get code details with scan history (admin) ────────────
+
+router.get("/codes/:code/detail", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { code } = req.params;
+    const record = await findQrCode(code);
+    if (!record) {
+      return res.status(404).json({ error: "Code not found" });
+    }
+    const book = await findBook(record.bookId);
+    res.json({
+      success: true,
+      code: record,
+      book,
+    });
+  } catch (err: any) {
+    console.error("Get code detail failed:", err.message);
+    res.status(500).json({ error: "Failed to load code details" });
+  }
+});
+
 // ─── Activate a code (admin scans in Activate section) ─────
 
 router.post("/codes/:code/activate", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -258,8 +279,9 @@ router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
     }
 
     let updated = record;
+    const userAgent = req.headers["user-agent"] as string | undefined;
     try {
-      updated = (await recordVerification(code, clientIp(req))) || record;
+      updated = (await recordVerification(code, clientIp(req), userAgent)) || record;
     } catch (err: any) {
       console.error("Verification log failed:", err.message);
     }
@@ -272,6 +294,7 @@ router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
         activatedAt: updated.activatedAt,
         verifyCount: updated.verifyCount || 0,
         lastVerifiedAt: updated.lastVerifiedAt || null,
+        recentScans: updated.recentScans || [],
       },
       flagged: !!updated.flagged,
       flagReason: updated.flagReason || null,
