@@ -15,16 +15,11 @@ import Verify from './pages/Verify'
 export default function App() {
   const { pathname } = useLocation()
   const isAdmin = pathname.startsWith('/admin')
-  const isVerify = pathname.startsWith('/verify')
 
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
   if (isAdmin) {
     return <Admin />
-  }
-
-  if (isVerify) {
-    return <Verify />
   }
 
   return (
@@ -39,6 +34,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/resume" element={<Resume />} />
+          <Route path="/verify/:code" element={<Verify />} />
         </Routes>
       </main>
       <Footer />
