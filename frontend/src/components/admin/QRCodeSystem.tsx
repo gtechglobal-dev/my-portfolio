@@ -653,6 +653,10 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                   className="text-muted hover:text-rose-400 transition-colors">
                                   <ShieldOff className="w-3.5 h-3.5" />
                                 </button>
+                                <button onClick={() => deleteRecord(c)} title="Delete this code permanently"
+                                  className="text-muted hover:text-red-400 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -725,6 +729,24 @@ export default function QRCodeSystem({ token }: { token: string }) {
         fetchData();
       } else {
         setActivationMsg({ type: 'error', message: data.error || 'Failed to revoke code' });
+      }
+    } catch {
+      setActivationMsg({ type: 'error', message: 'Could not connect to server' });
+    }
+  }
+
+  async function deleteRecord(record: QrRecord) {
+    if (!confirm(`Delete ${record.serial} permanently? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`${API}/qrcode/codes/${record.code}/delete`, {
+        method: 'DELETE', headers,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActivationMsg({ type: 'success', message: `Code ${record.serial} deleted.` });
+        fetchData();
+      } else {
+        setActivationMsg({ type: 'error', message: data.error || 'Failed to delete code' });
       }
     } catch {
       setActivationMsg({ type: 'error', message: 'Could not connect to server' });

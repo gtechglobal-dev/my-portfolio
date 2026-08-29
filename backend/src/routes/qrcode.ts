@@ -13,6 +13,7 @@ import {
   writeQrCode,
   activateQrCode,
   revokeQrCode,
+  deleteQrCode,
   recordVerification,
   deleteQrCodesByBook,
   type Book,
@@ -25,14 +26,6 @@ const BASE_URL =
   process.env.QR_BASE_URL ||
   process.env.FRONTEND_URL ||
   "https://gtechglobal.dev";
-
-function toShortCode(title: string): string {
-  const clean = title
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 5);
-  return clean || Math.random().toString(36).slice(2, 7).toUpperCase();
-}
 
 function makeToken(): string {
   return randomBytes(12).toString("hex");
@@ -118,7 +111,7 @@ router.post("/:id/generate", authMiddleware, async (req: AuthRequest, res: Respo
     }
 
     const existing = await readQrCodes({ bookId: id });
-    const shortCode = toShortCode(book.title);
+    const shortCode = "OKSON";
     const usedSerials = new Set(existing.map((c) => c.serial));
 
     const generated: Array<{ serial: string; code: string; qr: string }> = [];
@@ -208,6 +201,23 @@ router.delete("/codes/:code", authMiddleware, async (req: AuthRequest, res: Resp
   } catch (err: any) {
     console.error("Revoke code failed:", err.message);
     res.status(500).json({ error: "Failed to revoke code" });
+  }
+});
+
+// ─── Permanently delete a code (admin) ─────────────────────
+
+router.delete("/codes/:code/delete", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { code } = req.params;
+    const record = await findQrCode(code);
+    if (!record) {
+      return res.status(404).json({ error: "Code not found" });
+    }
+    await deleteQrCode(code);
+    res.json({ success: true, deleted: record.serial });
+  } catch (err: any) {
+    console.error("Delete code failed:", err.message);
+    res.status(500).json({ error: "Failed to delete code" });
   }
 });
 

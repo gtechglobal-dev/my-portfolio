@@ -250,6 +250,13 @@ export async function revokeQrCode(code: string): Promise<QrCode | null> {
   return rest;
 }
 
+export async function deleteQrCode(code: string): Promise<boolean> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return false;
+  const result = await col.deleteOne({ code });
+  return result.deletedCount > 0;
+}
+
 const SUSPICION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_WINDOW_SCANS = 10;
 
