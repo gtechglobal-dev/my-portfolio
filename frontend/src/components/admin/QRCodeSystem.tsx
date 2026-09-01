@@ -149,6 +149,14 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: string; message: string } | null>(null);
   const [formStatus, setFormStatus] = useState<{ type: string; message: string } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Auto-dismiss the floating success toast after 2 seconds.
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const [frontCover, setFrontCover] = useState<string | null>(null);
   const [backCover, setBackCover] = useState<string | null>(null);
@@ -233,6 +241,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
       const data = await res.json();
       if (res.ok) {
         setFormStatus({ type: 'success', message: `Book "${data.book.title}" registered!` });
+        setToast(`Book "${data.book.title}" registered successfully 🎉`);
         setForm(emptyForm);
         setFrontCover(null);
         setBackCover(null);
@@ -1341,6 +1350,24 @@ export default function QRCodeSystem({ token }: { token: string }) {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating success toast — auto-dismisses after 2s */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key="toast"
+            className="fixed top-20 right-6 z-[130] flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-[#12121a]/95 px-4 py-3 shadow-2xl backdrop-blur"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ duration: 0.2 }}
+            role="status"
+          >
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span className="text-sm text-emerald-300 font-medium">{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>
