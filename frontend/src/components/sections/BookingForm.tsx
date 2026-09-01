@@ -318,7 +318,7 @@ export default function BookingForm() {
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         {samplePreviews.map((img, i) => (
                           <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-surface">
-                            <img src={img} alt={`Sample ${i + 1}`} className="w-full h-28 object-contain p-1" />
+                            <img src={img} alt={`Sample ${i + 1}`} decoding="async" className="w-full h-28 object-contain p-1" />
                             <button onClick={() => setSamplePreviews((prev) => prev.filter((_, j) => j !== i))}
                               className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
                               <X className="w-3 h-3 text-white" />

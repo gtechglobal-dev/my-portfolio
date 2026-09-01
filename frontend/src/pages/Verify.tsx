@@ -132,6 +132,7 @@ function BookMockup({
             src={cover}
             alt={alt}
             draggable={false}
+            decoding="async"
             className="relative rounded-r-sm shadow-[4px_6px_18px_rgba(0,0,0,0.45)] select-none"
             style={{
               width: coverW,

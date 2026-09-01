@@ -85,6 +85,20 @@ async function uploadCover(image: string, title: string): Promise<string | null>
   }
 }
 
+// Extract the Cloudinary `public_id` from a stored secure_url and delete the asset.
+// secure_url looks like .../image/upload/v1234567/gtech-portfolio/book-covers/abc123.jpg
+async function deleteCloudinaryCover(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  const m = String(url).match(/\/image\/upload\/v\d+\/(.+?)\.[a-zA-Z]{3,4}$/);
+  if (!m) return;
+  const publicId = m[1];
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err: any) {
+    console.error("Cover delete error:", err.message);
+  }
+}
+
 // ─── Register a book (admin) ───────────────────────────────
 
 router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -158,10 +172,13 @@ router.post("/:id/covers", authMiddleware, async (req: AuthRequest, res: Respons
 
     const update: Partial<Book> = {};
     if (frontCover) {
+      // Replacing an existing cover — remove the old Cloudinary asset first.
+      await deleteCloudinaryCover(book.frontCover);
       const url = await uploadCover(frontCover, book.title);
       if (url) update.frontCover = url;
     }
     if (backCover) {
+      await deleteCloudinaryCover(book.backCover);
       const url = await uploadCover(backCover, book.title);
       if (url) update.backCover = url;
     }
@@ -171,6 +188,37 @@ router.post("/:id/covers", authMiddleware, async (req: AuthRequest, res: Respons
   } catch (err: any) {
     console.error("Upload covers failed:", err.message);
     res.status(500).json({ error: "Failed to upload covers" });
+  }
+});
+
+// ─── Delete a single cover (also removes the asset from Cloudinary) ──
+
+router.delete("/:id/cover/:kind", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, kind } = req.params;
+    if (kind !== "front" && kind !== "back") {
+      return res.status(400).json({ error: "Invalid cover type" });
+    }
+    const book = await findBook(id);
+    if (!book) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    const existing = kind === "front" ? book.frontCover : book.backCover;
+    if (!existing) {
+      return res.status(404).json({ error: `No ${kind} cover to delete` });
+    }
+
+    const update: Partial<Book> = {};
+    if (kind === "front") update.frontCover = null;
+    else update.backCover = null;
+
+    await deleteCloudinaryCover(existing);
+    const updated = await updateBook(id, update);
+    res.json({ success: true, book: updated });
+  } catch (err: any) {
+    console.error("Delete cover failed:", err.message);
+    res.status(500).json({ error: "Failed to delete cover" });
   }
 });
 
@@ -184,7 +232,7 @@ router.patch("/:id", authMiddleware, async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ error: "Book not found" });
     }
 
-    const { title, author, isbn, publisher, year, edition, description, category } = req.body;
+    const { title, author, isbn, publisher, year, edition, description, category, frontCover, backCover } = req.body;
 
     const update: Partial<Book> = {};
     if (typeof title === "string") update.title = title.trim();
@@ -195,6 +243,26 @@ router.patch("/:id", authMiddleware, async (req: AuthRequest, res: Response) => 
     if (typeof edition === "string") update.edition = edition.trim();
     if (typeof description === "string") update.description = description.trim();
     if (typeof category === "string") update.category = category.trim() || "General";
+
+    // Cover edits — a new data-URL upload replaces (and deletes) the old asset.
+    if (frontCover) {
+      await deleteCloudinaryCover(book.frontCover);
+      const url = await uploadCover(frontCover, book.title.trim() || update.title || book.title);
+      if (url) update.frontCover = url;
+    }
+    if (backCover) {
+      await deleteCloudinaryCover(book.backCover);
+      const url = await uploadCover(backCover, book.title.trim() || update.title || book.title);
+      if (url) update.backCover = url;
+    }
+    if (frontCover === null) {
+      await deleteCloudinaryCover(book.frontCover);
+      update.frontCover = null;
+    }
+    if (backCover === null) {
+      await deleteCloudinaryCover(book.backCover);
+      update.backCover = null;
+    }
 
     if (update.title === "" || update.author === "") {
       return res.status(400).json({ error: "Title and author are required" });
@@ -225,6 +293,9 @@ router.get("/", authMiddleware, async (_req: AuthRequest, res: Response) => {
 router.delete("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const book = await findBook(id);
+    await deleteCloudinaryCover(book?.frontCover);
+    await deleteCloudinaryCover(book?.backCover);
     await deleteBook(id);
     await deleteQrCodesByBook(id);
     res.json({ success: true });

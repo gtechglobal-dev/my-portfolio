@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { optimizeImage } from '../../lib/image';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
-  XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw,
+  XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw, BadgeDollarSign, TrendingUp,
 } from 'lucide-react';
 
 const API = '/api';
@@ -23,7 +23,23 @@ interface Book {
   frontCover?: string | null;
   backCover?: string | null;
   bookCode?: string;
+  printedCopies?: number;
+  soldCopies?: number;
+  price?: number;
   createdAt: string;
+}
+
+interface SalesRow {
+  id: string;
+  title: string;
+  author: string;
+  frontCover?: string | null;
+  printed: number;
+  sold: number;
+  remaining: number;
+  price: number;
+  revenue: number;
+  percentSold: number;
 }
 
 interface SerialRecord {
@@ -65,7 +81,7 @@ interface QrRecord {
   createdAt: string;
 }
 
-type SubTab = 'register' | 'books' | 'activate' | 'codes';
+type SubTab = 'register' | 'books' | 'activate' | 'codes' | 'sales';
 
 interface ConfirmState {
   title: string;
@@ -81,6 +97,7 @@ interface ConfirmState {
     { id: 'books', label: 'Registered Books', icon: BookOpen },
     { id: 'activate', label: 'Activate Serials', icon: Zap },
     { id: 'codes', label: 'All Serials', icon: Hash },
+    { id: 'sales', label: 'Sales & Inventory', icon: BadgeDollarSign },
   ];
 
 const emptyForm = {
@@ -94,10 +111,19 @@ const emptyForm = {
   category: 'General',
 };
 
+function safeLocalGet(key: string): unknown {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function CoverThumb({ url, alt }: { url: string; alt: string }) {
   return (
     <div className="aspect-[3/4] w-20 rounded-lg overflow-hidden border border-white/[0.08] shrink-0">
-      <img src={url} alt={alt} className="w-full h-full object-cover" />
+      <img src={url} alt={alt} loading="lazy" decoding="async" className="w-full h-full object-cover" />
     </div>
   );
 }
@@ -127,6 +153,8 @@ function AdminMockup({ url, alt }: { url: string; alt: string }) {
           <img
             src={url}
             alt={alt}
+            loading="lazy"
+            decoding="async"
             draggable={false}
             className="relative rounded-r-sm"
             style={{ width: w, height: h, objectFit: 'cover', pointerEvents: 'none', userSelect: 'none', WebkitUserDrag: 'none' } as any}
@@ -140,7 +168,11 @@ function AdminMockup({ url, alt }: { url: string; alt: string }) {
 export default function QRCodeSystem({ token }: { token: string }) {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const [subTab, setSubTab] = useState<SubTab>('books');
+  const [subTab, setSubTab] = useState<SubTab>(() => {
+    // Restore the last active tab after a refresh; default to Register Book.
+    const saved = safeLocalGet('okson_admin_tab') as SubTab | null;
+    return saved && ['register', 'books', 'activate', 'codes', 'sales'].includes(saved) ? saved : 'register';
+  });
   const [books, setBooks] = useState<Book[]>([]);
   const [codes, setCodes] = useState<QrRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +203,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [editBookId, setEditBookId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [editSaving, setEditSaving] = useState(false);
+  // New cover uploads picked in the Edit panel (data URLs that replace the stored cover).
+  const [editCover, setEditCover] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
+  // Covers flagged for deletion (removed from the book AND from Cloudinary on save).
+  const [editCoverDelete, setEditCoverDelete] = useState<{ front: boolean; back: boolean }>({ front: false, back: false });
+  const [editCoverErrors, setEditCoverErrors] = useState('');
 
   const [selectedBookId, setSelectedBookId] = useState('');
   const [genCount, setGenCount] = useState('10');
@@ -206,6 +243,19 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState<{ code: QrRecord; book: Book | null } | null>(null);
 
+  // Sales & inventory
+  const [sales, setSales] = useState<SalesRow[]>([]);
+  const [salesTotals, setSalesTotals] = useState<{ printed: number; sold: number; revenue: number }>({ printed: 0, sold: 0, revenue: 0 });
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesMsg, setSalesMsg] = useState<{ type: string; message: string } | null>(null);
+  // Draft form for editing one book's sales record (index into sales array or book id)
+  const [editSalesBookId, setEditSalesBookId] = useState<string | null>(null);
+  const [saleForm, setSaleForm] = useState<{ printedCopies: string; soldCopies: string; price: string }>({ printedCopies: '', soldCopies: '', price: '' });
+  const [salesSearch, setSalesSearch] = useState('');
+  // Quick sell modal
+  const [sellBook, setSellBook] = useState<SalesRow | null>(null);
+  const [sellQty, setSellQty] = useState(1);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -222,6 +272,88 @@ export default function QRCodeSystem({ token }: { token: string }) {
   };
 
   useEffect(() => { fetchData(); }, [token]);
+
+  const fetchSales = async () => {
+    setSalesLoading(true);
+    try {
+      const res = await fetch(`${API}/sales`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setSales(data.sales || []);
+        setSalesTotals(data.totals || { printed: 0, sold: 0, revenue: 0 });
+      }
+    } catch (err) {
+      console.error('Failed to load sales data:', err);
+    }
+    setSalesLoading(false);
+  };
+
+  useEffect(() => {
+    if (subTab === 'sales') fetchSales();
+  }, [subTab, token]);
+
+  // Keep the active tab across refreshes.
+  useEffect(() => {
+    try {
+      localStorage.setItem('okson_admin_tab', JSON.stringify(subTab));
+    } catch {
+      /* ignore */
+    }
+  }, [subTab]);
+
+  const openEditSales = (row: SalesRow) => {
+    setEditSalesBookId(row.id);
+    setSaleForm({ printedCopies: String(row.printed || ''), soldCopies: String(row.sold || ''), price: String(row.price || '') });
+  };
+
+  const saveSales = async (bookId: string) => {
+    const printed = parseInt(saleForm.printedCopies, 10) || 0;
+    const price = parseFloat(saleForm.price) || 0;
+    let sold = parseInt(saleForm.soldCopies, 10) || 0;
+    if (sold > printed) sold = printed;
+    setSalesMsg(null);
+    try {
+      const res = await fetch(`${API}/sales/${bookId}`, {
+        method: 'POST', headers, body: JSON.stringify({ printedCopies: printed, soldCopies: sold, price }),
+      });
+      if (res.ok) {
+        setSalesMsg({ type: 'success', message: 'Sales & inventory updated.' });
+        setEditSalesBookId(null);
+        fetchSales();
+      } else {
+        const data = await res.json();
+        setSalesMsg({ type: 'error', message: data.error || 'Failed to save sales data' });
+      }
+    } catch {
+      setSalesMsg({ type: 'error', message: 'Could not connect to server' });
+    }
+  };
+
+  const sell = async (bookId: string, qty: number) => {
+    try {
+      const res = await fetch(`${API}/sales/${bookId}/sold`, {
+        method: 'POST', headers, body: JSON.stringify({ qty }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const book = data.book as { title?: string; price?: number } | undefined;
+        const price = book?.price || 0;
+        setSalesMsg({ type: 'success', message: `Sold ${qty} copy${qty > 1 ? 's' : ''}. Revenue ${(price * qty).toLocaleString()} naira recorded.` });
+        fetchSales();
+      } else {
+        setSalesMsg({ type: 'error', message: 'Failed to record the sale.' });
+      }
+    } catch {
+      setSalesMsg({ type: 'error', message: 'Could not connect to server' });
+    }
+  };
+
+  const confirmSell = async () => {
+    if (!sellBook) return;
+    const qty = Math.max(1, Math.min(sellQty, sellBook.remaining));
+    setSellBook(null);
+    await sell(sellBook.id, qty);
+  };
 
   const setField = (k: keyof typeof emptyForm, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -337,6 +469,33 @@ export default function QRCodeSystem({ token }: { token: string }) {
       description: b.description,
       category: b.category,
     });
+    setEditCover({ front: null, back: null });
+    setEditCoverDelete({ front: false, back: false });
+    setEditCoverErrors('');
+  };
+
+  const pickEditCover = async (kind: 'front' | 'back') => {
+    setEditCoverErrors('');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setEditCoverErrors('Image must be 5MB or smaller. Please use a smaller image.');
+        return;
+      }
+      try {
+        const optimized = await optimizeImage(file, { maxWidth: 900, maxHeight: 1200 });
+        setEditCover((c) => ({ ...c, [kind]: optimized }));
+        // Choosing a new file counts as "not deleting" that cover.
+        setEditCoverDelete((d) => ({ ...d, [kind]: false }));
+      } catch {
+        setEditCoverErrors('Could not read the image file.');
+      }
+    };
+    input.click();
   };
 
   const setEditField = (k: keyof typeof emptyForm, v: string) =>
@@ -351,8 +510,15 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setEditSaving(true);
     setStatus(null);
     try {
+      const body: Record<string, unknown> = { ...editForm };
+      // Only send cover changes (data URL to replace, null to delete).
+      if (editCover.front) body.frontCover = editCover.front;
+      else if (editCoverDelete.front) body.frontCover = null;
+      if (editCover.back) body.backCover = editCover.back;
+      else if (editCoverDelete.back) body.backCover = null;
+
       const res = await fetch(`${API}/qrcode/${editBookId}`, {
-        method: 'PATCH', headers, body: JSON.stringify(editForm),
+        method: 'PATCH', headers, body: JSON.stringify(body),
       });
       const data = await res.json();
       if (res.ok) {
@@ -1021,6 +1187,44 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                     className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors resize-none" />
                                 </div>
                               </div>
+
+                              {/* Cover editing (replaces / deletes the Cloudinary asset too) */}
+                              <div className="border-t border-white/[0.06] pt-2 mt-1">
+                                <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Book Covers</div>
+                                {editCoverErrors && <p className="text-[10px] text-red-400 mb-2">{editCoverErrors}</p>}
+                                <div className="grid grid-cols-2 gap-3">
+                                  {(['front', 'back'] as const).map((kind) => {
+                                    const original = kind === 'front' ? b.frontCover : b.backCover;
+                                    const displayUrl = editCover[kind] || (editCoverDelete[kind] ? null : original);
+                                    const isDelete = !!editCoverDelete[kind];
+                                    return (
+                                      <div key={kind} className="rounded-lg bg-surface p-2 border border-white/[0.06]">
+                                        <div className="text-[10px] text-muted mb-1 capitalize">{kind} cover</div>
+                                        <div className="flex items-start gap-2">
+                                          {displayUrl ? (
+                                            <CoverThumb url={displayUrl} alt={`${kind} cover`} />
+                                          ) : (
+                                            <div className="aspect-[3/4] w-14 rounded-lg border border-dashed border-white/[0.15] flex items-center justify-center text-faint text-[9px]">{isDelete ? 'Removed' : 'None'}</div>
+                                          )}
+                                          <div className="flex flex-col gap-1.5 min-w-0">
+                                            <button type="button" onClick={() => pickEditCover(kind)}
+                                              className="text-[10px] text-indigo flex items-center gap-1"><Plus className="w-3 h-3" /> {editCover[kind] ? 'Change' : 'Add/Replace'}</button>
+                                            {displayUrl && (
+                                              <button type="button" onClick={() => { setEditCoverDelete((d) => ({ ...d, [kind]: true })); setEditCover((c) => ({ ...c, [kind]: null })); }}
+                                                className="text-[10px] text-red-400 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete from Cloudinary</button>
+                                            )}
+                                            {isDelete && (
+                                              <button type="button" onClick={() => setEditCoverDelete((d) => ({ ...d, [kind]: false }))}
+                                                className="text-[10px] text-muted flex items-center gap-1"><Check className="w-3 h-3" /> Undo delete</button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
                               <div className="flex items-center gap-2">
                                 <button onClick={handleSaveEdit} disabled={editSaving}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark disabled:opacity-50">
@@ -1300,6 +1504,282 @@ export default function QRCodeSystem({ token }: { token: string }) {
           )}
         </motion.div>
       )}
+
+      {/* SALES & INVENTORY */}
+      {subTab === 'sales' && (
+        <div className="space-y-5">
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4">
+              <p className="text-[11px] uppercase tracking-wider text-faint">Books Tracked</p>
+              <p className="mt-1 text-2xl font-bold">{sales.length}</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4">
+              <p className="text-[11px] uppercase tracking-wider text-faint">Copies Printed</p>
+              <p className="mt-1 text-2xl font-bold">{salesTotals.printed.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4">
+              <p className="text-[11px] uppercase tracking-wider text-faint">Copies Sold</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-400">{salesTotals.sold.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4">
+              <p className="text-[11px] uppercase tracking-wider text-faint">Total Revenue</p>
+              <p className="mt-1 text-2xl font-bold text-amber-400">₦{salesTotals.revenue.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
+            <input
+              value={salesSearch}
+              onChange={(e) => setSalesSearch(e.target.value)}
+              placeholder={`Search ${sales.length} book${sales.length === 1 ? '' : 's'} by title or author…`}
+              className="w-full rounded-lg bg-[#14141a] border border-white/10 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+            />
+            {salesSearch && (
+              <button
+                onClick={() => setSalesSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint hover:text-white"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {salesMsg && (
+            <div className={`rounded-lg border px-4 py-2.5 text-sm ${
+              salesMsg.type === 'error'
+                ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+            }`}>
+              {salesMsg.message}
+            </div>
+          )}
+
+          {salesLoading && sales.length === 0 ? (
+            <p className="text-sm text-faint">Loading sales & inventory…</p>
+          ) : sales.length === 0 ? (
+            <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-8 text-center">
+              <BadgeDollarSign className="mx-auto mb-3 w-10 h-10 text-faint" />
+              <p className="text-sm text-faint">No registered books yet. Go to the "Register Book" tab to add your first book — then it will appear here where you can record its printed copies, price, and sold count.</p>
+            </div>
+          ) : (() => {
+            const q = salesSearch.trim().toLowerCase();
+            const filtered = q ? sales.filter((r) => r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q)) : sales;
+            return filtered.length === 0 ? (
+              <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-8 text-center">
+                <Search className="mx-auto mb-3 w-10 h-10 text-faint" />
+                <p className="text-sm text-faint">No books match "{salesSearch}".</p>
+                <button onClick={() => setSalesSearch('')} className="mt-3 text-xs text-emerald-400 hover:underline">Clear search</button>
+              </div>
+            ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map((row) => (
+                <div key={row.id} className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4 flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    {row.frontCover ? (
+                      <img src={row.frontCover} alt={row.title} loading="lazy" decoding="async" className="w-12 h-16 rounded object-cover bg-white/5 shrink-0" />
+                    ) : (
+                      <BookOpen className="w-12 h-16 rounded p-3 object-cover bg-white/5 text-faint shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold leading-tight truncate">{row.title}</h4>
+                      <p className="text-xs text-faint truncate">{row.author}</p>
+                      {row.printed === 0 ? (
+                        <span className="mt-1.5 inline-block rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                          Not tracked — click Edit to record & set price
+                        </span>
+                      ) : (
+                        <p className="text-xs text-faint mt-1">Price: <span className="text-amber-300">₦{row.price.toLocaleString()}</span></p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sold progress */}
+                  {row.printed > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-faint">{row.sold.toLocaleString()} sold</span>
+                      <span className="text-faint">{row.percentSold}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-full bg-emerald-400/80 rounded-full" style={{ width: `${row.percentSold}%` }} />
+                    </div>
+                  </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-white/[0.03] py-2">
+                      <p className="text-xs text-faint">Printed</p>
+                      <p className="text-sm font-semibold">{row.printed.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/[0.03] py-2">
+                      <p className="text-xs text-faint">Remaining</p>
+                      <p className="text-sm font-semibold">{row.remaining.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/[0.03] py-2">
+                      <p className="text-xs text-faint">Revenue</p>
+                      <p className="text-sm font-semibold text-amber-300">₦{row.revenue.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {editSalesBookId === row.id ? (
+                    <div className="space-y-2 border-t border-white/[0.08] pt-3">
+                      <label className="block">
+                        <span className="text-[11px] text-faint">Copies printed</span>
+                        <input
+                          type="number" min={0}
+                          value={saleForm.printedCopies}
+                          onChange={(e) => setSaleForm((s) => ({ ...s, printedCopies: e.target.value }))}
+                          className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-[11px] text-faint">Copies sold</span>
+                        <input
+                          type="number" min={0}
+                          value={saleForm.soldCopies}
+                          onChange={(e) => setSaleForm((s) => ({ ...s, soldCopies: e.target.value }))}
+                          className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-[11px] text-faint">Price per copy (₦)</span>
+                        <input
+                          type="number" min={0} step="0.01"
+                          value={saleForm.price}
+                          onChange={(e) => setSaleForm((s) => ({ ...s, price: e.target.value }))}
+                          className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                        />
+                      </label>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => saveSales(row.id)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Save
+                        </button>
+                        <button
+                          onClick={() => setEditSalesBookId(null)}
+                          className="rounded-lg bg-white/[0.05] text-faint text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => openEditSales(row)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors whitespace-nowrap"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit Inventory
+                      </button>
+                      <button
+                        onClick={() => { setSellBook(row); setSellQty(1); }}
+                        disabled={row.remaining <= 0}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5" /> Sell
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Quick Sell modal */}
+      <AnimatePresence>
+        {sellBook && (
+          <motion.div
+            key="sell"
+            className="fixed inset-0 z-[125] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSellBook(null)}
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 6 }}
+              transition={{ duration: 0.16 }}
+              className="relative w-full max-w-sm rounded-2xl border border-white/[0.1] bg-[#14141a] p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-base font-semibold">Record a Sale</h3>
+                <button onClick={() => setSellBook(null)} className="text-faint hover:text-white" aria-label="Close">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-faint mb-4 truncate">{sellBook.title}</p>
+
+              <div className="rounded-xl border border-white/[0.08] bg-black/20 p-3 mb-4 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-[11px] text-faint">Price / copy</p>
+                  <p className="text-sm font-semibold text-amber-300">₦{sellBook.price.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-faint">Quantity</p>
+                  <p className="text-sm font-semibold">{sellQty}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-faint">Total</p>
+                  <p className="text-sm font-semibold text-emerald-300">₦{(sellBook.price * sellQty).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <label>
+                <span className="text-[11px] text-faint">Quantity sold (max {sellBook.remaining} in stock)</span>
+                <input
+                  type="number" min={1} max={sellBook.remaining}
+                  value={sellQty}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setSellQty(Number.isNaN(v) ? 1 : Math.max(1, Math.min(v, sellBook.remaining)));
+                  }}
+                  className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                />
+              </label>
+
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={() => setSellQty((q) => Math.max(1, q - 1))}
+                  className="h-10 w-10 rounded-lg bg-white/[0.05] text-lg font-bold hover:bg-white/[0.1]"
+                >−</button>
+                <button
+                  onClick={() => setSellQty((q) => Math.min(sellBook.remaining, q + 1))}
+                  className="h-10 w-10 rounded-lg bg-white/[0.05] text-lg font-bold hover:bg-white/[0.1]"
+                >+</button>
+                <span className="flex-1 text-center text-xs text-faint">Click +/− or type the quantity</span>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={confirmSell}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 text-black text-sm font-semibold px-4 py-2.5 hover:bg-emerald-400 transition-colors"
+                >
+                  <TrendingUp className="w-4 h-4" /> Confirm Sale
+                </button>
+                <button
+                  onClick={() => setSellBook(null)}
+                  className="rounded-lg bg-white/[0.05] text-faint text-sm font-semibold px-4 py-2.5 hover:bg-white/[0.1] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation modal for admin actions */}
       <AnimatePresence>

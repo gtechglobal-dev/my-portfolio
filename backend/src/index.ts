@@ -13,6 +13,7 @@ import graphicsRouter from './routes/graphics.js';
 import cryptoRouter from './routes/crypto.js';
 import ogRouter from './routes/og.js';
 import qrcodeRouter from './routes/qrcode.js';
+import salesRouter from './routes/sales.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -44,6 +45,7 @@ app.use('/api/graphics', graphicsRouter);
 app.use('/api/crypto', cryptoRouter);
 app.use('/api/og', ogRouter);
 app.use('/api/qrcode', qrcodeRouter);
+app.use('/api/sales', salesRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', db: isDbConnected(), timestamp: new Date().toISOString() });

@@ -10,6 +10,7 @@ import adminRouter from '../backend/src/routes/admin';
 import contactRouter from '../backend/src/routes/contact';
 import resumeRouter from '../backend/src/routes/resume';
 import qrcodeRouter from '../backend/src/routes/qrcode';
+import salesRouter from '../backend/src/routes/sales';
 
 await connectDB();
 
@@ -30,6 +31,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/resume', resumeRouter);
 app.use('/api/qrcode', qrcodeRouter);
+app.use('/api/sales', salesRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -602,7 +602,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                                       {expandedBooking.sampleImages.map((img, i) => (
                                                         <a key={i} href={img} target="_blank" rel="noopener noreferrer"
                                                           className="block w-24 h-24 rounded-lg overflow-hidden border border-white/[0.06] bg-surface hover:border-indigo/30 transition-colors">
-                                                          <img src={img} alt={`Sample ${i + 1}`} className="w-full h-full object-contain p-1" />
+                                                          <img src={img} alt={`Sample ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-contain p-1" />
                                                         </a>
                                                       ))}
                                                     </div>
@@ -796,7 +796,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                               <div className="grid grid-cols-3 gap-2 mb-3">
                                 {gfxImages.map((img, i) => (
                                   <div key={i} className="relative group rounded-lg overflow-hidden border border-white/[0.06] bg-surface">
-                                    <img src={img} alt={`Preview ${i + 1}`} className="w-full h-24 object-contain p-1" />
+                                    <img src={img} alt={`Preview ${i + 1}`} loading="lazy" decoding="async" className="w-full h-24 object-contain p-1" />
                                     <button onClick={() => removeGfxImage(i)}
                                       className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/70">
                                       <X className="w-3 h-3 text-white" />
@@ -841,7 +841,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                           {graphics.map((d) => (
                             <div key={d.id} className="card p-0 overflow-hidden group">
                               <div className="relative w-full aspect-[4/3] overflow-hidden bg-ink flex items-center justify-center p-2">
-                                <img src={d.image} alt={d.title} className="max-w-full max-h-full object-contain" />
+                                <img src={d.image} alt={d.title} decoding="async" className="max-w-full max-h-full object-contain" />
                                 <button onClick={() => deleteGraphics(d.id)}
                                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">
                                   <Trash2 className="w-3.5 h-3.5 text-white" />

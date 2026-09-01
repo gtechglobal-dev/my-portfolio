@@ -159,6 +159,12 @@ export interface Book {
   backCover?: string | null;
   /** Unique token encoded in the single QR code printed on every copy of this book. */
   bookCode?: string;
+  /** Total number of printed copies recorded in the Sales tab. */
+  printedCopies?: number;
+  /** Number of copies sold as tracked in the Sales tab. */
+  soldCopies?: number;
+  /** Selling price per copy (NGN) as set in the Sales tab. */
+  price?: number;
   createdAt: string;
 }
 
