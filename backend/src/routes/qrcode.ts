@@ -140,6 +140,40 @@ router.post("/:id/covers", authMiddleware, async (req: AuthRequest, res: Respons
   }
 });
 
+// ─── Update book details (admin) ───────────────────────────
+
+router.patch("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const book = await findBook(id);
+    if (!book) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    const { title, author, isbn, publisher, year, edition, description, category } = req.body;
+
+    const update: Partial<Book> = {};
+    if (typeof title === "string") update.title = title.trim();
+    if (typeof author === "string") update.author = author.trim();
+    if (typeof isbn === "string") update.isbn = isbn.trim();
+    if (typeof publisher === "string") update.publisher = publisher.trim() || "Okson Publishers";
+    if (typeof year === "string") update.year = year.trim();
+    if (typeof edition === "string") update.edition = edition.trim();
+    if (typeof description === "string") update.description = description.trim();
+    if (typeof category === "string") update.category = category.trim() || "General";
+
+    if (update.title === "" || update.author === "") {
+      return res.status(400).json({ error: "Title and author are required" });
+    }
+
+    const updated = await updateBook(id, update);
+    res.json({ success: true, book: updated });
+  } catch (err: any) {
+    console.error("Update book failed:", err.message);
+    res.status(500).json({ error: "Failed to update book" });
+  }
+});
+
 // ─── List books (admin) ────────────────────────────────────
 
 router.get("/", authMiddleware, async (_req: AuthRequest, res: Response) => {

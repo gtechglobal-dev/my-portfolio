@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
-  XCircle, Download, Loader2, ChevronDown,   BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle,
+  XCircle, Download, Loader2, ChevronDown,   BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil,
 } from 'lucide-react';
 
 const API = '/api';
@@ -112,6 +112,10 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [coverBookId, setCoverBookId] = useState<string | null>(null);
   const [coverUpload, setCoverUpload] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
   const [coverSaving, setCoverSaving] = useState(false);
+
+  const [editBookId, setEditBookId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [editSaving, setEditSaving] = useState(false);
 
   const [selectedBookId, setSelectedBookId] = useState('');
   const [genCount, setGenCount] = useState('10');
@@ -245,6 +249,49 @@ export default function QRCodeSystem({ token }: { token: string }) {
       setCoverErrors('Could not connect to server');
     }
     setCoverSaving(false);
+  };
+
+  const startEditBook = (b: Book) => {
+    setEditBookId(b.id);
+    setEditForm({
+      title: b.title,
+      author: b.author,
+      isbn: b.isbn || '',
+      publisher: b.publisher,
+      year: b.year || '',
+      edition: b.edition || '',
+      description: b.description,
+      category: b.category,
+    });
+  };
+
+  const setEditField = (k: keyof typeof emptyForm, v: string) =>
+    setEditForm((f) => ({ ...f, [k]: v }));
+
+  const handleSaveEdit = async () => {
+    if (!editBookId) return;
+    if (!editForm.title.trim() || !editForm.author.trim()) {
+      setStatus({ type: 'error', message: 'Title and author are required' });
+      return;
+    }
+    setEditSaving(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`${API}/qrcode/${editBookId}`, {
+        method: 'PATCH', headers, body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus({ type: 'success', message: `Book "${data.book.title}" updated!` });
+        setEditBookId(null);
+        fetchData();
+      } else {
+        setStatus({ type: 'error', message: data.error || 'Failed to update book' });
+      }
+    } catch {
+      setStatus({ type: 'error', message: 'Could not connect to server' });
+    }
+    setEditSaving(false);
   };
 
   const handleDeleteBook = async (id: string, title: string) => {
@@ -575,6 +622,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                       const bookCodes = codes.filter((c) => c.bookId === b.id);
                       const active = bookCodes.filter((c) => c.status === 'active').length;
                       const isManage = coverBookId === b.id;
+                      const isEdit = editBookId === b.id;
                       return (
                         <div key={b.id} className="card p-5">
                           <div className="flex items-start justify-between mb-2">
@@ -616,6 +664,61 @@ export default function QRCodeSystem({ token }: { token: string }) {
                               </div>
                             </div>
                           )}
+                          {isEdit && (
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mb-3">
+                              <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Edit Book Details</div>
+                              <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">Title *</label>
+                                  <input type="text" value={editForm.title} onChange={(e) => setEditField('title', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">Author *</label>
+                                  <input type="text" value={editForm.author} onChange={(e) => setEditField('author', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">ISBN</label>
+                                  <input type="text" value={editForm.isbn} onChange={(e) => setEditField('isbn', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">Publisher</label>
+                                  <input type="text" value={editForm.publisher} onChange={(e) => setEditField('publisher', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">Year</label>
+                                  <input type="text" value={editForm.year} onChange={(e) => setEditField('year', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-muted block mb-1">Edition</label>
+                                  <input type="text" value={editForm.edition} onChange={(e) => setEditField('edition', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-[10px] text-muted block mb-1">Category</label>
+                                  <input type="text" value={editForm.category} onChange={(e) => setEditField('category', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-[10px] text-muted block mb-1">Description</label>
+                                  <textarea rows={2} value={editForm.description} onChange={(e) => setEditField('description', e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors resize-none" />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={handleSaveEdit} disabled={editSaving}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark disabled:opacity-50">
+                                  {editSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save Changes
+                                </button>
+                                <button onClick={() => setEditBookId(null)}
+                                  className="text-[10px] text-muted hover:text-white" disabled={editSaving}>Cancel</button>
+                              </div>
+                            </div>
+                          )}
                           {b.isbn && <div className="text-[11px] text-muted">ISBN: {b.isbn}</div>}
                           <div className="text-[11px] text-muted">{b.category}{b.year ? ` · ${b.year}` : ''}</div>
                           <div className="flex items-center gap-3 mt-3 text-[11px]">
@@ -630,6 +733,10 @@ export default function QRCodeSystem({ token }: { token: string }) {
                             <button onClick={() => { setCoverBookId(isManage ? null : b.id); setCoverUpload({ front: null, back: null }); }}
                               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.05] text-muted text-xs font-medium hover:bg-white/[0.1] hover:text-white transition-colors" title="Upload front/back cover designs">
                               {isManage ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} Covers
+                            </button>
+                            <button onClick={() => { setEditBookId(isEdit ? null : b.id); if (isEdit) {} else startEditBook(b); }}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.05] text-muted text-xs font-medium hover:bg-white/[0.1] hover:text-white transition-colors" title="Edit book details">
+                              <Pencil className="w-3.5 h-3.5" /> {isEdit ? 'Close' : 'Edit'}
                             </button>
                           </div>
                         </div>
