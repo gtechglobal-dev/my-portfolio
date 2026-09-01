@@ -115,3 +115,9 @@ body {
   box-shadow: 0 4px 16px rgba(255, 122, 47, 0.4);
   transform: translateY(-1px);
 }
+
+/* Mask password-style input without triggering the browser's password manager.
+   Uses text type so no save-password prompt / password tracking occurs. */
+.masked {
+  -webkit-text-security: disc;
+}

@@ -1990,12 +1990,16 @@ export default function QRCodeSystem({ token }: { token: string }) {
               </p>
               <form onSubmit={(e) => { e.preventDefault(); verifyAndContinue(); }}>
                 <input
-                  type="password"
+                  type="text"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  className="masked w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:border-indigo/50"
                   value={passPassword}
                   onChange={(e) => setPassPassword(e.target.value)}
                   placeholder="Admin password"
                   autoFocus
-                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:border-indigo/50"
                 />
                 {passError && <p className="text-xs text-red-400 mt-2">{passError}</p>}
                 <div className="flex gap-2 mt-4">
