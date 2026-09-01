@@ -62,3 +62,64 @@ export async function sendBookingWhatsApp(booking: BookingNotification): Promise
     console.error('WhatsApp notification failed:', err.message);
   }
 }
+
+interface FlaggedCopyAlert {
+  serial: string;
+  bookTitle: string;
+  distinctLocations: number;
+  locations: string[];
+  timeWindow: string;
+}
+
+export async function sendFlaggedCopyWhatsApp(alert: FlaggedCopyAlert): Promise<void> {
+  if (!WA_ACCESS_TOKEN || !WA_PHONE_NUMBER_ID) {
+    console.warn('Flagged copy alert skipped: WA_ACCESS_TOKEN or WA_PHONE_NUMBER_ID not set');
+    return;
+  }
+
+  const locSummary =
+    (alert.locations || []).slice(0, 12).map((l) => `• ${l}`).join('\n') ||
+    '• Unknown';
+
+  const body = [
+    '⚠️ *Possible Counterfeit / Flagged Copy Alert*',
+    '',
+    `*Book:* ${alert.bookTitle}`,
+    `*Serial:* ${alert.serial}`,
+    '',
+    `This serial has been verified from *${alert.distinctLocations} different locations* within ${alert.timeWindow}.`,
+    '',
+    '*Locations detected:*',
+    locSummary,
+    '',
+    'Action: Please review this serial in the admin QR Codes section and *revoke it* if you believe it is an unauthorized duplicate.',
+  ].join('\n');
+
+  try {
+    const res = await fetch(`${WA_API_URL}/${WA_PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${WA_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: NOTIFY_PHONE,
+        type: 'text',
+        text: { body },
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('WhatsApp alert API error:', JSON.stringify(data));
+      return;
+    }
+
+    console.log('Flagged copy WhatsApp alert sent:', data.messages?.[0]?.id);
+  } catch (err: any) {
+    console.error('Flagged copy WhatsApp alert failed:', err.message);
+  }
+}

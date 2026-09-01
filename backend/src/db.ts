@@ -139,6 +139,8 @@ export interface Book {
   edition?: string;
   description: string;
   category: string;
+  frontCover?: string | null;
+  backCover?: string | null;
   createdAt: string;
 }
 
@@ -164,6 +166,19 @@ export async function writeBook(book: Book): Promise<void> {
   await col.insertOne(book as any);
 }
 
+export async function updateBook(id: string, update: Partial<Book>): Promise<Book | null> {
+  const col = getCollection<Book>('books');
+  if (!col) return null;
+  const doc = await col.findOneAndUpdate(
+    { id },
+    { $set: update },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
 export async function deleteBook(id: string): Promise<boolean> {
   const col = getCollection<Book>('books');
   if (!col) return false;
@@ -181,6 +196,7 @@ export interface ScanRecord {
   browser?: string;
   os?: string;
   country?: string;
+  state?: string;
   city?: string;
 }
 
@@ -195,10 +211,15 @@ export interface QrCode {
   flagged?: boolean;
   flagReason?: string | null;
   flaggedAt?: string | null;
+  alertSent?: boolean;
+  alertAt?: string | null;
   activatedAt: string | null;
   verifyCount?: number;
   lastVerifiedAt?: string | null;
   recentScans?: ScanRecord[];
+  locations?: string[];
+  devices?: string[];
+  flagCombos?: string[];
   createdAt: string;
 }
 
@@ -229,9 +250,14 @@ export async function writeQrCode(q: QrCode): Promise<void> {
     flagged: q.flagged ?? false,
     flagReason: q.flagReason ?? null,
     flaggedAt: q.flaggedAt ?? null,
+    alertSent: q.alertSent ?? false,
+    alertAt: q.alertAt ?? null,
     verifyCount: q.verifyCount ?? 0,
     lastVerifiedAt: q.lastVerifiedAt ?? null,
     recentScans: q.recentScans ?? [],
+    locations: q.locations ?? [],
+    devices: q.devices ?? [],
+    flagCombos: q.flagCombos ?? [],
   } as any);
 }
 
@@ -269,7 +295,17 @@ export async function deleteQrCode(code: string): Promise<boolean> {
 }
 
 const SUSPICION_WINDOW_MS = 24 * 60 * 60 * 1000;
-const MAX_WINDOW_SCANS = 10;
+
+// A serial is flagged as suspicious when it has been verified from this many
+// distinct device + location combinations over its lifetime.
+const FLAG_DISTINCT_COMBOS = 100;
+
+// An admin alert is fired when the serial has been verified from this many
+// distinct locations within the 24-hour window ("many different locations at
+// ~the same time", not just many scans).
+const ALERT_DISTINCT_LOCATIONS = 50;
+
+const MAX_RECENT_SCANS = 100;
 
 function parseUserAgent(ua: string): { device: string; browser: string; os: string } {
   let device = 'Unknown';
@@ -280,7 +316,6 @@ function parseUserAgent(ua: string): { device: string; browser: string; os: stri
 
   const uaLower = ua.toLowerCase();
 
-  // Device
   if (uaLower.includes('mobile') || uaLower.includes('android') || uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) {
     device = 'Mobile';
   } else if (uaLower.includes('tablet')) {
@@ -289,7 +324,6 @@ function parseUserAgent(ua: string): { device: string; browser: string; os: stri
     device = 'Desktop';
   }
 
-  // Browser
   if (uaLower.includes('edg/')) browser = 'Edge';
   else if (uaLower.includes('chrome') || uaLower.includes('crios')) browser = 'Chrome';
   else if (uaLower.includes('firefox') || uaLower.includes('fxios')) browser = 'Firefox';
@@ -297,7 +331,6 @@ function parseUserAgent(ua: string): { device: string; browser: string; os: stri
   else if (uaLower.includes('opera') || uaLower.includes('opr/')) browser = 'Opera';
   else if (uaLower.includes('samsungbrowser')) browser = 'Samsung Browser';
 
-  // OS
   if (uaLower.includes('windows')) os = 'Windows';
   else if (uaLower.includes('mac os') || uaLower.includes('macos')) os = 'macOS';
   else if (uaLower.includes('iphone') || uaLower.includes('ipad') || uaLower.includes('ipod')) os = 'iOS';
@@ -307,13 +340,28 @@ function parseUserAgent(ua: string): { device: string; browser: string; os: stri
   return { device, browser, os };
 }
 
-export async function recordVerification(code: string, ip: string, userAgent?: string): Promise<QrCode | null> {
+export async function recordVerification(
+  code: string,
+  ip: string,
+  userAgent?: string,
+  geo?: { country?: string; state?: string; city?: string }
+): Promise<{ record: QrCode | null; shouldAlert: boolean }> {
   const col = getCollection<QrCode>('qrcodes');
-  if (!col) return null;
+  if (!col) return { record: null, shouldAlert: false };
   const now = new Date().toISOString();
   const nowMs = Date.now();
 
   const { device, browser, os } = parseUserAgent(userAgent || '');
+
+  const country = geo?.country || 'Unknown';
+  const state = geo?.state || 'Unknown';
+  const city = geo?.city || 'Unknown';
+
+  // Normalised location key: "State, Country" (e.g. "Lagos, Nigeria")
+  const locationKey = [state.trim(), country.trim()].filter(Boolean).join(', ') || 'Unknown';
+
+  // Combo key used to track distinct device + location pairs for flagging
+  const comboKey = `${device}|${locationKey}`;
 
   const scan: ScanRecord = {
     ip,
@@ -322,33 +370,72 @@ export async function recordVerification(code: string, ip: string, userAgent?: s
     device,
     browser,
     os,
+    country,
+    state,
+    city,
   };
 
   const doc = await col.findOne({ code });
-  if (!doc) return null;
+  if (!doc) return { record: null, shouldAlert: false };
 
+  // Rolling 24h scan history for location-specific alert detection
   const recent = (doc.recentScans || [])
     .filter((s) => nowMs - new Date(s.at).getTime() <= SUSPICION_WINDOW_MS);
   recent.push(scan);
-  const capped = recent.slice(-10);
+  const capped = recent.slice(-MAX_RECENT_SCANS);
 
-  const distinctIps = new Set(capped.map((s) => s.ip)).size;
-  const scanCount = capped.length;
+  // Distinct locations (state+country) within the 24h window — for the alert
+  const distinctLocationsInWindow = new Set(
+    capped
+      .map((s) => [s.state, s.country].filter(Boolean).join(', ').trim())
+      .filter((k) => k && k !== ',')
+  ).size;
 
-  const becameFlagged = !doc.flagged && (distinctIps >= 2 || scanCount >= MAX_WINDOW_SCANS);
+  // Lifetime distinct arrays (cumulative, never shrunk)
+  const lifetimeLocations = new Set<string>([
+    ...(doc.locations || []),
+    locationKey,
+  ]);
+
+  const lifetimeDevices = new Set<string>([
+    ...(doc.devices || []),
+    device,
+  ]);
+
+  const lifetimeCombos = new Set<string>([
+    ...(doc.flagCombos || []),
+    comboKey,
+  ]);
 
   const set: Record<string, any> = {
     verifyCount: (doc.verifyCount || 0) + 1,
     lastVerifiedAt: now,
     recentScans: capped,
+    locations: Array.from(lifetimeLocations),
+    devices: Array.from(lifetimeDevices),
+    flagCombos: Array.from(lifetimeCombos),
   };
+
+  // Flag at 100 distinct device + location combos
+  const becameFlagged =
+    !doc.flagged && lifetimeCombos.size >= FLAG_DISTINCT_COMBOS;
+
   if (becameFlagged) {
     set.flagged = true;
     set.flagReason =
-      distinctIps >= 2
-        ? 'This serial was scanned from multiple locations within a short time — possible unauthorized duplicate.'
-        : 'Unusually high number of scans detected for this serial — possible unauthorized duplicate.';
+      `This serial was verified from ${lifetimeCombos.size} different device/location combinations — possible unauthorized duplicate or wide distribution.`;
     set.flaggedAt = now;
+  }
+
+  // Admin alert when scanned from 50+ distinct locations in 24h window,
+  // and we have not already alerted for this code
+  const shouldAlert =
+    distinctLocationsInWindow >= ALERT_DISTINCT_LOCATIONS &&
+    !doc.alertSent;
+
+  if (shouldAlert) {
+    set.alertSent = true;
+    set.alertAt = now;
   }
 
   const updated = await col.findOneAndUpdate(
@@ -356,9 +443,9 @@ export async function recordVerification(code: string, ip: string, userAgent?: s
     { $set: set },
     { returnDocument: 'after' },
   );
-  if (!updated) return null;
+  if (!updated) return { record: null, shouldAlert: false };
   const { _id, ...rest } = updated;
-  return rest;
+  return { record: rest, shouldAlert };
 }
 
 export async function deleteQrCodesByBook(bookId: string): Promise<number> {

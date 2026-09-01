@@ -17,6 +17,8 @@ interface Book {
   edition?: string;
   description: string;
   category: string;
+  frontCover?: string | null;
+  backCover?: string | null;
   createdAt: string;
 }
 
@@ -28,6 +30,7 @@ interface ScanRecord {
   browser?: string;
   os?: string;
   country?: string;
+  state?: string;
   city?: string;
 }
 
@@ -41,10 +44,15 @@ interface QrRecord {
   flagged?: boolean;
   flagReason?: string | null;
   flaggedAt?: string | null;
+  alertSent?: boolean;
+  alertAt?: string | null;
   activatedAt: string | null;
   verifyCount?: number;
   lastVerifiedAt?: string | null;
   recentScans?: ScanRecord[];
+  locations?: string[];
+  devices?: string[];
+  flagCombos?: string[];
   createdAt: string;
 }
 
@@ -68,6 +76,23 @@ const emptyForm = {
   category: 'General',
 };
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function CoverThumb({ url, alt }: { url: string; alt: string }) {
+  return (
+    <div className="aspect-[3/4] w-20 rounded-lg overflow-hidden border border-white/[0.08] shrink-0">
+      <img src={url} alt={alt} className="w-full h-full object-cover" />
+    </div>
+  );
+}
+
 export default function QRCodeSystem({ token }: { token: string }) {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -79,6 +104,14 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: string; message: string } | null>(null);
+
+  const [frontCover, setFrontCover] = useState<string | null>(null);
+  const [backCover, setBackCover] = useState<string | null>(null);
+  const [coverErrors, setCoverErrors] = useState<string>('');
+
+  const [coverBookId, setCoverBookId] = useState<string | null>(null);
+  const [coverUpload, setCoverUpload] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
+  const [coverSaving, setCoverSaving] = useState(false);
 
   const [selectedBookId, setSelectedBookId] = useState('');
   const [genCount, setGenCount] = useState('10');
@@ -125,14 +158,17 @@ export default function QRCodeSystem({ token }: { token: string }) {
     }
     setSaving(true);
     setStatus(null);
+    setCoverErrors('');
     try {
       const res = await fetch(`${API}/qrcode`, {
-        method: 'POST', headers, body: JSON.stringify(form),
+        method: 'POST', headers, body: JSON.stringify({ ...form, frontCover, backCover }),
       });
       const data = await res.json();
       if (res.ok) {
         setStatus({ type: 'success', message: `Book "${data.book.title}" registered!` });
         setForm(emptyForm);
+        setFrontCover(null);
+        setBackCover(null);
         fetchData();
       } else {
         setStatus({ type: 'error', message: data.error || 'Failed to register book' });
@@ -141,6 +177,74 @@ export default function QRCodeSystem({ token }: { token: string }) {
       setStatus({ type: 'error', message: 'Could not connect to server' });
     }
     setSaving(false);
+  };
+
+  const pickCover = async (kind: 'front' | 'back') => {
+    setCoverErrors('');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setCoverErrors('Image must be 5MB or smaller. Please use a smaller image.');
+        return;
+      }
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        if (kind === 'front') setFrontCover(dataUrl);
+        else setBackCover(dataUrl);
+      } catch {
+        setCoverErrors('Could not read the image file.');
+      }
+    };
+    input.click();
+  };
+
+  const pickCoverUpload = async (kind: 'front' | 'back') => {
+    setCoverErrors('');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setCoverErrors('Image must be 5MB or smaller. Please use a smaller image.');
+        return;
+      }
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        setCoverUpload((c) => ({ ...c, [kind]: dataUrl }));
+      } catch {
+        setCoverErrors('Could not read the image file.');
+      }
+    };
+    input.click();
+  };
+
+  const saveCovers = async (bookId: string) => {
+    if (!coverUpload.front && !coverUpload.back) return;
+    setCoverSaving(true);
+    setCoverErrors('');
+    try {
+      const res = await fetch(`${API}/qrcode/${bookId}/covers`, {
+        method: 'POST', headers, body: JSON.stringify(coverUpload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus({ type: 'success', message: 'Book covers updated!' });
+        setCoverUpload({ front: null, back: null });
+        setCoverBookId(null);
+        fetchData();
+      } else {
+        setCoverErrors(data.error || 'Failed to upload covers');
+      }
+    } catch {
+      setCoverErrors('Could not connect to server');
+    }
+    setCoverSaving(false);
   };
 
   const handleDeleteBook = async (id: string, title: string) => {
@@ -413,6 +517,41 @@ export default function QRCodeSystem({ token }: { token: string }) {
                       className="w-full px-3 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors resize-none" placeholder="Short description shown to readers when they verify the code (optional)" />
                   </div>
                 </div>
+
+                <div className="mt-5">
+                  <label className="text-[10px] text-muted uppercase tracking-wider block mb-2">Book Cover Designs (front & back)</label>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      {frontCover ? (
+                        <CoverThumb url={frontCover} alt="Front cover" />
+                      ) : (
+                        <div className="aspect-[3/4] w-20 rounded-lg border border-dashed border-white/[0.15] flex flex-col items-center justify-center text-faint">
+                          <BookOpen className="w-5 h-5 mb-1" />
+                          <span className="text-[9px]">Front</span>
+                        </div>
+                      )}
+                      <button type="button" onClick={() => pickCover('front')}
+                        className="text-xs text-indigo hover:text-indigo/80 flex items-center gap-1">
+                        <Plus className="w-3.5 h-3.5" /> {frontCover ? 'Change' : 'Add'} Front Cover
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {backCover ? (
+                        <CoverThumb url={backCover} alt="Back cover" />
+                      ) : (
+                        <div className="aspect-[3/4] w-20 rounded-lg border border-dashed border-white/[0.15] flex flex-col items-center justify-center text-faint">
+                          <BookOpen className="w-5 h-5 mb-1" />
+                          <span className="text-[9px]">Back</span>
+                        </div>
+                      )}
+                      <button type="button" onClick={() => pickCover('back')}
+                        className="text-xs text-indigo hover:text-indigo/80 flex items-center gap-1">
+                        <Plus className="w-3.5 h-3.5" /> {backCover ? 'Change' : 'Add'} Back Cover
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-faint mt-2">These appear on the reader's verification page as the book preview. Max 5MB each.</p>
+                </div>
                 <div className="mt-4 flex items-center gap-3">
                   <button onClick={handleRegister} disabled={saving}
                     className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold hover:bg-indigo-dark transition-all disabled:opacity-50">
@@ -435,6 +574,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                     {books.map((b) => {
                       const bookCodes = codes.filter((c) => c.bookId === b.id);
                       const active = bookCodes.filter((c) => c.status === 'active').length;
+                      const isManage = coverBookId === b.id;
                       return (
                         <div key={b.id} className="card p-5">
                           <div className="flex items-start justify-between mb-2">
@@ -447,16 +587,51 @@ export default function QRCodeSystem({ token }: { token: string }) {
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+                          {(b.frontCover || b.backCover) && (
+                            <div className="flex items-center gap-2 my-2">
+                              {b.frontCover && <CoverThumb url={b.frontCover} alt={`${b.title} front`} />}
+                              {b.backCover && <CoverThumb url={b.backCover} alt={`${b.title} back`} />}
+                            </div>
+                          )}
+                          {isManage && (
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mb-3">
+                              <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Upload Covers</div>
+                              <div className="flex flex-wrap gap-3 mb-3">
+                                <div className="flex items-center gap-2">
+                                  {coverUpload.front ? <CoverThumb url={coverUpload.front} alt="Front" /> : <div className="aspect-[3/4] w-14 rounded border border-dashed border-white/[0.15] flex items-center justify-center text-faint text-[9px]">Front</div>}
+                                  <button type="button" onClick={() => pickCoverUpload('front')} className="text-[10px] text-indigo flex items-center gap-1"><Plus className="w-3 h-3" /> {coverUpload.front ? 'Change' : 'Add'} Front</button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {coverUpload.back ? <CoverThumb url={coverUpload.back} alt="Back" /> : <div className="aspect-[3/4] w-14 rounded border border-dashed border-white/[0.15] flex items-center justify-center text-faint text-[9px]">Back</div>}
+                                  <button type="button" onClick={() => pickCoverUpload('back')} className="text-[10px] text-indigo flex items-center gap-1"><Plus className="w-3 h-3" /> {coverUpload.back ? 'Change' : 'Add'} Back</button>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => saveCovers(b.id)} disabled={coverSaving || (!coverUpload.front && !coverUpload.back)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark disabled:opacity-50">
+                                  {coverSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save Covers
+                                </button>
+                                <button onClick={() => { setCoverBookId(null); setCoverUpload({ front: null, back: null }); }}
+                                  className="text-[10px] text-muted hover:text-white" disabled={coverSaving}>Cancel</button>
+                              </div>
+                            </div>
+                          )}
                           {b.isbn && <div className="text-[11px] text-muted">ISBN: {b.isbn}</div>}
                           <div className="text-[11px] text-muted">{b.category}{b.year ? ` · ${b.year}` : ''}</div>
                           <div className="flex items-center gap-3 mt-3 text-[11px]">
                             <span className="text-muted">Codes: <span className="text-white/80">{bookCodes.length}</span></span>
                             <span className="text-muted">Active: <span className="text-emerald-400">{active}</span></span>
                           </div>
-                          <button onClick={() => { setSelectedBookId(b.id); setSubTab('generate'); }}
-                            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo/10 text-indigo text-xs font-medium hover:bg-indigo/20 transition-colors">
-                            <QrCode className="w-3.5 h-3.5" /> Generate Codes
-                          </button>
+                          <div className="flex gap-2 mt-4">
+                            <button onClick={() => { setSelectedBookId(b.id); setSubTab('generate'); }}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo/10 text-indigo text-xs font-medium hover:bg-indigo/20 transition-colors">
+                              <QrCode className="w-3.5 h-3.5" /> Generate Codes
+                            </button>
+                            <button onClick={() => { setCoverBookId(isManage ? null : b.id); setCoverUpload({ front: null, back: null }); }}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.05] text-muted text-xs font-medium hover:bg-white/[0.1] hover:text-white transition-colors" title="Upload front/back cover designs">
+                              {isManage ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} Covers
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -728,12 +903,20 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                             <div>Serial: <span className="text-white/80">{detailData.code.serial}</span></div>
                                             <div>Status: <span className="text-white/80 capitalize">{detailData.code.status}</span></div>
                                             <div>Total Scans: <span className="text-white/80">{detailData.code.verifyCount || 0}</span></div>
+                                            <div>Distinct Locations: <span className="text-white/80">{detailData.code.locations?.length || 0}</span></div>
+                                            <div>Distinct Devices: <span className="text-white/80">{detailData.code.devices?.length || 0}</span></div>
+                                            <div>Distinct Device/Loc pairs: <span className={`font-medium ${(detailData.code.flagCombos?.length || 0) >= 100 ? 'text-rose-300' : 'text-white/80'}`}>{detailData.code.flagCombos?.length || 0}</span>
+                                              <span className="text-faint"> / 100 (flag threshold)</span>
+                                            </div>
                                             <div>Created: <span className="text-white/80">{new Date(detailData.code.createdAt).toLocaleString()}</span></div>
                                             {detailData.code.activatedAt && (
                                               <div>Activated: <span className="text-white/80">{new Date(detailData.code.activatedAt).toLocaleString()}</span></div>
                                             )}
                                             {detailData.code.flagged && (
                                               <div className="text-rose-300">Flagged: {detailData.code.flagReason}</div>
+                                            )}
+                                            {detailData.code.alertSent && (
+                                              <div className="text-amber-300">Admin alert sent {detailData.code.alertAt ? `on ${new Date(detailData.code.alertAt).toLocaleString()}` : ''}</div>
                                             )}
                                           </div>
                                         </div>
@@ -746,6 +929,8 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                                   <tr className="border-b border-white/[0.04] text-left text-muted">
                                                     <th className="px-3 py-2">Date & Time</th>
                                                     <th className="px-3 py-2">IP Address</th>
+                                                    <th className="px-3 py-2">State</th>
+                                                    <th className="px-3 py-2">Location</th>
                                                     <th className="px-3 py-2">Device</th>
                                                     <th className="px-3 py-2">Browser</th>
                                                     <th className="px-3 py-2">OS</th>
@@ -757,10 +942,12 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                                     <tr key={idx} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
                                                       <td className="px-3 py-2 text-faint">{new Date(scan.at).toLocaleString()}</td>
                                                       <td className="px-3 py-2 text-faint font-mono">{scan.ip}</td>
+                                                      <td className="px-3 py-2">{scan.state || 'Unknown'}</td>
+                                                      <td className="px-3 py-2">{scan.city ? `${scan.city}, ${scan.country || ''}` : (scan.country || 'Unknown')}</td>
                                                       <td className="px-3 py-2">{scan.device || 'Unknown'}</td>
                                                       <td className="px-3 py-2">{scan.browser || 'Unknown'}</td>
                                                       <td className="px-3 py-2">{scan.os || 'Unknown'}</td>
-                                                      <td className="px-3 py-2 text-faint max-w-[200px] truncate" title={scan.userAgent || ''}>{scan.userAgent || '—'}</td>
+                                                      <td className="px-3 py-2 text-faint max-w-[160px] truncate" title={scan.userAgent || ''}>{scan.userAgent || '—'}</td>
                                                     </tr>
                                                   ))}
                                                 </tbody>
