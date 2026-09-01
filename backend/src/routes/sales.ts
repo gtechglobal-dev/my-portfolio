@@ -1,6 +1,14 @@
 import { Router, Response } from "express";
 import bcrypt from "bcryptjs";
-import { readBooks, findBook, updateBook, type Book } from "../db.js";
+import { randomBytes } from "crypto";
+import {
+  readBooks,
+  findBook,
+  updateBook,
+  recordSaleToBook,
+  type Book,
+  type SaleEntry,
+} from "../db.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
 
 const router = Router();
@@ -51,6 +59,7 @@ router.get("/", authMiddleware, async (_req: AuthRequest, res: Response) => {
           price,
           revenue: sold * price,
           percentSold: printed > 0 ? Math.round((sold / printed) * 100) : 0,
+          salesLog: b.salesLog || [],
         };
       });
 
@@ -100,7 +109,7 @@ router.post("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// ─── Quick increment of sold copies (e.g. record a single sale) ──
+// ─── Record a sale: increments sold count, logs seller + date + revenue ──
 
 router.post("/:id/sold", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -109,16 +118,66 @@ router.post("/:id/sold", authMiddleware, async (req: AuthRequest, res: Response)
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
+
     const qty = Math.max(1, Math.min(parseInt(req.body.qty, 10) || 1, 10000));
+    const seller = typeof req.body.seller === "string" ? req.body.seller.trim() : "";
+    if (!seller) {
+      return res.status(400).json({ error: "Seller name is required" });
+    }
+
     const sold = book.soldCopies || 0;
     const printed = book.printedCopies || 0;
-    const newSold = Math.min(sold + qty, printed);
+    const cappedQty = Math.min(qty, Math.max(0, printed - sold));
 
-    const updated = await updateBook(id, { soldCopies: newSold });
-    res.json({ success: true, book: updated });
+    const price = book.price || 0;
+    const revenue = cappedQty * price;
+    const logId = randomBytes(8).toString("hex");
+
+    // Pin the per-sale price from the book at transaction time so history stays accurate.
+    const updated = await recordSaleToBook(id, price, cappedQty, revenue, seller, logId);
+    res.json({
+      success: true,
+      book: updated,
+      sale: { id: logId, seller, qty: cappedQty, price, revenue, date: new Date().toISOString() },
+    });
   } catch (err: any) {
     console.error("Record sale failed:", err.message);
     res.status(500).json({ error: "Failed to record sale" });
+  }
+});
+
+// ─── All recorded sales across every book (newest first) ───────────
+
+router.get("/log", authMiddleware, async (_req: AuthRequest, res: Response) => {
+  try {
+    const books = await readBooks();
+    const entries: Array<SaleEntry & { bookId: string; bookTitle: string; author: string }> = [];
+    for (const b of books) {
+      if (!b.salesLog || b.salesLog.length === 0) continue;
+      for (const e of b.salesLog) {
+        entries.push({
+          ...e,
+          bookId: b.id,
+          bookTitle: b.title,
+          author: b.author,
+        });
+      }
+    }
+    entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const totals = entries.reduce(
+      (acc, e) => {
+        acc.qty += e.qty;
+        acc.revenue += e.revenue;
+        return acc;
+      },
+      { qty: 0, revenue: 0 }
+    );
+
+    res.json({ sales: entries, totals });
+  } catch (err: any) {
+    console.error("List sales log failed:", err.message);
+    res.status(500).json({ error: "Failed to load sales log" });
   }
 });
 

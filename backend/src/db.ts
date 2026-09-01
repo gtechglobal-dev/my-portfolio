@@ -165,7 +165,23 @@ export interface Book {
   soldCopies?: number;
   /** Selling price per copy (NGN) as set in the Sales tab. */
   price?: number;
+  /** Chronological log of every recorded sale (added when a sale is recorded). */
+  salesLog?: SaleEntry[];
   createdAt: string;
+}
+
+export interface SaleEntry {
+  id: string;
+  /** Seller / operational staff who recorded the sale. */
+  seller: string;
+  /** Quantity of copies sold in this transaction. */
+  qty: number;
+  /** Selling price per copy used for this sale (at the time of the sale). */
+  price: number;
+  /** Total revenue of the sale (qty * price). */
+  revenue: number;
+  /** ISO timestamp of when the sale was recorded. */
+  date: string;
 }
 
 export function makeBookCode(): string {
@@ -233,6 +249,36 @@ export async function deleteBook(id: string): Promise<boolean> {
   if (!col) return false;
   const result = await col.deleteOne({ id });
   return result.deletedCount > 0;
+}
+
+// Atomically increment the sold count and append a sale-history entry. Returns null
+// if the book cannot be found or the database is unavailable.
+export async function recordSaleToBook(
+  id: string,
+  price: number,
+  qty: number,
+  revenue: number,
+  seller: string,
+  logId: string,
+): Promise<Book | null> {
+  const col = getCollection<Book>('books');
+  if (!col) return null;
+  const entry: SaleEntry = {
+    id: logId,
+    seller,
+    qty,
+    price,
+    revenue,
+    date: new Date().toISOString(),
+  };
+  const doc = await col.findOneAndUpdate(
+    { id },
+    { $inc: { soldCopies: qty }, $push: { salesLog: entry as any } },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
 }
 
 // ─── QR Code ───────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { optimizeImage } from '../../lib/image';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
-  XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw, BadgeDollarSign, TrendingUp,
+  XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw, BadgeDollarSign, TrendingUp, History,
 } from 'lucide-react';
 
 const API = '/api';
@@ -40,6 +40,19 @@ interface SalesRow {
   price: number;
   revenue: number;
   percentSold: number;
+  salesLog?: SaleLogEntry[];
+}
+
+interface SaleLogEntry {
+  id: string;
+  seller: string;
+  qty: number;
+  price: number;
+  revenue: number;
+  date: string;
+  bookId?: string;
+  bookTitle?: string;
+  author?: string;
 }
 
 interface SerialRecord {
@@ -255,9 +268,14 @@ export default function QRCodeSystem({ token }: { token: string }) {
   // Quick sell modal
   const [sellBook, setSellBook] = useState<SalesRow | null>(null);
   const [sellQty, setSellQty] = useState(1);
-  // Admin-password gate before sensitive inventory edits.
+  const [seller, setSeller] = useState('');
+  const [sellerError, setSellerError] = useState('');
+  // Sales history view (what was sold, when, by whom).
+  const [salesLogOpen, setSalesLogOpen] = useState(false);
+  const [salesLog, setSalesLog] = useState<Array<SaleLogEntry>>([]);
+  const [salesLogLoading, setSalesLogLoading] = useState(false);
+  // Admin-password gate before sensitive inventory edits (Edit Inventory only).
   const [passOpen, setPassOpen] = useState(false);
-  const [passPending, setPassPending] = useState<'edit' | 'sell' | null>(null);
   const [passAttempt, setPassAttempt] = useState<SalesRow | null>(null);
   const [passPassword, setPassPassword] = useState('');
   const [passError, setPassError] = useState('');
@@ -313,26 +331,25 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setSaleForm({ printedCopies: String(row.printed || ''), soldCopies: String(row.sold || ''), price: String(row.price || '') });
   };
 
-  // Route inventory actions through an admin-password confirmation first.
+  // Route inventory edits through an admin-password confirmation first.
   const requestEdit = (row: SalesRow) => {
-    setPassPending('edit');
     setPassAttempt(row);
     setPassPassword('');
     setPassError('');
     setPassOpen(true);
   };
 
+  // Selling does not require the password — it opens the sell form directly.
   const requestSell = (row: SalesRow) => {
     if (row.remaining <= 0) return;
-    setPassPending('sell');
-    setPassAttempt(row);
-    setPassPassword('');
-    setPassError('');
-    setPassOpen(true);
+    setSellBook(row);
+    setSellQty(1);
+    setSeller('');
+    setSellerError('');
   };
 
   const verifyAndContinue = async () => {
-    if (!passPassword || !passPending) return;
+    if (!passPassword) return;
     setPassChecking(true);
     setPassError('');
     try {
@@ -343,12 +360,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
       if (data.valid && passAttempt) {
         setPassOpen(false);
         setPassChecking(false);
-        if (passPending === 'edit') {
-          openEditSales(passAttempt);
-        } else {
-          setSellBook(passAttempt);
-          setSellQty(1);
-        }
+        openEditSales(passAttempt);
       } else {
         setPassChecking(false);
         setPassError('Incorrect admin password. Please try again.');
@@ -382,19 +394,20 @@ export default function QRCodeSystem({ token }: { token: string }) {
     }
   };
 
-  const sell = async (bookId: string, qty: number) => {
+  const sell = async (bookId: string, qty: number, soldBy: string) => {
     try {
       const res = await fetch(`${API}/sales/${bookId}/sold`, {
-        method: 'POST', headers, body: JSON.stringify({ qty }),
+        method: 'POST', headers, body: JSON.stringify({ qty, seller: soldBy }),
       });
       if (res.ok) {
         const data = await res.json();
-        const book = data.book as { title?: string; price?: number } | undefined;
-        const price = book?.price || 0;
-        setSalesMsg({ type: 'success', message: `Sold ${qty} copy${qty > 1 ? 's' : ''}. Revenue ${(price * qty).toLocaleString()} naira recorded.` });
+        const sale = data.sale as { revenue?: number; qty?: number } | undefined;
+        const price = data.book?.price || 0;
+        setSalesMsg({ type: 'success', message: `Sold ${sale?.qty || qty} copy${(sale?.qty || qty) > 1 ? 's' : ''} by ${soldBy}. Revenue ${(sale?.revenue ?? price * qty).toLocaleString()} naira recorded.` });
         fetchSales();
       } else {
-        setSalesMsg({ type: 'error', message: 'Failed to record the sale.' });
+        const data = await res.json();
+        setSalesMsg({ type: 'error', message: data.error || 'Failed to record the sale.' });
       }
     } catch {
       setSalesMsg({ type: 'error', message: 'Could not connect to server' });
@@ -403,9 +416,24 @@ export default function QRCodeSystem({ token }: { token: string }) {
 
   const confirmSell = async () => {
     if (!sellBook) return;
+    if (!seller.trim()) {
+      setSellerError('Seller name is required.');
+      return;
+    }
     const qty = Math.max(1, Math.min(sellQty, sellBook.remaining));
     setSellBook(null);
-    await sell(sellBook.id, qty);
+    await sell(sellBook.id, qty, seller.trim());
+  };
+
+  const fetchSalesLog = async () => {
+    setSalesLogLoading(true);
+    try {
+      const res = await fetch(`${API}/sales/log`, { headers });
+      if (res.ok) setSalesLog((await res.json()).sales || []);
+    } catch {
+      /* ignore */
+    }
+    setSalesLogLoading(false);
   };
 
   const setField = (k: keyof typeof emptyForm, v: string) =>
@@ -1627,6 +1655,17 @@ export default function QRCodeSystem({ token }: { token: string }) {
       {/* SALES & INVENTORY */}
       {subTab === 'sales' && (
         <div className="space-y-5">
+          {/* Header with sales history trigger */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-faint text-xs">
+              <History className="w-4 h-4" /> Track printed copies, record sales, and monitor revenue.
+            </div>
+            <button onClick={() => { setSalesLogOpen(true); fetchSalesLog(); }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.05] text-xs font-semibold hover:bg-white/[0.1] transition-colors">
+              <History className="w-4 h-4 text-indigo" /> View Sales History
+            </button>
+          </div>
+
           {/* Summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-xl border border-white/[0.08] bg-[#14141a] p-4">
@@ -1889,6 +1928,18 @@ export default function QRCodeSystem({ token }: { token: string }) {
                 <span className="flex-1 text-center text-xs text-faint">Click +/− or type the quantity</span>
               </div>
 
+              <label className="mt-4 block">
+                <span className="text-[11px] text-faint">Sold by (seller name) *</span>
+                <input
+                  type="text"
+                  value={seller}
+                  onChange={(e) => { setSeller(e.target.value); setSellerError(''); }}
+                  placeholder="Please enter your name"
+                  className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                />
+                {sellerError && <p className="text-xs text-red-400 mt-1.5">{sellerError}</p>}
+              </label>
+
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={confirmSell}
@@ -1935,7 +1986,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
               </div>
               <h3 className="text-base font-semibold text-center mb-1">Admin Verification</h3>
               <p className="text-xs text-faint text-center mb-4">
-                Enter your admin password to {passPending === 'edit' ? 'edit inventory' : 'record a sale'}{passAttempt ? ` for "${passAttempt.title}"` : ''}.
+                Enter your admin password to edit inventory{passAttempt ? ` for "${passAttempt.title}"` : ''}.
               </p>
               <form onSubmit={(e) => { e.preventDefault(); verifyAndContinue(); }}>
                 <input
@@ -1958,6 +2009,64 @@ export default function QRCodeSystem({ token }: { token: string }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sales History modal */}
+      <AnimatePresence>
+        {salesLogOpen && (
+          <motion.div
+            key="saleslog"
+            className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSalesLogOpen(false)}
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 6 }}
+              transition={{ duration: 0.16 }}
+              className="relative w-full max-w-3xl rounded-2xl border border-white/[0.1] bg-[#14141a] p-5 shadow-2xl max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-semibold flex items-center gap-2"><History className="w-5 h-5 text-indigo" /> Sales History</h3>
+                  <p className="text-xs text-faint mt-0.5">Book sold, quantity, seller, and date — newest first.</p>
+                </div>
+                <button onClick={() => setSalesLogOpen(false)} className="text-faint hover:text-white" aria-label="Close">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto flex-1">
+                {salesLogLoading ? (
+                  <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 text-indigo animate-spin" /></div>
+                ) : salesLog.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <History className="w-10 h-10 text-faint mx-auto mb-3" />
+                    <p className="text-sm text-faint">No sales recorded yet. Use the Sell button on any book to record a sale.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {salesLog.map((s) => (
+                      <div key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-white/[0.03] px-3 py-2.5 border border-white/[0.05]">
+                        <p className="text-sm font-semibold min-w-[140px] truncate">{s.bookTitle}</p>
+                        <span className="text-[11px] text-faint">{s.qty} copy{s.qty > 1 ? 's' : ''}</span>
+                        <span className="text-[11px] text-faint">@ ₦{s.price.toLocaleString()}</span>
+                        <span className="text-xs font-semibold text-emerald-300">₦{s.revenue.toLocaleString()}</span>
+                        <span className="text-[11px] text-indigo">by {s.seller}</span>
+                        <span className="text-[11px] text-faint ml-auto">{new Date(s.date).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
