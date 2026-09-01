@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { optimizeImage } from '../../lib/image';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
-  XCircle, Download, Loader2, ChevronDown,   BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil,
+  XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw,
 } from 'lucide-react';
 
 const API = '/api';
+
+const SERIAL_PREFIX = 'OKSON-';
 
 interface Book {
   id: string;
@@ -19,7 +22,13 @@ interface Book {
   category: string;
   frontCover?: string | null;
   backCover?: string | null;
+  bookCode?: string;
   createdAt: string;
+}
+
+interface SerialRecord {
+  serial: string;
+  code: string;
 }
 
 interface ScanRecord {
@@ -56,14 +65,23 @@ interface QrRecord {
   createdAt: string;
 }
 
-type SubTab = 'books' | 'generate' | 'activate' | 'codes';
+type SubTab = 'register' | 'books' | 'activate' | 'codes';
 
-const subTabs: { id: SubTab; label: string; icon: any }[] = [
-  { id: 'books', label: 'Register Books', icon: BookOpen },
-  { id: 'generate', label: 'Generate Codes', icon: QrCode },
-  { id: 'activate', label: 'Activate Codes', icon: Zap },
-  { id: 'codes', label: 'All Codes', icon: Layers },
-];
+interface ConfirmState {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+}
+
+  const subTabs: { id: SubTab; label: string; icon: any }[] = [
+    { id: 'register', label: 'Register Book', icon: Plus },
+    { id: 'books', label: 'Registered Books', icon: BookOpen },
+    { id: 'activate', label: 'Activate Serials', icon: Zap },
+    { id: 'codes', label: 'All Serials', icon: Hash },
+  ];
 
 const emptyForm = {
   title: '',
@@ -76,19 +94,45 @@ const emptyForm = {
   category: 'General',
 };
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function CoverThumb({ url, alt }: { url: string; alt: string }) {
   return (
     <div className="aspect-[3/4] w-20 rounded-lg overflow-hidden border border-white/[0.08] shrink-0">
       <img src={url} alt={alt} className="w-full h-full object-cover" />
+    </div>
+  );
+}
+
+// Small angled book mockup (auto-generated from the uploaded cover) shown in the
+// admin so the publisher can see exactly what readers will see on verify.
+function AdminMockup({ url, alt }: { url: string; alt: string }) {
+  const w = 60;
+  const h = Math.round(w * 1.35);
+  const thick = 8;
+  return (
+    <div
+      className="rounded-lg border border-white/[0.12] bg-white/[0.03] p-2.5 shadow-lg select-none"
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+    >
+      <div style={{ perspective: 700 }}>
+        <div className="relative" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-24deg)' }}>
+          <div
+            className="absolute rounded"
+            style={{ width: w, height: h, background: 'linear-gradient(140deg,#2a2a30,#14141a)', transform: 'translateZ(-2px)' }}
+          />
+          <div
+            className="absolute rounded-sm"
+            style={{ left: w - 2, width: thick, height: h, background: 'repeating-linear-gradient(90deg,#f4f0e6 0 2px,#e2dccb 2px 4px)', transform: 'rotateY(-90deg)', transformOrigin: 'left center' }}
+          />
+          <img
+            src={url}
+            alt={alt}
+            draggable={false}
+            className="relative rounded-r-sm"
+            style={{ width: w, height: h, objectFit: 'cover', pointerEvents: 'none', userSelect: 'none', WebkitUserDrag: 'none' } as any}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -104,10 +148,13 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: string; message: string } | null>(null);
+  const [formStatus, setFormStatus] = useState<{ type: string; message: string } | null>(null);
 
   const [frontCover, setFrontCover] = useState<string | null>(null);
   const [backCover, setBackCover] = useState<string | null>(null);
   const [coverErrors, setCoverErrors] = useState<string>('');
+
+  const [regQr, setRegQr] = useState<{ book: Book; qr: string } | null>(null);
 
   const [coverBookId, setCoverBookId] = useState<string | null>(null);
   const [coverUpload, setCoverUpload] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
@@ -120,7 +167,23 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [selectedBookId, setSelectedBookId] = useState('');
   const [genCount, setGenCount] = useState('10');
   const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState<Array<{ serial: string; code: string; qr: string }>>([]);
+  const [generated, setGenerated] = useState<SerialRecord[]>([]);
+  const [genQr, setGenQr] = useState<string | null>(null);
+  const [genBookCode, setGenBookCode] = useState<string | null>(null);
+  const [genBookId, setGenBookId] = useState('');
+
+  // Inline panels inside each registered book card.
+  const [cardPanel, setCardPanel] = useState<{ bookId: string; panel: 'generate' | 'qr' | 'covers' | 'edit' } | null>(null);
+  const [cardQr, setCardQr] = useState<{ bookId: string; qr: string; verifyUrl: string } | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+
+  const [confirmBox, setConfirmBox] = useState<ConfirmState | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setConfirmBox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const [codeInput, setCodeInput] = useState('');
   const [activating, setActivating] = useState(false);
@@ -157,11 +220,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
 
   const handleRegister = async () => {
     if (!form.title.trim() || !form.author.trim()) {
-      setStatus({ type: 'error', message: 'Title and author are required' });
+      setFormStatus({ type: 'error', message: 'Title and author are required' });
       return;
     }
     setSaving(true);
-    setStatus(null);
+    setFormStatus(null);
     setCoverErrors('');
     try {
       const res = await fetch(`${API}/qrcode`, {
@@ -169,16 +232,17 @@ export default function QRCodeSystem({ token }: { token: string }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setStatus({ type: 'success', message: `Book "${data.book.title}" registered!` });
+        setFormStatus({ type: 'success', message: `Book "${data.book.title}" registered!` });
         setForm(emptyForm);
         setFrontCover(null);
         setBackCover(null);
+        setRegQr({ book: data.book, qr: data.qr });
         fetchData();
       } else {
-        setStatus({ type: 'error', message: data.error || 'Failed to register book' });
+        setFormStatus({ type: 'error', message: data.error || 'Failed to register book' });
       }
     } catch {
-      setStatus({ type: 'error', message: 'Could not connect to server' });
+      setFormStatus({ type: 'error', message: 'Could not connect to server' });
     }
     setSaving(false);
   };
@@ -196,9 +260,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
         return;
       }
       try {
-        const dataUrl = await fileToDataUrl(file);
-        if (kind === 'front') setFrontCover(dataUrl);
-        else setBackCover(dataUrl);
+        const optimized = await optimizeImage(file, { maxWidth: 900, maxHeight: 1200 });
+        if (kind === 'front') setFrontCover(optimized);
+        else setBackCover(optimized);
       } catch {
         setCoverErrors('Could not read the image file.');
       }
@@ -219,8 +283,8 @@ export default function QRCodeSystem({ token }: { token: string }) {
         return;
       }
       try {
-        const dataUrl = await fileToDataUrl(file);
-        setCoverUpload((c) => ({ ...c, [kind]: dataUrl }));
+        const optimized = await optimizeImage(file, { maxWidth: 900, maxHeight: 1200 });
+        setCoverUpload((c) => ({ ...c, [kind]: optimized }));
       } catch {
         setCoverErrors('Could not read the image file.');
       }
@@ -241,6 +305,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
         setStatus({ type: 'success', message: 'Book covers updated!' });
         setCoverUpload({ front: null, back: null });
         setCoverBookId(null);
+        setCardPanel(null);
         fetchData();
       } else {
         setCoverErrors(data.error || 'Failed to upload covers');
@@ -284,6 +349,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
       if (res.ok) {
         setStatus({ type: 'success', message: `Book "${data.book.title}" updated!` });
         setEditBookId(null);
+        setCardPanel(null);
         fetchData();
       } else {
         setStatus({ type: 'error', message: data.error || 'Failed to update book' });
@@ -294,10 +360,17 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setEditSaving(false);
   };
 
-  const handleDeleteBook = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}" and all of its QR codes?`)) return;
-    const res = await fetch(`${API}/qrcode/${id}`, { method: 'DELETE', headers });
-    if (res.ok) fetchData();
+  const handleDeleteBook = (id: string, title: string) => {
+    setConfirmBox({
+      title: 'Delete Book',
+      message: `Delete "${title}" and all of its QR codes? This cannot be undone.`,
+      confirmLabel: 'Delete Book',
+      danger: true,
+      onConfirm: async () => {
+        const res = await fetch(`${API}/qrcode/${id}`, { method: 'DELETE', headers });
+        if (res.ok) fetchData();
+      },
+    });
   };
 
   const handleGenerate = async () => {
@@ -308,6 +381,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setGenerating(true);
     setStatus(null);
     setGenerated([]);
+    setGenQr(null);
+    setGenBookCode(null);
+    setGenBookId(selectedBookId);
     try {
       const res = await fetch(`${API}/qrcode/${selectedBookId}/generate`, {
         method: 'POST', headers, body: JSON.stringify({ count: parseInt(genCount, 10) || 1 }),
@@ -315,7 +391,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
       const data = await res.json();
       if (res.ok) {
         setGenerated(data.codes || []);
-        setStatus({ type: 'success', message: `${data.count} QR code${data.count > 1 ? 's' : ''} generated! Scan to activate.` });
+        setGenQr(data.qr || null);
+        setGenBookCode(data.bookCode || null);
+        setStatus({ type: 'success', message: `${data.count} serial number${data.count > 1 ? 's' : ''} generated for the book QR!` });
         fetchData();
       } else {
         setStatus({ type: 'error', message: data.error || 'Failed to generate codes' });
@@ -327,15 +405,15 @@ export default function QRCodeSystem({ token }: { token: string }) {
   };
 
   const handleActivate = async () => {
-    const code = codeInput.trim().toLowerCase();
+    const code = codeInput.trim().toUpperCase();
     if (!code) {
-      setActivationMsg({ type: 'error', message: 'Scan or paste the QR code value first' });
+      setActivationMsg({ type: 'error', message: 'Enter a serial number (e.g. OKSON-AB1234)' });
       return;
     }
     setActivating(true);
     setActivationMsg(null);
     try {
-      const res = await fetch(`${API}/qrcode/codes/${code}/activate`, {
+      const res = await fetch(`${API}/qrcode/codes/${encodeURIComponent(code)}/activate`, {
         method: 'POST', headers,
       });
       const data = await res.json();
@@ -377,6 +455,21 @@ export default function QRCodeSystem({ token }: { token: string }) {
     setDetailLoading(false);
   };
 
+  const viewBookQr = async (book: Book) => {
+    setQrLoading(true);
+    setCardQr(null);
+    setSelectedBookId(book.id);
+    try {
+      const resp = await fetch(`${API}/qrcode/${book.id}/qr`, { headers });
+      const data = await resp.json();
+      if (!resp.ok || !data.qr) throw new Error('No QR');
+      setCardQr({ bookId: book.id, qr: data.qr, verifyUrl: data.verifyUrl });
+    } catch {
+      setStatus({ type: 'error', message: 'Could not load the book QR. Try again.' });
+    }
+    setQrLoading(false);
+  };
+
   const downloadGenerated = async () => {
     if (generated.length === 0) return;
     setDownloading('all');
@@ -386,32 +479,48 @@ export default function QRCodeSystem({ token }: { token: string }) {
       const book = books.find((b) => b.id === selectedBookId);
       const title = book?.title || 'Codes';
 
-      const cols = 2;
-      const rows = 2;
+      const cols = 1;
+      const rows = 4;
       const perPage = cols * rows;
-      const cellW = 300;
-      const cellH = 280;
+      const cellW = 400;
+      const cellH = 150;
       const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
       const font = await doc.embedFont(StandardFonts.Helvetica);
-      let page = doc.addPage([cols * cellW + 60, rows * cellH + 120]);
+      let page = doc.addPage([cols * cellW + 60, rows * cellH + 170]);
       page.drawText(`Okson Publishers - ${title}`, { x: 30, y: page.getHeight() - 40, size: 18, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
+
+      // The single book QR on every page
+      let bookQr = genQr;
+      if (!bookQr && book?.bookCode) {
+        const resp = await fetch(`${API}/qrcode/${book.id}/qr`, { headers });
+        const data = await resp.json();
+        if (resp.ok) bookQr = data.qr;
+      }
+      if (bookQr) {
+        const png = await fetch(bookQr).then((r) => r.arrayBuffer());
+        const img = await doc.embedPng(new Uint8Array(png));
+        page.drawImage(img, { x: 30, y: page.getHeight() - 150, width: 100, height: 100 });
+        page.drawText('Scan this QR once — then enter the serial printed on the book.', { x: 140, y: page.getHeight() - 90, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
+        page.drawText('Every serial under this book verifies with this same QR.', { x: 140, y: page.getHeight() - 108, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
+      }
 
       for (let i = 0; i < generated.length; i++) {
         if (i % perPage === 0 && i > 0) {
-          page = doc.addPage([cols * cellW + 60, rows * cellH + 120]);
+          page = doc.addPage([cols * cellW + 60, rows * cellH + 170]);
           page.drawText(`Okson Publishers - ${title}`, { x: 30, y: page.getHeight() - 40, size: 18, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
+          if (bookQr) {
+            const png = await fetch(bookQr).then((r) => r.arrayBuffer());
+            const img = await doc.embedPng(new Uint8Array(png));
+            page.drawImage(img, { x: 30, y: page.getHeight() - 150, width: 100, height: 100 });
+            page.drawText('Scan this QR once — then enter the serial printed on the book.', { x: 140, y: page.getHeight() - 90, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
+            page.drawText('Every serial under this book verifies with this same QR.', { x: 140, y: page.getHeight() - 108, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
+          }
         }
         const posInPage = i % perPage;
-        const col = posInPage % cols;
-        const row = Math.floor(posInPage / cols);
         const g = generated[i];
-        const png = await fetch(g.qr).then((r) => r.arrayBuffer());
-        const img = await doc.embedPng(new Uint8Array(png));
-        const x = 30 + col * cellW;
-        const y = 60 + (rows - 1 - row) * cellH;
-        page.drawImage(img, { x, y, width: 180, height: 180 });
-        page.drawText(g.serial, { x: x + 190, y: y + 120, size: 13, font });
-        page.drawText(`${window.location.origin}/verify/${g.code}`, { x: x + 190, y: y + 100, size: 8, font, color: rgb(0.4, 0.4, 0.4) });
+        const y = 40 + (rows - 1 - Math.floor(posInPage / cols)) * cellH;
+        page.drawText(g.serial, { x: 40, y: y + 70, size: 20, font: boldFont });
+        page.drawText(`Verify at ${window.location.origin}/verify`, { x: 40, y: y + 48, size: 8, font, color: rgb(0.4, 0.4, 0.4) });
       }
 
       const bytes = await doc.save();
@@ -421,29 +530,63 @@ export default function QRCodeSystem({ token }: { token: string }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `okson-codes-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+      a.download = `okson-serials-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
-      alert('PDF generation failed. Try individual downloads instead.');
+      alert('PDF generation failed. Try again.');
     }
     setDownloading(null);
   };
 
-  const downloadOne = async (g: { serial: string; code: string; qr: string }) => {
-    setDownloading(g.serial);
-    const a = document.createElement('a');
-    a.href = g.qr;
-    a.download = `${g.serial}.png`;
-    a.click();
+  const downloadBookQr = async (book?: Book) => {
+    const id = book?.id || selectedBookId;
+    if (!id) return;
+    setDownloading('bookqr');
+    try {
+      const resp = await fetch(`${API}/qrcode/${id}/qr`, { headers });
+      const data = await resp.json();
+      if (!resp.ok || !data.qr) throw new Error('No QR');
+      const a = document.createElement('a');
+      a.href = data.qr;
+      a.download = `okson-book-qr-${books.find((b) => b.id === id)?.title.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'book'}.png`;
+      a.click();
+    } catch {
+      alert('Could not load the book QR. Generate codes or refresh first.');
+    }
     setDownloading(null);
   };
 
-  const copyCode = async (code: string) => {
+  const toggleCardPanel = async (panel: 'generate' | 'qr' | 'covers' | 'edit', book: Book) => {
+    const isOpen = cardPanel?.bookId === book.id && cardPanel.panel === panel;
+    if (isOpen) {
+      setCardPanel(null);
+      if (panel === 'covers') { setCoverBookId(null); setCoverUpload({ front: null, back: null }); }
+      if (panel === 'edit') setEditBookId(null);
+      return;
+    }
+    setCardPanel({ bookId: book.id, panel });
+    setSelectedBookId(book.id);
+    if (panel === 'covers') {
+      setEditBookId(null);
+      setCoverBookId(book.id);
+      setCoverUpload({ front: null, back: null });
+    } else if (panel === 'edit') {
+      setCoverBookId(null); setCoverUpload({ front: null, back: null });
+      startEditBook(book);
+    } else if (panel === 'qr') {
+      setCoverBookId(null); setEditBookId(null);
+      await viewBookQr(book);
+    } else {
+      setCoverBookId(null); setEditBookId(null);
+    }
+  };
+
+  const copySerial = async (serial: string) => {
     try {
-      await navigator.clipboard.writeText(code);
-      setActivationMsg({ type: 'info', message: 'Code copied to clipboard — paste in the Activate box.' });
+      await navigator.clipboard.writeText(serial);
+      setActivationMsg({ type: 'info', message: 'Serial copied — paste it in the Activate box.' });
     } catch { /* ignore */ }
   };
 
@@ -489,7 +632,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
             </div>
             <p className="text-xs text-rose-200/70 mt-0.5">
               Same serial scanned from multiple locations or abnormally often — likely an unauthorized duplicate print.
-              Review them under All Codes and revoke any that look fraudulent.
+              Review them under All Serials and revoke any that look fraudulent.
             </p>
           </div>
           <button onClick={() => { setSubTab('codes'); setCodesFilter('flagged'); }} className="shrink-0 text-xs text-rose-300 hover:text-rose-200 underline underline-offset-2">
@@ -515,8 +658,8 @@ export default function QRCodeSystem({ token }: { token: string }) {
         </div>
       ) : (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-          {/* REGISTER BOOKS */}
-          {subTab === 'books' && (
+          {/* REGISTER BOOK */}
+          {subTab === 'register' && (
             <div className="space-y-6">
               <div className="card p-6">
                 <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
@@ -604,17 +747,37 @@ export default function QRCodeSystem({ token }: { token: string }) {
                     className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold hover:bg-indigo-dark transition-all disabled:opacity-50">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {saving ? 'Saving...' : 'Register Book'}
                   </button>
-                  {status?.type === 'success' && <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{status.message}</span>}
-                  {status?.type === 'error' && <span className="text-xs text-red-400 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{status.message}</span>}
+                  {formStatus?.type === 'success' && <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{formStatus.message}</span>}
+                  {formStatus?.type === 'error' && <span className="text-xs text-red-400 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{formStatus.message}</span>}
                 </div>
+                {regQr && regQr.qr && (
+                  <div className="mt-4 rounded-lg border border-emerald-500/25 bg-emerald-500/[0.05] p-4 flex items-start gap-4">
+                    <img src={regQr.qr} alt={`${regQr.book.title} QR code`} className="w-24 h-24 rounded-lg bg-white p-1.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                        <ScanLine className="w-3.5 h-3.5" /> Book QR ready — "{regQr.book.title}"
+                      </div>
+                      <p className="text-[11px] text-muted mt-1">
+                        This is the <span className="text-white/80">single QR code</span> for the book. It is printed on every copy — readers scan it once, then enter the serial number printed on their copy to verify authenticity.
+                      </p>
+                      <code className="block text-[10px] bg-ink rounded px-2 py-1 border border-white/[0.06] mt-2 break-all">{`${window.location.origin}/verify/${regQr.book.bookCode}`}</code>
+                      <button onClick={() => setRegQr(null)} className="text-[10px] text-muted hover:text-white mt-2">Dismiss</button>
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+          )}
 
+          {/* REGISTERED BOOKS */}
+          {subTab === 'books' && (
+            <div className="space-y-6">
               <div>
                 <h4 className="text-sm font-semibold mb-4">Registered Books <span className="text-faint font-normal">({books.length})</span></h4>
                 {books.length === 0 ? (
                   <div className="card p-10 text-center">
                     <BookOpen className="w-10 h-10 text-faint mx-auto mb-3" />
-                    <p className="text-sm text-muted">No books registered yet. Use the form above to add one.</p>
+                    <p className="text-sm text-muted">No books registered yet. Use the "Register Book" tab to add one.</p>
                   </div>
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -623,8 +786,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
                       const active = bookCodes.filter((c) => c.status === 'active').length;
                       const isManage = coverBookId === b.id;
                       const isEdit = editBookId === b.id;
+                      const panel = cardPanel?.bookId === b.id ? cardPanel.panel : null;
                       return (
-                        <div key={b.id} className="card p-5">
+                        <div key={b.id} className="card p-5 flex flex-col">
                           <div className="flex items-start justify-between mb-2">
                             <div className="min-w-0">
                               <h5 className="text-sm font-semibold leading-tight">{b.title}</h5>
@@ -636,13 +800,149 @@ export default function QRCodeSystem({ token }: { token: string }) {
                             </button>
                           </div>
                           {(b.frontCover || b.backCover) && (
-                            <div className="flex items-center gap-2 my-2">
-                              {b.frontCover && <CoverThumb url={b.frontCover} alt={`${b.title} front`} />}
-                              {b.backCover && <CoverThumb url={b.backCover} alt={`${b.title} back`} />}
+                            <div className="flex items-end gap-4 my-3">
+                              {b.frontCover && <AdminMockup url={b.frontCover} alt={`${b.title} front`} />}
+                              {b.backCover && <AdminMockup url={b.backCover} alt={`${b.title} back`} />}
                             </div>
                           )}
+                          {b.isbn && <div className="text-[11px] text-muted">ISBN: {b.isbn}</div>}
+                          {b.bookCode && (
+                            <button onClick={() => copySerial(b.bookCode!)} title="Copy book code"
+                              className="mt-1 text-[10px] text-indigo hover:text-indigo/80 flex items-center gap-1 self-start">
+                              <ScanLine className="w-2.5 h-2.5" /> Book code: {b.bookCode}
+                            </button>
+                          )}
+                          <div className="flex items-center gap-3 mt-3 text-[11px]">
+                            <span className="text-muted">Serials: <span className="text-white/80">{bookCodes.length}</span></span>
+                            <span className="text-muted">Active: <span className="text-emerald-400">{active}</span></span>
+                          </div>
+
+                          {/* Action buttons (covers/edit panels stay inline in this card) */}
+                          <div className="grid grid-cols-2 gap-2 mt-4">
+                            <button onClick={() => toggleCardPanel('generate', b)}
+                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${panel === 'generate' ? 'bg-indigo text-white' : 'bg-indigo/10 text-indigo hover:bg-indigo/20'}`}>
+                              <QrCode className="w-3.5 h-3.5 shrink-0" /> Generate
+                            </button>
+                            <button onClick={() => toggleCardPanel('qr', b)}
+                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${panel === 'qr' ? 'bg-indigo text-white' : 'bg-white/[0.05] text-muted hover:bg-white/[0.1] hover:text-white'}`} title="View the single QR code for this book">
+                              <ScanLine className="w-3.5 h-3.5 shrink-0" /> QR
+                            </button>
+                            <button onClick={() => toggleCardPanel('covers', b)}
+                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${isManage ? 'bg-indigo text-white' : 'bg-white/[0.05] text-muted hover:bg-white/[0.1] hover:text-white'}`} title="Upload front/back cover designs">
+                              {isManage ? <X className="w-3.5 h-3.5 shrink-0" /> : <Plus className="w-3.5 h-3.5 shrink-0" />} Covers
+                            </button>
+                            <button onClick={() => toggleCardPanel('edit', b)}
+                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${isEdit ? 'bg-indigo text-white' : 'bg-white/[0.05] text-muted hover:bg-white/[0.1] hover:text-white'}`} title="Edit book details">
+                              <Pencil className="w-3.5 h-3.5 shrink-0" />
+                              {isEdit ? 'Close' : 'Edit'}
+                            </button>
+                          </div>
+
+                          {/* ── Generate serial codes (inline) ── */}
+                          {panel === 'generate' && (
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mt-3">
+                              <div className="text-[10px] text-muted uppercase tracking-wider mb-1">Generate Serial Codes</div>
+                              <p className="text-[10px] text-faint mb-2">One QR per book, printed on every copy. Each copy gets its own serial to type in and verify.</p>
+                              <div className="flex items-end gap-2">
+                                <div className="flex-1">
+                                  <label className="text-[10px] text-muted block mb-1">Number of Serials</label>
+                                  <input type="number" min={1} max={500} value={genCount} onChange={(e) => setGenCount(e.target.value)}
+                                    className="w-full px-2.5 py-2 rounded-lg bg-surface border border-white/[0.06] text-white text-xs focus:border-indigo/40 focus:outline-none transition-colors" />
+                                </div>
+                                <button onClick={handleGenerate} disabled={generating || !selectedBookId}
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark transition-colors disabled:opacity-50">
+                                  {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <QrCode className="w-3 h-3" />}
+                                  {generating ? 'Generating...' : 'Generate'}
+                                </button>
+                              </div>
+                              {genBookId === b.id && status?.type === 'success' && <p className="text-[10px] text-emerald-400 mt-2 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />{status.message}</p>}
+                              {genBookId === b.id && status?.type === 'error' && <p className="text-[10px] text-red-400 mt-2 flex items-center gap-1"><XCircle className="w-3 h-3" />{status.message}</p>}
+
+                              {genBookId === b.id && genQr && (
+                                <div className="mt-3 rounded-lg border border-white/[0.06] bg-surface/50 p-3">
+                                  <div className="text-[10px] font-semibold text-white/80 mb-2 flex items-center gap-1.5">
+                                    <ScanLine className="w-3 h-3 text-indigo" /> Book QR — every copy of "{b.title}"
+                                  </div>
+                                  <div className="flex items-start gap-3">
+                                    <img src={genQr} alt={`${b.title} QR code`} className="w-20 h-20 rounded bg-white p-1 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <code className="block text-[9px] bg-ink rounded px-2 py-1 border border-white/[0.06] break-all mb-2">{`${window.location.origin}/verify/${genBookCode || b.bookCode}`}</code>
+                                      <div className="flex flex-wrap gap-2">
+                                        <button onClick={() => downloadBookQr(b)} disabled={downloading === 'bookqr'}
+                                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo/10 text-indigo text-[10px] hover:bg-indigo/20 transition-colors disabled:opacity-50">
+                                          {downloading === 'bookqr' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} QR PNG
+                                        </button>
+                                        {genBookCode && (
+                                          <button onClick={() => copySerial(genBookCode)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.05] text-muted text-[10px] hover:text-white transition-colors">
+                                            <Copy className="w-3 h-3" /> Copy code
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {genBookId === b.id && generated.length > 0 && (
+                                <div className="mt-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="text-[10px] text-muted uppercase tracking-wider">{generated.length} generated for "{b.title}"</div>
+                                    <div className="flex items-center gap-2">
+                                      <button onClick={downloadGenerated} disabled={downloading === 'all'}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo/10 text-indigo text-[10px] hover:bg-indigo/20 transition-colors disabled:opacity-50">
+                                        {downloading === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Print Sheet
+                                      </button>
+                                      <button onClick={() => setGenerated([])} className="text-[10px] text-muted hover:text-white">Clear</button>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {generated.map((g) => (
+                                      <button key={g.serial} onClick={() => copySerial(g.serial)} title="Copy serial"
+                                        className="px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-[10px] font-medium tracking-wide flex items-center gap-1 hover:bg-white/[0.08] transition-colors">
+                                        {g.serial} <Copy className="w-2.5 h-2.5 text-faint" />
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <p className="text-[9px] text-faint mt-2">Pending serials verify as "Not activated" until you activate them under the "Activate Serials" tab.</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ── Book QR (inline) ── */}
+                          {panel === 'qr' && (
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mt-3">
+                              <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Book QR</div>
+                              {qrLoading ? (
+                                <div className="flex items-center gap-2 text-xs text-muted py-3"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading QR...</div>
+                              ) : cardQr?.bookId === b.id ? (
+                                <div className="flex items-start gap-3">
+                                  <img src={cardQr.qr} alt={`${b.title} QR code`} className="w-24 h-24 rounded bg-white p-1.5 shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] text-muted mb-1">The <span className="text-white/80">single QR</span> printed on every copy of this book.</p>
+                                    <code className="block text-[9px] bg-ink rounded px-2 py-1 border border-white/[0.06] break-all mb-2">{cardQr.verifyUrl}</code>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button onClick={() => downloadBookQr(b)} disabled={downloading === 'bookqr'}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo/10 text-indigo text-[10px] hover:bg-indigo/20 transition-colors disabled:opacity-50">
+                                        {downloading === 'bookqr' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Download PNG
+                                      </button>
+                                      {b.bookCode && (
+                                        <button onClick={() => copySerial(b.bookCode!)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.05] text-muted text-[10px] hover:text-white transition-colors">
+                                          <Copy className="w-3 h-3" /> Copy book code
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted py-2">Could not load the QR. Try again.</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ── Upload covers (inline) ── */}
                           {isManage && (
-                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mb-3">
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mt-3">
                               <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Upload Covers</div>
                               <div className="flex flex-wrap gap-3 mb-3">
                                 <div className="flex items-center gap-2">
@@ -654,18 +954,21 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                   <button type="button" onClick={() => pickCoverUpload('back')} className="text-[10px] text-indigo flex items-center gap-1"><Plus className="w-3 h-3" /> {coverUpload.back ? 'Change' : 'Add'} Back</button>
                                 </div>
                               </div>
+                              {coverErrors && <p className="text-[10px] text-red-400 mb-2">{coverErrors}</p>}
                               <div className="flex items-center gap-2">
                                 <button onClick={() => saveCovers(b.id)} disabled={coverSaving || (!coverUpload.front && !coverUpload.back)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark disabled:opacity-50">
                                   {coverSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save Covers
                                 </button>
-                                <button onClick={() => { setCoverBookId(null); setCoverUpload({ front: null, back: null }); }}
+                                <button onClick={() => toggleCardPanel('covers', b)}
                                   className="text-[10px] text-muted hover:text-white" disabled={coverSaving}>Cancel</button>
                               </div>
                             </div>
                           )}
+
+                          {/* ── Edit book details (inline) ── */}
                           {isEdit && (
-                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mb-3">
+                            <div className="rounded-lg border border-white/[0.06] bg-ink p-3 mt-3">
                               <div className="text-[10px] text-muted uppercase tracking-wider mb-2">Edit Book Details</div>
                               <div className="grid grid-cols-2 gap-2 mb-2">
                                 <div>
@@ -714,31 +1017,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white text-[10px] font-medium hover:bg-indigo-dark disabled:opacity-50">
                                   {editSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Save Changes
                                 </button>
-                                <button onClick={() => setEditBookId(null)}
+                                <button onClick={() => toggleCardPanel('edit', b)}
                                   className="text-[10px] text-muted hover:text-white" disabled={editSaving}>Cancel</button>
                               </div>
                             </div>
                           )}
-                          {b.isbn && <div className="text-[11px] text-muted">ISBN: {b.isbn}</div>}
-                          <div className="text-[11px] text-muted">{b.category}{b.year ? ` · ${b.year}` : ''}</div>
-                          <div className="flex items-center gap-3 mt-3 text-[11px]">
-                            <span className="text-muted">Codes: <span className="text-white/80">{bookCodes.length}</span></span>
-                            <span className="text-muted">Active: <span className="text-emerald-400">{active}</span></span>
-                          </div>
-                          <div className="flex gap-2 mt-4">
-                            <button onClick={() => { setSelectedBookId(b.id); setSubTab('generate'); }}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-indigo/10 text-indigo text-xs font-medium hover:bg-indigo/20 transition-colors">
-                              <QrCode className="w-3.5 h-3.5" /> Generate Codes
-                            </button>
-                            <button onClick={() => { setCoverBookId(isManage ? null : b.id); setCoverUpload({ front: null, back: null }); }}
-                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.05] text-muted text-xs font-medium hover:bg-white/[0.1] hover:text-white transition-colors" title="Upload front/back cover designs">
-                              {isManage ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} Covers
-                            </button>
-                            <button onClick={() => { setEditBookId(isEdit ? null : b.id); if (isEdit) {} else startEditBook(b); }}
-                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.05] text-muted text-xs font-medium hover:bg-white/[0.1] hover:text-white transition-colors" title="Edit book details">
-                              <Pencil className="w-3.5 h-3.5" /> {isEdit ? 'Close' : 'Edit'}
-                            </button>
-                          </div>
                         </div>
                       );
                     })}
@@ -748,95 +1031,20 @@ export default function QRCodeSystem({ token }: { token: string }) {
             </div>
           )}
 
-          {/* GENERATE CODES */}
-          {subTab === 'generate' && (
-            <div className="space-y-6">
-              <div className="card p-6">
-                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo" /> Generate Serial QR Codes
-                </h4>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label htmlFor="qr-selbook" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Book</label>
-                    <select id="qr-selbook" name="qr-selbook" value={selectedBookId} onChange={(e) => setSelectedBookId(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors">
-                      <option value="">Select a book...</option>
-                      {books.map((b) => (
-                        <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="qr-count" className="text-[10px] text-muted uppercase tracking-wider block mb-1.5">Number of Codes</label>
-                    <input id="qr-count" name="qr-count" type="number" min={1} max={500} value={genCount} onChange={(e) => setGenCount(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg bg-surface border border-white/[0.06] text-white text-sm focus:border-indigo/40 focus:outline-none transition-colors" />
-                  </div>
-                  <div className="lg:col-span-2 flex items-end">
-                    <button onClick={handleGenerate} disabled={generating || !selectedBookId}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo text-white text-sm font-semibold hover:bg-indigo-dark transition-all disabled:opacity-50">
-                      {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                      {generating ? 'Generating...' : `Generate ${parseInt(genCount, 10) || 1} Code${parseInt(genCount, 10) !== 1 ? 's' : ''}`}
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[11px] text-faint mt-3">
-                  Codes are generated with unique random tokens and unguessable serial numbers (e.g. OKSON-AB1234). They start as <span className="text-amber-400">pending</span> and must be activated in the "Activate Codes" section before readers can verify them.
-                </p>
-                {status?.type === 'success' && <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{status.message}</p>}
-                {status?.type === 'error' && <p className="text-xs text-red-400 mt-2 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{status.message}</p>}
-              </div>
-
-              {generated.length > 0 && (
-                <div className="card p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-semibold">Generated Codes ({generated.length}) — {selectedBook?.title}</h4>
-                    <div className="flex gap-2">
-                      <button onClick={() => setGenerated([])} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] text-xs hover:bg-white/[0.08] transition-colors">
-                        <X className="w-3.5 h-3.5" /> Clear
-                      </button>
-                      <button onClick={downloadGenerated} disabled={downloading !== null}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo/10 text-indigo text-xs hover:bg-indigo/20 transition-colors disabled:opacity-50">
-                        {downloading === 'all' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Download All (PDF)
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted mb-4">
-                    Scan each code with your device to copy or use it in the Activate section. Generated codes remain <span className="text-amber-400">pending</span> until you activate them.
-                  </p>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {generated.map((g) => (
-                      <div key={g.serial} className="border border-white/[0.06] rounded-xl p-4 bg-ink flex flex-col items-center">
-                        <img src={g.qr} alt={g.serial} className="w-40 h-40 rounded-lg bg-white p-2" />
-                        <div className="text-xs font-semibold mt-2">{g.serial}</div>
-                        <button onClick={() => copyCode(g.code)} className="mt-2 text-[10px] text-indigo hover:text-indigo/80 flex items-center gap-1">
-                          <Copy className="w-3 h-3" /> Copy code
-                        </button>
-                        <button onClick={() => downloadOne(g)} disabled={downloading === g.serial}
-                          className="mt-1 text-[10px] text-muted hover:text-white flex items-center gap-1">
-                          {downloading === g.serial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Download PNG
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ACTIVATE CODES */}
+          {/* ACTIVATE SERIALS */}
           {subTab === 'activate' && (
             <div className="space-y-6">
               <div className="card p-6 max-w-2xl">
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-indigo" /> Activate a Code
+                  <Zap className="w-4 h-4 text-indigo" /> Activate a Serial Number
                 </h4>
                 <p className="text-xs text-muted mb-4">
-                  Paste (or scan) the QR code value, then activate it. Once activated, any reader who scans the code will be taken to the verified page showing the book details.
+                  Paste the serial number printed on the book copy, then activate it. Once activated, readers who scan the book's QR and enter this serial will see the verified authentic page.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <input id="qr-code-input" name="qr-code-input" type="text" value={codeInput} onChange={(e) => setCodeInput(e.target.value)}
-                    placeholder="Paste the code token here..."
-                    className="flex-1 px-4 py-3 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" />
+                  <input id="qr-code-input" name="qr-code-input" type="text" value={codeInput} onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                    placeholder={`e.g. ${SERIAL_PREFIX}AB1234`}
+                    className="flex-1 px-4 py-3 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors uppercase tracking-wider" />
                   <button onClick={handleActivate} disabled={activating || !codeInput.trim()}
                     className="flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-indigo text-white text-sm font-semibold hover:bg-indigo-dark transition-all disabled:opacity-50">
                     {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Activate
@@ -848,11 +1056,11 @@ export default function QRCodeSystem({ token }: { token: string }) {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold mb-4">Pending Codes <span className="text-faint font-normal">(ready to activate)</span></h4>
+                <h4 className="text-sm font-semibold mb-4">Pending Serials <span className="text-faint font-normal">(ready to activate)</span></h4>
                 {pendingCodes().length === 0 ? (
                   <div className="card p-8 text-center">
                     <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                    <p className="text-sm text-muted">No pending codes. Generate new codes to get started.</p>
+                    <p className="text-sm text-muted">No pending serials. Generate serials on the Generate tab.</p>
                   </div>
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -863,7 +1071,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                           <div className="text-[10px] text-muted truncate">{c.bookTitle}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <button onClick={() => copyCode(c.code)} className="text-[10px] text-muted hover:text-white flex items-center gap-1">
+                          <button onClick={() => copySerial(c.serial)} className="text-[10px] text-muted hover:text-white flex items-center gap-1">
                             <Copy className="w-3 h-3" /> Copy
                           </button>
                           <button onClick={() => activateRecord(c)} className="text-[10px] text-indigo hover:text-indigo/80 flex items-center gap-1">
@@ -965,7 +1173,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                 <td className="px-4 py-3 text-faint text-xs">{c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : '—'}</td>
                                 <td className="px-4 py-3">
                                   <div className="flex items-center justify-end gap-1.5">
-                                    <button onClick={() => copyCode(c.code)} title="Copy code" className="text-muted hover:text-white transition-colors">
+                                    <button onClick={() => copySerial(c.serial)} title="Copy serial" className="text-muted hover:text-white transition-colors">
                                       <Copy className="w-3.5 h-3.5" />
                                     </button>
                                     <button onClick={() => fetchCodeDetail(c.code)} title="View scan details" className="text-muted hover:text-indigo-400 transition-colors">
@@ -1083,6 +1291,59 @@ export default function QRCodeSystem({ token }: { token: string }) {
           )}
         </motion.div>
       )}
+
+      {/* Confirmation modal for admin actions */}
+      <AnimatePresence>
+        {confirmBox && (
+          <motion.div
+            key="confirm"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setConfirmBox(null)}
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 6 }}
+              transition={{ duration: 0.16 }}
+              className="relative w-full max-w-sm rounded-2xl border border-white/[0.1] bg-[#14141a] p-5 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${confirmBox.danger ? 'bg-rose-500/15 text-rose-400' : 'bg-indigo/15 text-indigo'}`}>
+                  {confirmBox.danger ? <AlertTriangle className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />}
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); setConfirmBox(null); }} className="ml-auto w-7 h-7 rounded-lg bg-white/[0.05] text-muted hover:text-white hover:bg-white/[0.1] flex items-center justify-center transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <h4 className="text-base font-semibold mb-1.5">{confirmBox.title}</h4>
+              <p className="text-sm text-muted leading-relaxed mb-5">{confirmBox.message}</p>
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={(e) => { e.stopPropagation(); setConfirmBox(null); }}
+                  className="px-4 py-2 rounded-lg bg-white/[0.05] text-xs font-medium text-muted hover:bg-white/[0.1] hover:text-white transition-colors">
+                  {confirmBox.cancelLabel || 'Cancel'}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const cb = confirmBox;
+                    setConfirmBox(null);
+                    cb.onConfirm();
+                  }}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${confirmBox.danger ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-indigo text-white hover:bg-indigo-dark'}`}
+                >
+                  {confirmBox.confirmLabel}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 
@@ -1109,29 +1370,45 @@ export default function QRCodeSystem({ token }: { token: string }) {
     }
   }
 
-  async function revokeRecord(record: QrRecord) {
+  function revokeRecord(record: QrRecord) {
     if (record.status === 'revoked') {
-      if (!confirm(`Re-activate ${record.serial}? It will verify as authentic again.`)) return;
-      try {
-        const res = await fetch(`${API}/qrcode/codes/${record.code}/activate`, {
-          method: 'POST', headers,
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setActivationMsg({ type: 'success', message: `Code ${record.serial} re-activated.` });
-          fetchData();
-        } else {
-          setActivationMsg({ type: 'error', message: data.error || 'Failed to re-activate code' });
-        }
-      } catch {
-        setActivationMsg({ type: 'error', message: 'Could not connect to server' });
-      }
+      setConfirmBox({
+        title: 'Re-activate Serial',
+        message: `Re-activate ${record.serial}? It will verify as authentic again.`,
+        confirmLabel: 'Re-activate',
+        onConfirm: () => doReactivate(record),
+      });
       return;
     }
-    const reason = record.flagged
-      ? 'Revoke this flagged/suspicious code? It will no longer verify as authentic.'
-      : `Revoke ${record.serial}? It will no longer verify as authentic and can be re-activated later if needed.`;
-    if (!confirm(reason)) return;
+    setConfirmBox({
+      title: 'Revoke Serial',
+      message: record.flagged
+        ? 'This code was flagged for suspicious verification activity. Revoke it so it no longer verifies as authentic? You can re-activate it later if needed.'
+        : `Revoke ${record.serial}? It will no longer verify as authentic and can be re-activated later if needed.`,
+      confirmLabel: 'Revoke Serial',
+      danger: true,
+      onConfirm: () => doRevoke(record),
+    });
+  }
+
+  async function doReactivate(record: QrRecord) {
+    try {
+      const res = await fetch(`${API}/qrcode/codes/${record.code}/activate`, {
+        method: 'POST', headers,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActivationMsg({ type: 'success', message: `Code ${record.serial} re-activated.` });
+        fetchData();
+      } else {
+        setActivationMsg({ type: 'error', message: data.error || 'Failed to re-activate code' });
+      }
+    } catch {
+      setActivationMsg({ type: 'error', message: 'Could not connect to server' });
+    }
+  }
+
+  async function doRevoke(record: QrRecord) {
     try {
       const res = await fetch(`${API}/qrcode/codes/${record.code}`, {
         method: 'DELETE', headers,
@@ -1148,8 +1425,17 @@ export default function QRCodeSystem({ token }: { token: string }) {
     }
   }
 
-  async function deleteRecord(record: QrRecord) {
-    if (!confirm(`Delete ${record.serial} permanently? This cannot be undone.`)) return;
+  function deleteRecord(record: QrRecord) {
+    setConfirmBox({
+      title: 'Delete Serial Permanently',
+      message: `Delete ${record.serial} permanently? This cannot be undone — the serial will no longer verify and cannot be recovered.`,
+      confirmLabel: 'Delete Permanently',
+      danger: true,
+      onConfirm: () => doDeleteRecord(record),
+    });
+  }
+
+  async function doDeleteRecord(record: QrRecord) {
     try {
       const res = await fetch(`${API}/qrcode/codes/${record.code}/delete`, {
         method: 'DELETE', headers,

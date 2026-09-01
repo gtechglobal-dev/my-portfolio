@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
 import { webDevPackages, graphicsPackages, formatNgn, DEFAULT_EXCHANGE_RATE } from '../../lib/constants';
+import { optimizeImage } from '../../lib/image';
 
 const countries = [
   { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}', pattern: /^[7-9]\d{9}$/, hint: '10 digits e.g. 8012345678' },
@@ -336,11 +337,14 @@ export default function BookingForm() {
                           if (!files) return;
                           const remaining = 3 - samplePreviews.length;
                           if (remaining <= 0) { alert('Maximum 3 sample images allowed.'); return; }
-                          Array.from(files).slice(0, remaining).forEach((file) => {
+                          Array.from(files).slice(0, remaining).forEach(async (file) => {
                             if (file.size > 5 * 1024 * 1024) { alert(`"${file.name}" is too large. Max 5MB.`); return; }
-                            const reader = new FileReader();
-                            reader.onload = () => setSamplePreviews((prev) => [...prev, reader.result as string]);
-                            reader.readAsDataURL(file);
+                            try {
+                              const optimized = await optimizeImage(file);
+                              setSamplePreviews((prev) => [...prev, optimized]);
+                            } catch {
+                              alert(`"${file.name}" could not be read.`);
+                            }
                           });
                           e.target.value = '';
                         }} />

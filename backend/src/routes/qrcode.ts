@@ -7,11 +7,16 @@ import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
 import {
   readBooks,
   findBook,
+  findBookByCode,
   writeBook,
   updateBook,
   deleteBook,
+  assignBookCode,
   readQrCodes,
   findQrCode,
+  findQrCodeBySerial,
+  findSerial,
+  serialExists,
   writeQrCode,
   activateQrCode,
   revokeQrCode,
@@ -44,6 +49,9 @@ function makeToken(): string {
 }
 
 // Random undecypherable serial suffix like "AB1234" (2 letters + 4 digits)
+// The space is ~ 26 * 26 * 9000 = ~6M distinct suffixes; combined with the
+// in-memory used set + a DB unique index + a pre-insert existence check, the
+// same serial can never be created twice.
 function makeSerialSuffix(): string {
   const letters = Array.from(
     { length: 2 },
@@ -51,6 +59,15 @@ function makeSerialSuffix(): string {
   ).join("");
   const digits = String(Math.floor(1000 + Math.random() * 9000));
   return `${letters}${digits}`;
+}
+
+async function nextUniqueSerial(): Promise<string> {
+  // Infinite-ish retry — practically bounded because the suffix space is huge;
+  // the unique DB index is the final guarantee against any collision.
+  for (;;) {
+    const serial = `OKSON-${makeSerialSuffix()}`;
+    if (!(await serialExists(serial))) return serial;
+  }
 }
 
 async function uploadCover(image: string, title: string): Promise<string | null> {
@@ -87,6 +104,14 @@ router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
       console.error("Cover upload failed:", err.message);
     }
 
+    // Every book gets ONE unique book code — the single QR printed on each copy.
+    let bookCode = makeToken();
+    let existingBook = await findBookByCode(bookCode);
+    while (existingBook) {
+      bookCode = makeToken();
+      existingBook = await findBookByCode(bookCode);
+    }
+
     const book: Book = {
       id: uuidv4(),
       title: title.trim(),
@@ -99,11 +124,20 @@ router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
       category: category?.trim() || "General",
       frontCover: frontCov,
       backCover: backCov,
+      bookCode,
       createdAt: new Date().toISOString(),
     };
 
     await writeBook(book);
-    res.json({ success: true, book });
+
+    const verifyUrl = `${BASE_URL}/verify/${bookCode}`;
+    const qr = await QRCode.toDataURL(verifyUrl, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 400,
+    });
+
+    res.json({ success: true, book, qr });
   } catch (err: any) {
     console.error("Register book failed:", err.message);
     res.status(500).json({ error: "Failed to register book" });
@@ -200,7 +234,9 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res: Response) =>
   }
 });
 
-// ─── Generate serial QR codes for a book (admin) ───────────
+// ─── Generate serial numbers for a book (admin) ────────────
+// One QR code per book; every serial number generated under that book is
+// verifiable when the reader scans the book's QR and enters the serial.
 
 router.post("/:id/generate", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -212,22 +248,29 @@ router.post("/:id/generate", authMiddleware, async (req: AuthRequest, res: Respo
       return res.status(404).json({ error: "Book not found" });
     }
 
+    // Make sure legacy books all have a book code.
+    if (!book.bookCode) {
+      book.bookCode = await assignBookCode(book.id);
+    }
+
     const existing = await readQrCodes({ bookId: id });
-    const shortCode = "OKSON";
     const usedSerials = new Set(existing.map((c) => c.serial));
 
-    const generated: Array<{ serial: string; code: string; qr: string }> = [];
+    const generated: Array<{ serial: string; code: string }> = [];
+    const createdIds: string[] = [];
 
     for (let i = 0; i < count; i++) {
-      let serial = `${shortCode}-${makeSerialSuffix()}`;
+      let serial = await nextUniqueSerial();
       while (usedSerials.has(serial)) {
-        serial = `${shortCode}-${makeSerialSuffix()}`;
+        serial = await nextUniqueSerial();
       }
       usedSerials.add(serial);
+
       const code = makeToken();
+      const serialId = uuidv4();
 
       await writeQrCode({
-        id: uuidv4(),
+        id: serialId,
         code,
         serial,
         bookId: book.id,
@@ -237,20 +280,47 @@ router.post("/:id/generate", authMiddleware, async (req: AuthRequest, res: Respo
         createdAt: new Date().toISOString(),
       });
 
-      const verifyUrl = `${BASE_URL}/verify/${code}`;
-      const qr = await QRCode.toDataURL(verifyUrl, {
-        errorCorrectionLevel: "H",
-        margin: 2,
-        width: 400,
-      });
-
-      generated.push({ serial, code, qr });
+      createdIds.push(serialId);
+      generated.push({ serial, code });
     }
 
-    res.json({ success: true, count: generated.length, codes: generated });
+    // The single QR for the book (identical for all its serial numbers).
+    const verifyUrl = `${BASE_URL}/verify/${book.bookCode}`;
+    const qr = await QRCode.toDataURL(verifyUrl, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 400,
+    });
+
+    res.json({ success: true, count: generated.length, codes: generated, serialIds: createdIds, bookCode: book.bookCode, qr });
   } catch (err: any) {
     console.error("Generate codes failed:", err.message);
     res.status(500).json({ error: "Failed to generate QR codes" });
+  }
+});
+
+// ─── Get the single QR for a book (admin) ──────────────────
+
+router.get("/:id/qr", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const book = await findBook(id);
+    if (!book) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+    if (!book.bookCode) {
+      book.bookCode = await assignBookCode(book.id);
+    }
+    const verifyUrl = `${BASE_URL}/verify/${book.bookCode}`;
+    const qr = await QRCode.toDataURL(verifyUrl, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 400,
+    });
+    res.json({ success: true, bookCode: book.bookCode, qr, verifyUrl });
+  } catch (err: any) {
+    console.error("Get book QR failed:", err.message);
+    res.status(500).json({ error: "Failed to load book QR" });
   }
 });
 
@@ -287,19 +357,22 @@ router.get("/codes/:code/detail", authMiddleware, async (req: AuthRequest, res: 
   }
 });
 
-// ─── Activate a code (admin scans in Activate section) ─────
+// ─── Activate a serial number (admin) ──────────────────────
+// Accepts either the serial (OKSON-XXXXXX) or the serial record token.
 
 router.post("/codes/:code/activate", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { code } = req.params;
-    const record = await findQrCode(code);
+    const value = code.trim().toUpperCase();
+    const record =
+      value.startsWith("OKSON-") ? await findQrCodeBySerial(value) : await findQrCode(code);
     if (!record) {
       return res.status(404).json({ error: "Code not found" });
     }
     if (record.status === "active") {
       return res.json({ success: true, alreadyActive: true, code: record });
     }
-    const updated = await activateQrCode(code);
+    const updated = await activateQrCode(record.code);
     res.json({ success: true, code: updated });
   } catch (err: any) {
     console.error("Activate code failed:", err.message);
@@ -307,19 +380,21 @@ router.post("/codes/:code/activate", authMiddleware, async (req: AuthRequest, re
   }
 });
 
-// ─── Revoke / delete a code (admin) ──────────────────────────
+// ─── Revoke / delete a serial number (admin) ───────────────
 
 router.delete("/codes/:code", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { code } = req.params;
-    const record = await findQrCode(code);
+    const value = code.trim().toUpperCase();
+    const record =
+      value.startsWith("OKSON-") ? await findQrCodeBySerial(value) : await findQrCode(code);
     if (!record) {
       return res.status(404).json({ error: "Code not found" });
     }
     if (record.status === "revoked") {
       return res.json({ success: true, alreadyRevoked: true, code: record });
     }
-    const updated = await revokeQrCode(code);
+    const updated = await revokeQrCode(record.code);
     res.json({ success: true, code: updated });
   } catch (err: any) {
     console.error("Revoke code failed:", err.message);
@@ -327,16 +402,18 @@ router.delete("/codes/:code", authMiddleware, async (req: AuthRequest, res: Resp
   }
 });
 
-// ─── Permanently delete a code (admin) ─────────────────────
+// ─── Permanently delete a serial number (admin) ────────────
 
 router.delete("/codes/:code/delete", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { code } = req.params;
-    const record = await findQrCode(code);
+    const value = code.trim().toUpperCase();
+    const record =
+      value.startsWith("OKSON-") ? await findQrCodeBySerial(value) : await findQrCode(code);
     if (!record) {
       return res.status(404).json({ error: "Code not found" });
     }
-    await deleteQrCode(code);
+    await deleteQrCode(record.code);
     res.json({ success: true, deleted: record.serial });
   } catch (err: any) {
     console.error("Delete code failed:", err.message);
@@ -352,40 +429,23 @@ function clientIp(req: AuthRequest): string {
   return ip.startsWith("::ffff:") ? ip.slice(7) : ip;
 }
 
-// Step 1 — check the QR code is valid before the user types their serial.
+// Step 1 — check the book QR is valid before the user types their serial.
 // Does NOT record a verification.
-router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
+router.get("/verify/:bookCode", async (req: AuthRequest, res: Response) => {
   try {
-    const { code } = req.params;
-    const record: QrCode | null = await findQrCode(code);
-    if (!record) {
+    const { bookCode } = req.params;
+    const book = await findBookByCode(bookCode);
+    if (!book) {
       return res.status(404).json({ error: "Invalid QR code", active: false, status: "invalid" });
     }
 
-    if (record.status === "revoked") {
-      return res.json({
-        active: false,
-        status: "revoked",
-        needsSerial: false,
-        code: { serial: record.serial, createdAt: record.createdAt, activatedAt: record.activatedAt },
-      });
-    }
-
-    if (record.status !== "active") {
-      return res.json({
-        active: false,
-        status: record.status,
-        needsSerial: false,
-        code: { serial: record.serial, createdAt: record.createdAt },
-      });
-    }
-
-    // Active code — prompt for the serial number written under the QR code.
+    // Active book — prompt for the serial number written on the book.
     res.json({
       active: true,
       status: "active",
       needsSerial: true,
-      code: { serial: record.serial },
+      book: publicBook(book),
+      code: { serial: null },
     });
   } catch (err: any) {
     console.error("Verify failed:", err.message);
@@ -393,16 +453,26 @@ router.get("/verify/:code", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Step 2 — user submits the serial number written under the book QR code.
-// Records the verification (with geolocation) only after the serial matches.
-router.post("/verify/:code", async (req: AuthRequest, res: Response) => {
+// Step 2 — user submits the serial number written on the book.
+// Records the verification (with geolocation) only after the serial matches a
+// serial number issued for this book's QR code.
+router.post("/verify/:bookCode", async (req: AuthRequest, res: Response) => {
   try {
-    const { code } = req.params;
+    const { bookCode } = req.params;
     const serial = (req.body?.serial || "").toString().trim().toUpperCase();
 
-    const record: QrCode | null = await findQrCode(code);
-    if (!record) {
+    const book = await findBookByCode(bookCode);
+    if (!book) {
       return res.status(404).json({ error: "Invalid QR code", active: false, status: "invalid" });
+    }
+
+    if (!serial) {
+      return res.status(400).json({ error: "Please enter the serial number written on the book." });
+    }
+
+    const record: QrCode | null = await findSerial(serial, book.id);
+    if (!record) {
+      return res.status(404).json({ error: "The serial number you entered is not valid for this book. Please verify it matches the number printed on the book." });
     }
 
     if (record.status === "revoked") {
@@ -410,27 +480,18 @@ router.post("/verify/:code", async (req: AuthRequest, res: Response) => {
         active: false,
         status: "revoked",
         code: { serial: record.serial, createdAt: record.createdAt, activatedAt: record.activatedAt },
+        book: publicBook(book),
       });
     }
 
     if (record.status !== "active") {
       return res.json({
         active: false,
-        status: record.status,
+        status: "pending",
         code: { serial: record.serial, createdAt: record.createdAt },
+        book: publicBook(book),
       });
     }
-
-    if (!serial) {
-      return res.status(400).json({ error: "Please enter the serial number written under the book QR code." });
-    }
-
-    const expectedSerial = (record.serial || "").toUpperCase();
-    if (serial !== expectedSerial) {
-      return res.status(400).json({ error: "The serial number you entered does not match this QR code. Please check the number printed under the QR code on your book." });
-    }
-
-    const book = await findBook(record.bookId);
 
     let updated = record;
     let shouldAlert = false;
@@ -438,7 +499,7 @@ router.post("/verify/:code", async (req: AuthRequest, res: Response) => {
     try {
       const ip = clientIp(req);
       const geo = await geoLocate(ip);
-      const result = await recordVerification(code, ip, userAgent, {
+      const result = await recordVerification(record.code, ip, userAgent, {
         country: geo.country,
         state: geo.state,
         city: geo.city,
@@ -472,13 +533,30 @@ router.post("/verify/:code", async (req: AuthRequest, res: Response) => {
         verifyCount: updated.verifyCount || 0,
         lastVerifiedAt: updated.lastVerifiedAt || null,
       },
-      book,
+      book: publicBook(book),
     });
   } catch (err: any) {
     console.error("Verify failed:", err.message);
     res.status(500).json({ error: "Verification failed" });
   }
 });
+
+function publicBook(b: Book) {
+  return {
+    id: b.id,
+    title: b.title,
+    author: b.author,
+    isbn: b.isbn || "",
+    publisher: b.publisher,
+    year: b.year || "",
+    edition: b.edition || "",
+    description: b.description || "",
+    category: b.category || "",
+    frontCover: b.frontCover || null,
+    backCover: b.backCover || null,
+    createdAt: b.createdAt,
+  };
+}
 
 // ─── Public: list other books (for the verification carousel) ─
 

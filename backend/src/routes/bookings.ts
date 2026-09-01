@@ -1,10 +1,34 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import nodemailer from 'nodemailer';
+import { v2 as cloudinary } from 'cloudinary';
 import { readBookings, writeBooking, updateBooking, deleteBooking, type Booking } from '../db.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 import { buildEmailHtml } from '../emailTemplate.js';
 import { sendBookingWhatsApp } from '../services/whatsapp.js';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const SAMPLE_FOLDER = 'gtech-portfolio/booking-samples';
+
+// Uploads a base64 data URL to Cloudinary and returns only the secure URL.
+// Images are never stored in the database or local filesystem.
+async function uploadSample(image: string, clientName: string): Promise<string | null> {
+  try {
+    const result = await cloudinary.uploader.upload(image, {
+      folder: SAMPLE_FOLDER,
+      context: `client=${(clientName || '').replace(/[|,=]/g, '').slice(0, 60)}`,
+    });
+    return result.secure_url;
+  } catch (err: any) {
+    console.error('Sample image upload error:', err.message);
+    return null;
+  }
+}
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -35,6 +59,14 @@ router.post('/', async (req: Request, res: Response) => {
     const rawImages: string[] = Array.isArray(sampleImages) ? sampleImages : sampleImage ? [sampleImage] : [];
     const sampleImagesClean = rawImages.slice(0, 3);
 
+    // Upload each sample image to Cloudinary; only the resulting URLs are
+    // stored in the DB (never the raw base64 blobs).
+    const uploadedSampleImages: string[] = [];
+    for (const img of sampleImagesClean) {
+      const url = await uploadSample(img, clientName);
+      if (url) uploadedSampleImages.push(url);
+    }
+
     const booking: Booking = {
       id: uuid(),
       clientName: cleanName,
@@ -44,7 +76,7 @@ router.post('/', async (req: Request, res: Response) => {
       serviceCategory: serviceCategory as Booking['serviceCategory'],
       package: (pkg || '').trim().slice(0, 200),
       description: cleanDesc,
-      sampleImages: sampleImagesClean.length > 0 ? sampleImagesClean : undefined,
+      sampleImages: uploadedSampleImages.length > 0 ? uploadedSampleImages : undefined,
       status: 'pending',
       createdAt: new Date().toISOString(),
     };

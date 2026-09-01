@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import CryptoBot from '../components/admin/CryptoBot';
 import QRCodeSystem from '../components/admin/QRCodeSystem';
+import { optimizeImage } from '../lib/image';
 
 const API = '/api';
 
@@ -258,14 +259,17 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     if (files.length > remaining) {
       setGfxStatus({ type: 'error', message: `Max 10 images. You can add ${remaining} more.` });
     }
-    Array.from(files).slice(0, toAdd).forEach((file) => {
+    Array.from(files).slice(0, toAdd).forEach(async (file) => {
       if (file.size > 5 * 1024 * 1024) {
         setGfxStatus({ type: 'error', message: `"${file.name}" is over 5MB — skipped.` });
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => setGfxImages((prev) => [...prev, reader.result as string]);
-      reader.readAsDataURL(file);
+      try {
+        const optimized = await optimizeImage(file, { maxWidth: 1400, maxHeight: 1400 });
+        setGfxImages((prev) => [...prev, optimized]);
+      } catch {
+        setGfxStatus({ type: 'error', message: `"${file.name}" could not be read — skipped.` });
+      }
     });
     e.target.value = '';
   };

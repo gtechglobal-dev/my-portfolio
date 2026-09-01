@@ -1,4 +1,5 @@
 import { MongoClient, Collection, ObjectId } from 'mongodb';
+import { randomBytes } from 'crypto';
 
 const DB_NAME = 'gtech-portfolio';
 
@@ -19,9 +20,24 @@ export async function connectDB(): Promise<void> {
     console.log(`Connected to MongoDB: ${DB_NAME}`);
     const bookingCount = await db.collection('bookings').countDocuments();
     console.log(`Existing bookings in DB: ${bookingCount}`);
+    await ensureIndexes();
   } catch (err: any) {
     console.error('MongoDB connection failed:', err.message);
     db = null;
+  }
+}
+
+// Unique indexes guarantee serial numbers and book codes can never repeat —
+// enforced at the database level even under concurrent generates.
+async function ensureIndexes(): Promise<void> {
+  if (!db) return;
+  try {
+    await db.collection('qrcodes').createIndex({ serial: 1 }, { unique: true });
+    await db.collection('qrcodes').createIndex({ code: 1 }, { unique: true });
+    await db.collection('books').createIndex({ bookCode: 1 }, { unique: true });
+    console.log('Unique indexes ensured on qrcodes.serial / qrcodes.code / books.bookCode');
+  } catch (err: any) {
+    console.error('Failed to ensure unique indexes:', err.message);
   }
 }
 
@@ -141,7 +157,13 @@ export interface Book {
   category: string;
   frontCover?: string | null;
   backCover?: string | null;
+  /** Unique token encoded in the single QR code printed on every copy of this book. */
+  bookCode?: string;
   createdAt: string;
+}
+
+export function makeBookCode(): string {
+  return randomBytes(12).toString('hex');
 }
 
 export async function readBooks(): Promise<Book[]> {
@@ -158,6 +180,27 @@ export async function findBook(id: string): Promise<Book | null> {
   if (!doc) return null;
   const { _id, ...rest } = doc;
   return rest;
+}
+
+export async function findBookByCode(bookCode: string): Promise<Book | null> {
+  const col = getCollection<Book>('books');
+  if (!col) return null;
+  const doc = await col.findOne({ bookCode });
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function assignBookCode(id: string): Promise<string> {
+  const col = getCollection<Book>('books');
+  if (!col) throw new Error('Database not connected');
+  // Generate a code that is not already in use by another book.
+  let code = makeBookCode();
+  while (await col.findOne({ bookCode: code })) {
+    code = makeBookCode();
+  }
+  await col.updateOne({ id }, { $set: { bookCode: code } });
+  return code;
 }
 
 export async function writeBook(book: Book): Promise<void> {
@@ -240,6 +283,32 @@ export async function findQrCode(code: string): Promise<QrCode | null> {
   if (!doc) return null;
   const { _id, ...rest } = doc;
   return rest;
+}
+
+export async function findSerial(serial: string, bookId: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const doc = await col.findOne({ serial, bookId });
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+export async function findQrCodeBySerial(serial: string): Promise<QrCode | null> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return null;
+  const doc = await col.findOne({ serial });
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
+// Returns true when the serial already exists in the DB. Used by the generator
+// to guarantee a serial is globally unique before inserting it.
+export async function serialExists(serial: string): Promise<boolean> {
+  const col = getCollection<QrCode>('qrcodes');
+  if (!col) return false;
+  return (await col.countDocuments({ serial })) > 0;
 }
 
 export async function writeQrCode(q: QrCode): Promise<void> {
