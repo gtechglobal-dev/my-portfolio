@@ -1,14 +1,35 @@
 import { Router, Response } from "express";
+import bcrypt from "bcryptjs";
 import { readBooks, findBook, updateBook, type Book } from "../db.js";
 import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
 
 const router = Router();
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync(
+  process.env.ADMIN_PASSWORD || "gtech26",
+  10,
+);
 
 // Clamp helper for numeric values coming from the client.
 function toNum(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
+
+// ─── Re-verify the admin password before sensitive inventory edits ──
+
+router.post("/verify-password", authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { password } = req.body ?? {};
+  if (typeof password !== "string" || password.length === 0) {
+    return res.status(400).json({ error: "Password is required" });
+  }
+  // Not tied to username so a freshly logged-in session can just confirm the key.
+  if (req.admin?.username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
+    return res.json({ valid: true });
+  }
+  return res.json({ valid: false });
+});
 
 // ─── Aggregate sales & revenue dashboard (admin) ─────────────
 

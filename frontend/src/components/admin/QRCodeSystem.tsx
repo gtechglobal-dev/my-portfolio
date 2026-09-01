@@ -255,6 +255,13 @@ export default function QRCodeSystem({ token }: { token: string }) {
   // Quick sell modal
   const [sellBook, setSellBook] = useState<SalesRow | null>(null);
   const [sellQty, setSellQty] = useState(1);
+  // Admin-password gate before sensitive inventory edits.
+  const [passOpen, setPassOpen] = useState(false);
+  const [passPending, setPassPending] = useState<'edit' | 'sell' | null>(null);
+  const [passAttempt, setPassAttempt] = useState<SalesRow | null>(null);
+  const [passPassword, setPassPassword] = useState('');
+  const [passError, setPassError] = useState('');
+  const [passChecking, setPassChecking] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -304,6 +311,52 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const openEditSales = (row: SalesRow) => {
     setEditSalesBookId(row.id);
     setSaleForm({ printedCopies: String(row.printed || ''), soldCopies: String(row.sold || ''), price: String(row.price || '') });
+  };
+
+  // Route inventory actions through an admin-password confirmation first.
+  const requestEdit = (row: SalesRow) => {
+    setPassPending('edit');
+    setPassAttempt(row);
+    setPassPassword('');
+    setPassError('');
+    setPassOpen(true);
+  };
+
+  const requestSell = (row: SalesRow) => {
+    if (row.remaining <= 0) return;
+    setPassPending('sell');
+    setPassAttempt(row);
+    setPassPassword('');
+    setPassError('');
+    setPassOpen(true);
+  };
+
+  const verifyAndContinue = async () => {
+    if (!passPassword || !passPending) return;
+    setPassChecking(true);
+    setPassError('');
+    try {
+      const res = await fetch(`${API}/sales/verify-password`, {
+        method: 'POST', headers, body: JSON.stringify({ password: passPassword }),
+      });
+      const data = await res.json();
+      if (data.valid && passAttempt) {
+        setPassOpen(false);
+        setPassChecking(false);
+        if (passPending === 'edit') {
+          openEditSales(passAttempt);
+        } else {
+          setSellBook(passAttempt);
+          setSellQty(1);
+        }
+      } else {
+        setPassChecking(false);
+        setPassError('Incorrect admin password. Please try again.');
+      }
+    } catch {
+      setPassChecking(false);
+      setPassError('Could not connect to server.');
+    }
   };
 
   const saveSales = async (bookId: string) => {
@@ -654,48 +707,60 @@ export default function QRCodeSystem({ token }: { token: string }) {
       const book = books.find((b) => b.id === selectedBookId);
       const title = book?.title || 'Codes';
 
-      const cols = 1;
-      const rows = 4;
-      const perPage = cols * rows;
-      const cellW = 400;
-      const cellH = 150;
+      // Real verify URL for this book (uses the deployed base, not localhost).
+      let verifyUrl = `${window.location.origin}/verify/${book?.bookCode || ''}`;
+      let bookQr = genQr;
+      if (book?.id) {
+        const resp = await fetch(`${API}/qrcode/${book.id}/qr`, { headers });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.verifyUrl) verifyUrl = data.verifyUrl;
+          if (data.qr) bookQr = data.qr;
+        }
+      }
+
       const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
       const font = await doc.embedFont(StandardFonts.Helvetica);
-      let page = doc.addPage([cols * cellW + 60, rows * cellH + 170]);
-      page.drawText(`Okson Publishers - ${title}`, { x: 30, y: page.getHeight() - 40, size: 18, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
 
-      // The single book QR on every page
-      let bookQr = genQr;
-      if (!bookQr && book?.bookCode) {
-        const resp = await fetch(`${API}/qrcode/${book.id}/qr`, { headers });
-        const data = await resp.json();
-        if (resp.ok) bookQr = data.qr;
-      }
-      if (bookQr) {
-        const png = await fetch(bookQr).then((r) => r.arrayBuffer());
-        const img = await doc.embedPng(new Uint8Array(png));
-        page.drawImage(img, { x: 30, y: page.getHeight() - 150, width: 100, height: 100 });
-        page.drawText('Scan this QR once — then enter the serial printed on the book.', { x: 140, y: page.getHeight() - 90, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
-        page.drawText('Every serial under this book verifies with this same QR.', { x: 140, y: page.getHeight() - 108, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
-      }
+      // Page in points: A4 landscape-ish content region with margins.
+      const pageW = 595.28;
+      const pageH = 841.89;
+      const margin = 40;
+      const headerH = 60;
+      const cellPad = 8;
+
+      // Fit a table: 3 columns, tightly-packed rows.
+      const cols = 3;
+      const colW = (pageW - margin * 2) / cols;
+      const rowH = 34;
+      const rowSpacing = 6;
+      const rowsPerPage = Math.floor((pageH - margin * 2 - headerH) / (rowH + rowSpacing));
+
+      let page: any = null;
+      const ensurePage = () => {
+        if (!page) {
+          page = doc.addPage([pageW, pageH]);
+          page.drawText(`Okson Publishers — Authentic Copy Serials`, { x: margin, y: pageH - margin - 24, size: 16, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
+          page.drawText(title, { x: margin, y: pageH - margin - 44, size: 11, font, color: rgb(0.3, 0.3, 0.3) });
+          page.drawText(verifyUrl, { x: margin, y: pageH - margin - 60, size: 9, font, color: rgb(0.45, 0.45, 0.45) });
+        }
+      };
 
       for (let i = 0; i < generated.length; i++) {
-        if (i % perPage === 0 && i > 0) {
-          page = doc.addPage([cols * cellW + 60, rows * cellH + 170]);
-          page.drawText(`Okson Publishers - ${title}`, { x: 30, y: page.getHeight() - 40, size: 18, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
-          if (bookQr) {
-            const png = await fetch(bookQr).then((r) => r.arrayBuffer());
-            const img = await doc.embedPng(new Uint8Array(png));
-            page.drawImage(img, { x: 30, y: page.getHeight() - 150, width: 100, height: 100 });
-            page.drawText('Scan this QR once — then enter the serial printed on the book.', { x: 140, y: page.getHeight() - 90, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
-            page.drawText('Every serial under this book verifies with this same QR.', { x: 140, y: page.getHeight() - 108, size: 10, font, color: rgb(0.3, 0.3, 0.3) });
-          }
+        const pos = i % (cols * rowsPerPage);
+        if (pos === 0) {
+          page = null;
+          ensurePage();
         }
-        const posInPage = i % perPage;
+        const col = pos % cols;
+        const rowIn = Math.floor(pos / cols);
+        const x = margin + col * colW;
+        const y = pageH - margin - headerH - (rowIn + 1) * (rowH + rowSpacing);
         const g = generated[i];
-        const y = 40 + (rows - 1 - Math.floor(posInPage / cols)) * cellH;
-        page.drawText(g.serial, { x: 40, y: y + 70, size: 20, font: boldFont });
-        page.drawText(`Verify at ${window.location.origin}/verify`, { x: 40, y: y + 48, size: 8, font, color: rgb(0.4, 0.4, 0.4) });
+
+        page.drawRectangle({ x, y, width: colW - 8, height: rowH, borderColor: rgb(0.2, 0.2, 0.2), borderWidth: 1, color: rgb(0.98, 0.98, 0.98) });
+        page.drawText(g.serial, { x: x + 12, y: y + rowH - 16, size: 13, font: boldFont, color: rgb(0.05, 0.05, 0.05) });
+        page.drawText(verifyUrl, { x: x + 12, y: y + cellPad + 1, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
       }
 
       const bytes = await doc.save();
@@ -711,6 +776,44 @@ export default function QRCodeSystem({ token }: { token: string }) {
     } catch (e) {
       console.error(e);
       alert('PDF generation failed. Try again.');
+    }
+    setDownloading(null);
+  };
+
+  const downloadGeneratedExcel = async () => {
+    if (generated.length === 0) return;
+    setDownloading('excel');
+    try {
+      const { utils, writeFile } = await import('xlsx');
+      const book = books.find((b) => b.id === selectedBookId);
+      const title = book?.title || 'Codes';
+
+      // Resolve the real verify URL the same way as the PDF.
+      let verifyUrl = `${window.location.origin}/verify/${book?.bookCode || ''}`;
+      if (book?.id) {
+        const resp = await fetch(`${API}/qrcode/${book.id}/qr`, { headers });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.verifyUrl) verifyUrl = data.verifyUrl;
+        }
+      }
+
+      const rows = generated.map((g, i) => ({
+        '#': i + 1,
+        'Serial Number': g.serial,
+        'Verify Link': verifyUrl,
+        Book: `${title}`,
+      }));
+
+      const bookRow = { '#': '', 'Serial Number': `OKSON AUTHENTICITY SERIALS — ${title}`, 'Verify Link': '', Book: '' };
+      const ws = utils.json_to_sheet([bookRow, ...rows]);
+      ws['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 90 }, { wch: 30 }];
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, 'Serials');
+      writeFile(wb, `okson-serials-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.xlsx`);
+    } catch (e) {
+      console.error(e);
+      alert('Excel generation failed. Try again.');
     }
     setDownloading(null);
   };
@@ -1063,9 +1166,13 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="text-[10px] text-muted uppercase tracking-wider">{generated.length} generated for "{b.title}"</div>
                                     <div className="flex items-center gap-2">
-                                      <button onClick={downloadGenerated} disabled={downloading === 'all'}
+                                      <button onClick={downloadGenerated} disabled={downloading === 'all' || downloading === 'excel'}
                                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo/10 text-indigo text-[10px] hover:bg-indigo/20 transition-colors disabled:opacity-50">
-                                        {downloading === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Print Sheet
+                                        {downloading === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Print Sheet (PDF)
+                                      </button>
+                                      <button onClick={downloadGeneratedExcel} disabled={downloading === 'all' || downloading === 'excel'}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 text-[10px] hover:bg-emerald-500/20 transition-colors disabled:opacity-50">
+                                        {downloading === 'excel' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />} Excel (.xlsx)
                                       </button>
                                       <button onClick={() => setGenerated([])} className="text-[10px] text-muted hover:text-white">Clear</button>
                                     </div>
@@ -1199,25 +1306,37 @@ export default function QRCodeSystem({ token }: { token: string }) {
                                     const isDelete = !!editCoverDelete[kind];
                                     return (
                                       <div key={kind} className="rounded-lg bg-surface p-2 border border-white/[0.06]">
-                                        <div className="text-[10px] text-muted mb-1 capitalize">{kind} cover</div>
-                                        <div className="flex items-start gap-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <div className="text-[10px] text-muted capitalize">{kind} cover</div>
+                                          <div className="flex items-center gap-1">
+                                            <button type="button" onClick={() => pickEditCover(kind)}
+                                              title={editCover[kind] ? 'Change cover' : 'Add / replace cover'}
+                                              className="w-6 h-6 rounded-md flex items-center justify-center text-indigo hover:bg-indigo/15 transition-colors">
+                                              <Plus className="w-3.5 h-3.5" />
+                                            </button>
+                                            {displayUrl && !isDelete && (
+                                              <button type="button"
+                                                onClick={() => { setEditCoverDelete((d) => ({ ...d, [kind]: true })); setEditCover((c) => ({ ...c, [kind]: null })); }}
+                                                title="Delete cover (also removes from Cloudinary)"
+                                                className="w-6 h-6 rounded-md flex items-center justify-center text-red-400 hover:bg-red-500/15 transition-colors">
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </button>
+                                            )}
+                                            {isDelete && (
+                                              <button type="button" onClick={() => setEditCoverDelete((d) => ({ ...d, [kind]: false }))}
+                                                title="Undo delete"
+                                                className="w-6 h-6 rounded-md flex items-center justify-center text-amber-300 hover:bg-amber-500/15 transition-colors">
+                                                <Check className="w-3.5 h-3.5" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-2">
                                           {displayUrl ? (
                                             <CoverThumb url={displayUrl} alt={`${kind} cover`} />
                                           ) : (
                                             <div className="aspect-[3/4] w-14 rounded-lg border border-dashed border-white/[0.15] flex items-center justify-center text-faint text-[9px]">{isDelete ? 'Removed' : 'None'}</div>
                                           )}
-                                          <div className="flex flex-col gap-1.5 min-w-0">
-                                            <button type="button" onClick={() => pickEditCover(kind)}
-                                              className="text-[10px] text-indigo flex items-center gap-1"><Plus className="w-3 h-3" /> {editCover[kind] ? 'Change' : 'Add/Replace'}</button>
-                                            {displayUrl && (
-                                              <button type="button" onClick={() => { setEditCoverDelete((d) => ({ ...d, [kind]: true })); setEditCover((c) => ({ ...c, [kind]: null })); }}
-                                                className="text-[10px] text-red-400 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete from Cloudinary</button>
-                                            )}
-                                            {isDelete && (
-                                              <button type="button" onClick={() => setEditCoverDelete((d) => ({ ...d, [kind]: false }))}
-                                                className="text-[10px] text-muted flex items-center gap-1"><Check className="w-3 h-3" /> Undo delete</button>
-                                            )}
-                                          </div>
                                         </div>
                                       </div>
                                     );
@@ -1597,6 +1716,14 @@ export default function QRCodeSystem({ token }: { token: string }) {
                     </div>
                   </div>
 
+                  {/* Out of stock notification */}
+                  {row.remaining === 0 && row.printed > 0 && (
+                    <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span className="text-xs font-semibold text-red-300">Out of Stock — all {row.printed.toLocaleString()} copies sold.</span>
+                    </div>
+                  )}
+
                   {/* Sold progress */}
                   {row.printed > 0 && (
                   <div>
@@ -1617,7 +1744,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                     </div>
                     <div className="rounded-lg bg-white/[0.03] py-2">
                       <p className="text-xs text-faint">Remaining</p>
-                      <p className="text-sm font-semibold">{row.remaining.toLocaleString()}</p>
+                      <p className={`text-sm font-semibold ${row.remaining === 0 && row.printed > 0 ? 'text-red-400' : ''}`}>{row.remaining.toLocaleString()}</p>
                     </div>
                     <div className="rounded-lg bg-white/[0.03] py-2">
                       <p className="text-xs text-faint">Revenue</p>
@@ -1672,13 +1799,13 @@ export default function QRCodeSystem({ token }: { token: string }) {
                   ) : (
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <button
-                        onClick={() => openEditSales(row)}
+                        onClick={() => requestEdit(row)}
                         className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors whitespace-nowrap"
                       >
                         <Pencil className="w-3.5 h-3.5" /> Edit Inventory
                       </button>
                       <button
-                        onClick={() => { setSellBook(row); setSellQty(1); }}
+                        onClick={() => requestSell(row)}
                         disabled={row.remaining <= 0}
                         className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                       >
@@ -1776,6 +1903,61 @@ export default function QRCodeSystem({ token }: { token: string }) {
                   Cancel
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin password gate for inventory edits */}
+      <AnimatePresence>
+        {passOpen && (
+          <motion.div
+            key="pass"
+            className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPassOpen(false)}
+          >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 6 }}
+              transition={{ duration: 0.16 }}
+              className="relative w-full max-w-sm rounded-2xl border border-white/[0.1] bg-[#14141a] p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-center mb-2">
+                <div className="w-11 h-11 rounded-full bg-indigo/15 text-indigo flex items-center justify-center">
+                  <ShieldOff className="w-6 h-6" />
+                </div>
+              </div>
+              <h3 className="text-base font-semibold text-center mb-1">Admin Verification</h3>
+              <p className="text-xs text-faint text-center mb-4">
+                Enter your admin password to {passPending === 'edit' ? 'edit inventory' : 'record a sale'}{passAttempt ? ` for "${passAttempt.title}"` : ''}.
+              </p>
+              <form onSubmit={(e) => { e.preventDefault(); verifyAndContinue(); }}>
+                <input
+                  type="password"
+                  value={passPassword}
+                  onChange={(e) => setPassPassword(e.target.value)}
+                  placeholder="Admin password"
+                  autoFocus
+                  className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:border-indigo/50"
+                />
+                {passError && <p className="text-xs text-red-400 mt-2">{passError}</p>}
+                <div className="flex gap-2 mt-4">
+                  <button type="submit" disabled={passChecking || !passPassword}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo text-white text-sm font-semibold px-4 py-2.5 hover:bg-indigo-dark transition-colors disabled:opacity-50">
+                    {passChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />} Confirm
+                  </button>
+                  <button type="button" onClick={() => setPassOpen(false)}
+                    className="rounded-lg bg-white/[0.05] text-faint text-sm font-semibold px-4 py-2.5 hover:bg-white/[0.1] transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
