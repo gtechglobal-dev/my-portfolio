@@ -2059,7 +2059,7 @@ export default function QRCodeSystem({ token }: { token: string }) {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                           <p className="text-sm font-semibold min-w-[140px] truncate">{s.bookTitle}</p>
                           <span className="text-[11px] text-white">{s.qty} {s.qty === 1 ? 'copy' : 'copies'}</span>
-                          <span className="text-[11px] text-faint">@ ₦{s.price.toLocaleString()}</span>
+                          <span className="text-[11px] text-amber-400">@ ₦{s.price.toLocaleString()}</span>
                           <span className="text-xs font-semibold text-emerald-300">₦{s.revenue.toLocaleString()}</span>
                           <span className="text-[11px] text-white ml-auto">{new Date(s.date).toLocaleString()}</span>
                         </div>
