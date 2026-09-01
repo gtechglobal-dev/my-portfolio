@@ -5,6 +5,7 @@ import {
   readBooks,
   findBook,
   updateBook,
+  addStockToBook,
   recordSaleToBook,
   type Book,
   type SaleEntry,
@@ -88,6 +89,15 @@ router.post("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
     const book = await findBook(id);
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
+    }
+
+    const { addToPrinted } = req.body ?? {};
+
+    // "Add stock" mode: increment the printed count only, leaving sold/price and
+    // all other book details untouched.
+    if (addToPrinted !== undefined && toNum(addToPrinted) > 0) {
+      const updated = await addStockToBook(id, toNum(addToPrinted));
+      return res.json({ success: true, book: updated, added: toNum(addToPrinted) });
     }
 
     const update: Partial<Book> = {};

@@ -265,6 +265,9 @@ export default function QRCodeSystem({ token }: { token: string }) {
   const [editSalesBookId, setEditSalesBookId] = useState<string | null>(null);
   const [saleForm, setSaleForm] = useState<{ printedCopies: string; soldCopies: string; price: string }>({ printedCopies: '', soldCopies: '', price: '' });
   const [salesSearch, setSalesSearch] = useState('');
+  // Add-stock inline input (which book has the form open + qty)
+  const [addStockId, setAddStockId] = useState<string | null>(null);
+  const [addStockQty, setAddStockQty] = useState(10);
   // Quick sell modal
   const [sellBook, setSellBook] = useState<SalesRow | null>(null);
   const [sellQty, setSellQty] = useState(1);
@@ -434,6 +437,26 @@ export default function QRCodeSystem({ token }: { token: string }) {
       /* ignore */
     }
     setSalesLogLoading(false);
+  };
+
+  const addStock = async (bookId: string) => {
+    const qty = Math.max(1, parseInt(String(addStockQty), 10) || 1);
+    setSalesMsg(null);
+    try {
+      const res = await fetch(`${API}/sales/${bookId}`, {
+        method: 'POST', headers, body: JSON.stringify({ addToPrinted: qty }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSalesMsg({ type: 'success', message: `Added ${data.added || qty} cop${(data.added || qty) === 1 ? 'y' : 'ies'} to stock.` });
+        setAddStockId(null);
+        fetchSales();
+      } else {
+        setSalesMsg({ type: 'error', message: data.error || 'Failed to add stock.' });
+      }
+    } catch {
+      setSalesMsg({ type: 'error', message: 'Could not connect to server' });
+    }
   };
 
   const setField = (k: keyof typeof emptyForm, v: string) =>
@@ -1836,20 +1859,52 @@ export default function QRCodeSystem({ token }: { token: string }) {
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <button
-                        onClick={() => requestEdit(row)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors whitespace-nowrap"
-                      >
-                        <Pencil className="w-3.5 h-3.5" /> Edit Inventory
-                      </button>
-                      <button
-                        onClick={() => requestSell(row)}
-                        disabled={row.remaining <= 0}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <TrendingUp className="w-3.5 h-3.5" /> Sell
-                      </button>
+                    <div className="space-y-2 pt-1">
+                      {addStockId === row.id ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="number" min={1}
+                            value={addStockQty}
+                            onChange={(e) => setAddStockQty(parseInt(e.target.value, 10) || 1)}
+                            className="flex-1 min-w-0 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-emerald-400"
+                            placeholder="Copies"
+                          />
+                          <button
+                            onClick={() => addStock(row.id)}
+                            className="rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors whitespace-nowrap"
+                          >
+                            <Check className="w-3.5 h-3.5 inline-block mr-1" /> Add
+                          </button>
+                          <button
+                            onClick={() => setAddStockId(null)}
+                            className="rounded-lg bg-white/[0.05] text-faint text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => { setAddStockId(row.id); setAddStockQty(10); }}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors whitespace-nowrap"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Add Stock
+                          </button>
+                          <button
+                            onClick={() => requestEdit(row)}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] text-xs font-semibold px-3 py-2 hover:bg-white/[0.1] transition-colors whitespace-nowrap"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Edit Inventory
+                          </button>
+                          <button
+                            onClick={() => requestSell(row)}
+                            disabled={row.remaining <= 0}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-xs font-semibold px-3 py-2 hover:bg-emerald-500/25 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <TrendingUp className="w-3.5 h-3.5" /> Sell
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

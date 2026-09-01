@@ -244,6 +244,21 @@ export async function updateBook(id: string, update: Partial<Book>): Promise<Boo
   return rest;
 }
 
+// Add stock by incrementing the printed count — never touches sold count, price,
+// or any other book detail.
+export async function addStockToBook(id: string, qty: number): Promise<Book | null> {
+  const col = getCollection<Book>('books');
+  if (!col) return null;
+  const doc = await col.findOneAndUpdate(
+    { id },
+    { $inc: { printedCopies: qty } },
+    { returnDocument: 'after' },
+  );
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
+}
+
 export async function deleteBook(id: string): Promise<boolean> {
   const col = getCollection<Book>('books');
   if (!col) return false;
