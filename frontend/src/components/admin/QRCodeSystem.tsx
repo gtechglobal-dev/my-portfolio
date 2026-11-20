@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { optimizeImage } from '../../lib/image';
+import { apiUrl } from '../../lib/api';
 import {
   BookOpen, Plus, Save, Trash2, QrCode, Zap, Search, Copy, CheckCircle2,
   XCircle, Download, Loader2, ChevronDown, BadgeCheck, Layers, X, Check, ShieldOff, AlertTriangle, Pencil, ScanLine, Hash, RefreshCw, BadgeDollarSign, TrendingUp, History,
 } from 'lucide-react';
 
-const API = '/api';
+const API = apiUrl('/api');
 
 const SERIAL_PREFIX = 'OKSON-';
 

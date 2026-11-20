@@ -3,15 +3,25 @@ services:
     name: my-portfolio
     runtime: node
     region: ohio
-    buildCommand: npm install && cd backend && npm install && cd .. && npm run build:all
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: /
       - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
         sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: QR_BASE_URL
+        sync: false
+      - key: FRONTEND_URL
         sync: false
       - key: ADMIN_USERNAME
         sync: false
@@ -27,7 +37,21 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
-      - key: JWT_SECRET
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_WEBHOOK_SECRET
+        sync: false
+      - key: PIN_ENCRYPTION_KEY
+        sync: false
+      - key: SCHOOL_CLIENT_PUBLIC_URL
+        sync: false
+      - key: MARKETPLACE_PUBLIC_URL
         sync: false
       - key: WA_ACCESS_TOKEN
         sync: false

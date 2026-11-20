@@ -1,47 +1,6 @@
-import { useState, ImgHTMLAttributes } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, X, Layers, Code, Clock, Sparkles } from 'lucide-react';
-
-function getScreenshotUrl(siteUrl: string) {
-  const cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-  return `https://image.thum.io/get/width/1200/crop/800/${siteUrl}?t=${cacheBuster}`;
-}
-
-function DynamicScreenshot({
-  src,
-  siteUrl,
-  fallbackSrc,
-  color,
-  title,
-  ...props
-}: {
-  src?: string | null;
-  siteUrl: string;
-  fallbackSrc?: string | null;
-  color: string;
-  title: string;
-} & ImgHTMLAttributes<HTMLImageElement>) {
-  const [attempt, setAttempt] = useState<'dynamic' | 'static' | 'failed'>('dynamic');
-
-  const currentSrc = attempt === 'dynamic'
-    ? getScreenshotUrl(siteUrl)
-    : attempt === 'static' && fallbackSrc
-      ? fallbackSrc
-      : null;
-
-  if (!currentSrc) return null;
-
-  return (
-    <img
-      {...props}
-      src={currentSrc}
-      onError={() => {
-        if (attempt === 'dynamic') setAttempt('static');
-        else setAttempt('failed');
-      }}
-    />
-  );
-}
 
 const projects = [
   {
@@ -50,8 +9,7 @@ const projects = [
     desc: 'Interactive youth engagement platform with real-time features, PWA support, role-based dashboards, and community management tools.',
     tech: ['Next.js', 'MongoDB', 'Socket.IO', 'PWA'],
     url: 'https://royalyouths.onrender.com/',
-    siteUrl: 'https://royalyouths.onrender.com/',
-    image: '/screenshots/royal-youths.png',
+    image: '/screenshots/youth%20community.png',
     color: '#a855f7',
     metric: '2K+ Active Users',
     status: 'live',
@@ -62,8 +20,7 @@ const projects = [
     desc: 'A full-featured service marketplace where users browse, select, and pay for digital projects — from design to development.',
     tech: ['Next.js', 'Stripe', 'MongoDB', 'TailwindCSS'],
     url: 'https://prestige-mall.onrender.com/',
-    siteUrl: 'https://prestige-mall.onrender.com/',
-    image: '/screenshots/prestige-mart.png',
+    image: '/screenshots/Prestige%20Marketplace%20Shopping%20Homepage.png',
     color: '#7c3aed',
     metric: 'Live & Active',
     status: 'live',
@@ -74,8 +31,7 @@ const projects = [
     desc: 'School result management system for nursery, primary and secondary schools with secure login, term filtering, automated grade computation, and printable report cards.',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Chart.js'],
     url: 'https://phronesisresultportal.gtechglobal.dev/',
-    siteUrl: 'https://phronesisresultportal.gtechglobal.dev/',
-    image: '/screenshots/school-results.png',
+    image: '/screenshots/academic%20result.png',
     color: '#ff7a2f',
     metric: 'Demo Available',
     status: 'live',
@@ -86,8 +42,7 @@ const projects = [
     desc: 'Digital presence for a modern church with sermon archives, event calendar, donation integration, and member portal.',
     tech: ['Next.js', 'Paystack', 'Sanity CMS', 'TailwindCSS'],
     url: 'https://houseonthethronechurch.netlify.app/',
-    siteUrl: 'https://houseonthethronechurch.netlify.app/',
-    image: '/screenshots/church.png',
+    image: '/screenshots/Divine%20Throne%20Church%20Homepage.png',
     color: '#a855f7',
     metric: 'Live Website',
     status: 'live',
@@ -98,7 +53,6 @@ const projects = [
     desc: 'Real-time financial analytics dashboard with transaction monitoring and multi-currency support.',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Chart.js'],
     url: '#',
-    siteUrl: '',
     image: null,
     color: '#ff7a2f',
     metric: 'Under Development',
@@ -110,7 +64,6 @@ const projects = [
     desc: 'AI-powered content generation platform with NLP capabilities and subscription billing.',
     tech: ['Next.js', 'Python', 'TensorFlow', 'Stripe'],
     url: '#',
-    siteUrl: '',
     image: null,
     color: '#a855f7',
     metric: 'Under Development',
@@ -122,7 +75,6 @@ const projects = [
     desc: 'Premium fashion e-commerce with inventory management and seamless checkout.',
     tech: ['Next.js', 'MongoDB', 'Paystack', 'Redis'],
     url: '#',
-    siteUrl: '',
     image: null,
     color: '#ff7a2f',
     metric: 'Under Development',
@@ -134,7 +86,6 @@ const projects = [
     desc: 'Property listing platform with virtual tours, mortgage calculator, and agent management.',
     tech: ['React', 'Node.js', 'PostgreSQL', 'Mapbox'],
     url: '#',
-    siteUrl: '',
     image: null,
     color: '#a855f7',
     metric: 'Under Development',
@@ -194,15 +145,12 @@ function ProjectModal({ project, onClose }: { project: (typeof projects)[0]; onC
         className="bg-surface border border-white/[0.06] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="relative">
-          {project.siteUrl || project.image ? (
-            <div className="w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-surface">
-              <DynamicScreenshot
-                siteUrl={project.siteUrl}
-                fallbackSrc={project.image}
-                color={project.color}
-                title={project.title}
+          {project.image ? (
+            <div className="group w-full h-52 md:h-56 overflow-hidden rounded-t-2xl bg-surface">
+              <img
+                src={project.image}
                 alt={project.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top transform-gpu transition-transform duration-700 ease-out group-hover:scale-105 group-hover:-translate-y-1"
               />
             </div>
           ) : (
@@ -292,14 +240,12 @@ export default function PortfolioGrid() {
                 className="relative w-full h-36 md:h-40 overflow-hidden"
                 style={{ backgroundColor: `${p.color}12` }}
               >
-                {p.siteUrl || p.image ? (
-                  <DynamicScreenshot
-                    siteUrl={p.siteUrl}
-                    fallbackSrc={p.image}
-                    color={p.color}
-                    title={p.title}
+                {p.image ? (
+                  <img
+                    src={p.image}
                     alt={p.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    className="w-full h-full object-cover object-top transform-gpu transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-1"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

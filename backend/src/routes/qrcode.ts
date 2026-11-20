@@ -42,6 +42,7 @@ const router = Router();
 const BASE_URL =
   process.env.QR_BASE_URL ||
   process.env.FRONTEND_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
   "https://gtechglobal.dev";
 
 function makeToken(): string {

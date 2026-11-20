@@ -5,8 +5,9 @@ import {
   BadgeCheck, X, AlertTriangle, Phone, Mail, KeyRound, CheckCircle2,
   Sparkles, ZoomIn, Lock,
 } from 'lucide-react';
+import { apiUrl } from '../lib/api';
 
-const API = '/api';
+const API = apiUrl('/api');
 const SERIAL_PREFIX = 'OKSON-';
 const SERIAL_SUFFIX_LEN = 6;
 

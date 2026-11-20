@@ -14,12 +14,25 @@ import cryptoRouter from './routes/crypto.js';
 import ogRouter from './routes/og.js';
 import qrcodeRouter from './routes/qrcode.js';
 import salesRouter from './routes/sales.js';
+import marketplaceRouter from './routes/marketplace.js';
+import marketplaceAdminRouter from './routes/marketplaceAdmin.js';
+import schoolsPublicRouter from './routes/schoolsPublic.js';
+import schoolsAdminRouter from './routes/schoolsAdmin.js';
+import schoolsClientRouter from './routes/schoolsClient.js';
+import schoolsPaymentsRouter from './routes/schoolsPayments.js';
+import schoolsInvitesRouter from './routes/schoolsInvites.js';
+import { initMarketplace } from './marketplace/init.js';
+import { initSchoolClients } from './schools/init.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json({ limit: '50mb' }));
+app.set('trust proxy', 1);
+app.use(cors({ origin: process.env.CORS_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173' }));
+app.use(express.json({
+  limit: '50mb',
+  verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); },
+}));
 
 app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err.type === 'entity.too.large') {
@@ -46,10 +59,19 @@ app.use('/api/crypto', cryptoRouter);
 app.use('/api/og', ogRouter);
 app.use('/api/qrcode', qrcodeRouter);
 app.use('/api/sales', salesRouter);
+app.use('/api/marketplace', marketplaceRouter);
+app.use('/api/admin/marketplace', marketplaceAdminRouter);
+app.use('/api/schools/public', schoolsPublicRouter);
+app.use('/api/schools/admin', schoolsAdminRouter);
+app.use('/api/schools/client', schoolsClientRouter);
+app.use('/api/schools/payments', schoolsPaymentsRouter);
+app.use('/api/schools/invite', schoolsInvitesRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', db: isDbConnected(), timestamp: new Date().toISOString() });
 });
+
+app.use('/api', (_req, res) => res.status(404).json({ error: 'API route not found' }));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const frontendDist = resolve(__dirname, '..', '..', 'frontend', 'dist');
@@ -61,14 +83,16 @@ if (existsSync(frontendDist)) {
   });
 }
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  await initMarketplace();
+  await initSchoolClients();
   app.listen(PORT, () => {
-    console.log(`Gtech Global API running on http://localhost:${PORT}`);
+    console.log(`Gtech Global web service running on http://localhost:${PORT}`);
   });
 }).catch((err) => {
   console.error('Failed to connect to MongoDB:', err.message);
   console.warn('Starting server without database — writes will fail');
   app.listen(PORT, () => {
-    console.log(`Gtech Global API running on http://localhost:${PORT} (NO DB)`);
+    console.log(`Gtech Global web service running on http://localhost:${PORT} (NO DB)`);
   });
 });

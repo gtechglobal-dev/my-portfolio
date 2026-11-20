@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight, Loader2, X, AlertTriangle, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
 import { webDevPackages, graphicsPackages, formatNgn, DEFAULT_EXCHANGE_RATE } from '../../lib/constants';
 import { optimizeImage } from '../../lib/image';
+import { apiUrl } from '../../lib/api';
 
 const countries = [
   { code: 'NG', name: 'Nigeria', dial: '+234', flag: '\u{1F1F3}\u{1F1EC}', pattern: /^[7-9]\d{9}$/, hint: '10 digits e.g. 8012345678' },
@@ -139,7 +140,7 @@ export default function BookingForm() {
     setError('');
     try {
       const pkgLabel = selectedPkg === 'other' ? 'Other Designs (Custom)' : selectedPkgData ? `${selectedPkgData.title} — $${selectedPkgData.priceUsd} USD` : selectedPkg;
-      const res = await fetch('/api/bookings', {
+      const res = await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

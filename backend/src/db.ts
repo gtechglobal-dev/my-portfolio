@@ -1,4 +1,4 @@
-import { MongoClient, Collection, ObjectId } from 'mongodb';
+import { MongoClient, Collection, ObjectId, Db } from 'mongodb';
 import { randomBytes } from 'crypto';
 
 const DB_NAME = 'gtech-portfolio';
@@ -43,6 +43,10 @@ async function ensureIndexes(): Promise<void> {
 
 export function isDbConnected(): boolean {
   return db !== null;
+}
+
+export function getDb(): Db | null {
+  return db;
 }
 
 function getCollection<T extends { _id?: ObjectId }>(name: string): Collection<T> | null {

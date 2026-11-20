@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Palette, Eye } from 'lucide-react';
+import { apiUrl } from '../../lib/api';
 
 interface GraphicsDesign {
   id: string;
@@ -96,7 +97,7 @@ export default function GraphicsGallery() {
   const [selected, setSelected] = useState<GraphicsDesign | null>(null);
 
   useEffect(() => {
-    fetch('/api/graphics')
+    fetch(apiUrl('/api/graphics'))
       .then((r) => r.json())
       .then((data) => setDesigns(data.graphics || []))
       .catch(() => {})

@@ -5,13 +5,14 @@ import {
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
   Palette, Upload, Image as ImageIcon, Download, FileText, Bot,
-  QrCode,
+  QrCode, ShoppingBag, Store,
 } from 'lucide-react';
 import CryptoBot from '../components/admin/CryptoBot';
 import QRCodeSystem from '../components/admin/QRCodeSystem';
 import { optimizeImage } from '../lib/image';
+import { apiUrl } from '../lib/api';
 
-const API = '/api';
+const API = apiUrl('/api');
 
 interface Booking {
   id: string;
@@ -142,9 +143,9 @@ function formatPhoneForWhatsApp(phone: string): string {
 }
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'crypto' | 'qrcode';
-  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume', 'crypto', 'qrcode'];
-  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
+  const hashTab = window.location.hash.replace('#', '') as 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode' | 'marketplace' | 'school_clients';
+  const validTabs = ['dashboard', 'bookings', 'messages', 'graphics', 'resume', 'crypto', 'qrcode', 'marketplace', 'school_clients'];
+  const [tab, setTab] = useState<'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode' | 'marketplace' | 'school_clients'>(validTabs.includes(hashTab) ? hashTab : 'dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -337,11 +338,13 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     return true;
   });
 
-  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode';
+  type NavId = 'dashboard' | 'bookings' | 'messages' | 'graphics' | 'resume' | 'crypto' | 'qrcode' | 'marketplace' | 'school_clients';
   const navItems: { id: NavId; label: string; icon: any; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'crypto', label: 'Crypto Bot', icon: Bot },
     { id: 'qrcode', label: 'QR Codes', icon: QrCode },
+    { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
+    { id: 'school_clients', label: 'School Clients', icon: Users },
     { id: 'bookings', label: 'Bookings', icon: CalendarCheck, badge: stats?.pendingBookings },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: stats?.unreadMessages },
     { id: 'graphics', label: 'Graphics', icon: Palette },
@@ -486,6 +489,40 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 {tab === 'crypto' && <CryptoBot token={token} />}
 
                 {tab === 'qrcode' && <QRCodeSystem token={token} />}
+
+                {tab === 'marketplace' && (
+                  <div className="space-y-4">
+                    <div className="card p-6">
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><Store className="w-5 h-5 text-indigo" /> Digital Marketplace</h3>
+                      <p className="text-sm text-muted mb-5">Manage products, PIN inventory, orders and school integrations from the dedicated marketplace administration panel.</p>
+                      <div className="flex flex-wrap gap-3">
+                        <button onClick={() => { window.location.href = '/admin/marketplace'; }} className="btn btn-primary">
+                          Open Marketplace Admin <ArrowRight className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => { window.open('/marketplace', '_blank'); }} className="btn btn-outline">
+                          View Marketplace <Store className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {tab === 'school_clients' && (
+                  <div className="space-y-4">
+                    <div className="card p-6">
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><Users className="w-5 h-5 text-indigo" /> School Client Portal</h3>
+                      <p className="text-sm text-muted mb-5">Manage applications, proposals, agreements, projects, payments and onboarding from the dedicated school administration panel.</p>
+                      <div className="flex flex-wrap gap-3">
+                        <button onClick={() => { window.location.href = '/admin/school-clients'; }} className="btn btn-primary">
+                          Open School Clients Admin <ArrowRight className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => { window.open('/school-management', '_blank'); }} className="btn btn-outline">
+                          View Public Page <Users className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {tab === 'bookings' && (
                   <div className="space-y-4">
@@ -864,7 +901,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold">Resume</h3>
-                      <a href="/api/resume/download" target="_blank" rel="noopener noreferrer"
+                      <a href={apiUrl('/api/resume/download')} target="_blank" rel="noopener noreferrer"
                         className="btn btn-primary text-sm flex items-center gap-2">
                         <Download className="w-4 h-4" />
                         Download PDF
@@ -872,7 +909,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     </div>
                     <div className="card p-6">
                       <p className="text-sm text-muted">Download the resume PDF to share with clients or employers.</p>
-                      <a href="/api/resume/download" target="_blank" rel="noopener noreferrer"
+                      <a href={apiUrl('/api/resume/download')} target="_blank" rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 mt-4 text-sm text-indigo hover:underline">
                         <Download className="w-4 h-4" /> Open Resume PDF
                       </a>

@@ -123,3 +123,25 @@ export async function sendFlaggedCopyWhatsApp(alert: FlaggedCopyAlert): Promise<
     console.error('Flagged copy WhatsApp alert failed:', err.message);
   }
 }
+
+export async function sendMarketplaceOrderAlert(order: { reference: string; customer: string; email: string; total: number; schoolName?: string | null; pinCount: number }): Promise<void> {
+  if (!WA_ACCESS_TOKEN || !WA_PHONE_NUMBER_ID) return;
+  const body = [
+    'Marketplace Order Confirmed',
+    '',
+    'Reference: ' + order.reference,
+    'Customer: ' + order.customer + ' (' + order.email + ')',
+    'Amount: NGN ' + order.total.toLocaleString(),
+    'PINs: ' + order.pinCount,
+    'School: ' + (order.schoolName || 'Direct'),
+  ].join('\n');
+  try {
+    await fetch(`${WA_API_URL}/${WA_PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: NOTIFY_PHONE, type: 'text', text: { body } }),
+    });
+  } catch (err: any) {
+    console.error('Marketplace WhatsApp alert failed:', err.message);
+  }
+}

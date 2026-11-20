@@ -19,6 +19,7 @@ function GithubIcon({ className }: { className?: string }) {
 }
 import { Link } from 'react-router-dom';
 import { siteConfig } from '../../lib/constants';
+import { apiUrl } from '../../lib/api';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -29,7 +30,7 @@ export default function Contact() {
     e.preventDefault();
     setSending(true);
     try {
-      const res = await fetch('/api/contact', {
+      const res = await fetch(apiUrl('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

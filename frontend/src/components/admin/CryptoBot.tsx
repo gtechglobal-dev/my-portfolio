@@ -5,8 +5,9 @@ import {
   Minus, ShieldAlert, Target, ChevronDown, ExternalLink, Zap, CircleDot,
   ArrowUpRight, ArrowDownRight, Info, Clock,
 } from 'lucide-react';
+import { apiUrl } from '../../lib/api';
 
-const API = '/api';
+const API = apiUrl('/api');
 
 interface IndicatorEvidence {
   name: string;
