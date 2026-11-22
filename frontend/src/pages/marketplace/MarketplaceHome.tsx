@@ -50,12 +50,12 @@ function ProductCard({ product, onBuy }: { product: Product; onBuy: (p: Product)
 }
 
 const FAQS = [
-  { q: 'What is a result-checking PIN?', a: 'A result-checking PIN is a secure code that allows a parent, guardian or student to view a published examination result on any participating school portal that supports the Gtech Global central PIN system.' },
-  { q: 'Can I use my PIN on another school portal?', a: 'Yes. PINs sold through the Gtech Global marketplace are universal. They are not locked to the school that purchased them. Any compatible participating school system can verify a valid PIN, subject to the configured usage limits and academic session.' },
-  { q: 'How many times can a PIN be used?', a: 'The default allowance is three successful result checks per academic session. Invalid attempts and unavailable results do not consume an allowance. The limit is configured per product.' },
-  { q: 'When will I receive my PINs?', a: 'PINs are revealed only after payment is confirmed by our payment gateway. You can access them securely from your order page at any time.' },
-  { q: 'Can my school buy on my behalf?', a: 'Yes. If you arrive from a school dashboard, your purchase is attributed to that school. Your PINs remain universal and can be distributed to parents and students.' },
-  { q: 'What if a school portal is offline after purchase?', a: 'Your confirmed order and PINs are always stored centrally by Gtech Global. You can retrieve them securely later, even if a school server is temporarily unavailable.' },
+  { q: 'What is a result-checking PIN?', a: 'A result-checking PIN is a secure code that lets a parent or guardian view a published examination result on the school portal.' },
+  { q: 'Who can buy PINs?', a: 'Only school administrators can purchase PIN packs through their school portal. Each PIN costs ₦1,000 and is delivered into the school’s Result PIN inventory.' },
+  { q: 'Is a PIN locked to a term?', a: 'Yes. A PIN stays unused until its first successful check. That first use locks it to the current session and term, and it cannot be used for any other term.' },
+  { q: 'How many times can a PIN be used?', a: 'Each PIN allows four successful result checks. Invalid attempts and unavailable results do not consume an allowance.' },
+  { q: 'When are PINs available?', a: 'After payment is confirmed, PINs are stored in the school Admin Result PIN page where they can be copied or downloaded with a unique sale ID. You can also retrieve them from your order page.' },
+  { q: 'What if the school portal is offline after purchase?', a: 'Your confirmed order and PINs are stored centrally by Gtech Global. The school can sync the order later, or we retry delivery automatically.' },
 ];
 
 function FAQ() {
@@ -101,7 +101,7 @@ export default function MarketplaceHome({ token }: { token?: string }) {
         <div className="container flex items-center justify-between h-16 px-6">
           <Link to="/" className="flex items-center gap-2">
             <img src="/gtechlogo.png" alt="" className="w-8 h-8 object-contain" />
-            <span className="font-bold text-lg">Gtech<span className="text-violet-400">Market</span></span>
+            <span className="font-bold text-lg">Gtech Global <span className="text-violet-400">Result PIN Depot</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm text-muted">
             <a href="#products" className="hover:text-white transition">Products</a>
@@ -131,7 +131,7 @@ export default function MarketplaceHome({ token }: { token?: string }) {
             Digital products, <span className="mp-gradient">delivered instantly.</span>
           </h1>
           <p className="text-muted text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
-            Buy universal examination result-checking PINs and other verified digital products from Gtech Global. One purchase, usable across participating school systems.
+            Result PIN packs for school administrators. ₦1,000 per PIN, delivered straight into your school Result PIN inventory and ready to copy or download.
           </p>
           <div className="max-w-xl mx-auto relative">
             <Search className="w-5 h-5 text-faint absolute left-4 top-1/2 -translate-y-1/2" />

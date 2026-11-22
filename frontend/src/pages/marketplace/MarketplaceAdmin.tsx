@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, ShoppingBag, KeyRound, Package, School, BarChart3,
   Settings, Download, Plus, Search, RefreshCw, LogOut, Menu, X,
-  TrendingUp, AlertCircle, CheckCircle2, Clock,
+  TrendingUp, AlertCircle, CheckCircle2, Clock, Eye, EyeOff,
 } from 'lucide-react';
 import { apiUrl } from '../../lib/api';
 
@@ -33,6 +33,7 @@ export default function MarketplaceAdmin() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -47,9 +48,11 @@ export default function MarketplaceAdmin() {
   const [showBatchForm, setShowBatchForm] = useState(false);
   const [showSchoolForm, setShowSchoolForm] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
-  const [productForm, setProductForm] = useState({ name: '', slug: '', description: '', price: '', minQty: '1', maxQty: '500', usageLimit: '3', session: '', type: 'DIGITAL_PIN' });
-  const [batchForm, setBatchForm] = useState({ name: '', count: '100', session: '', usageLimit: '3', validityDays: '' });
-  const [schoolForm, setSchoolForm] = useState({ name: '' });
+  const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, string>>({});
+  const [productForm, setProductForm] = useState({ name: '', slug: '', description: '', price: '1000', minQty: '1', maxQty: '500', usageLimit: '4', session: '', type: 'DIGITAL_PIN' });
+  const [schoolOnly, setSchoolOnly] = useState(true);
+  const [batchForm, setBatchForm] = useState({ name: '', count: '100', session: '', usageLimit: '4', validityDays: '' });
+  const [schoolForm, setSchoolForm] = useState({ name: '', deliveryWebhookUrl: '', deliverySecret: '' });
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -97,7 +100,8 @@ export default function MarketplaceAdmin() {
         ...productForm, price: Number(productForm.price), minQty: Number(productForm.minQty),
         maxQty: Number(productForm.maxQty), usageLimit: Number(productForm.usageLimit),
         categoryId: 'default', available: true, featured: true,
-        instructions: 'Complete payment to receive your digital product.',
+        schoolOnly,
+        instructions: 'PINs are delivered to the school stock queue after payment.',
       }) });
       setShowProductForm(false);
       setMessage('Product created');
@@ -132,10 +136,16 @@ export default function MarketplaceAdmin() {
     return (
       <div className="mp-root min-h-screen flex items-center justify-center p-6">
         <div className="mp-card w-full max-w-sm p-8">
-          <h1 className="text-xl font-bold mb-1">Marketplace Admin</h1>
+          <h1 className="text-xl font-bold mb-1">Result PIN Depot Admin</h1>
           <p className="text-xs text-muted mb-6">Gtech Global administration</p>
           <input value={loginUser} onChange={(e) => setLoginUser(e.target.value)} placeholder="Username" className="mp-input mb-3" />
-          <input value={loginPass} onChange={(e) => setLoginPass(e.target.value)} placeholder="Password" type="password" className="mp-input mb-3" />
+          <div className="relative mb-3">
+            <input value={loginPass} onChange={(e) => setLoginPass(e.target.value)} placeholder="Password" type={showLoginPassword ? 'text' : 'password'} className="mp-input pr-12" />
+            <button type="button" onClick={() => setShowLoginPassword((visible) => !visible)} aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-white transition-colors">
+              {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           {loginError && <p className="text-xs text-red-400 mb-3">{loginError}</p>}
           <button onClick={login} className="mp-btn w-full">Sign in</button>
         </div>
@@ -158,7 +168,7 @@ export default function MarketplaceAdmin() {
       <aside className="w-64 border-r border-white/[0.06] p-4 shrink-0 hidden lg:block">
         <div className="flex items-center gap-2 mb-8 px-2">
           <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center"><BarChart3 className="w-4 h-4" /></div>
-          <span className="font-semibold text-sm">Market Admin</span>
+          <span className="font-semibold text-sm">PIN Depot Admin</span>
         </div>
         <nav className="space-y-1">
           {nav.map((n) => (
@@ -223,6 +233,10 @@ export default function MarketplaceAdmin() {
                       {Object.entries(productForm).map(([key, val]) => (
                         <input key={key} value={val} onChange={(e) => setProductForm({ ...productForm, [key]: e.target.value })} placeholder={key.replace(/([A-Z])/g, ' $1')} className="mp-input" />
                       ))}
+                      <label className="md:col-span-2 flex items-center gap-2 text-sm text-muted">
+                        <input type="checkbox" checked={schoolOnly} onChange={(e) => setSchoolOnly(e.target.checked)} />
+                        School-only PIN pack (hidden from parent storefront)
+                      </label>
                       <button onClick={createProduct} className="mp-btn col-span-full">Create product</button>
                     </div>
                   )}
@@ -303,10 +317,39 @@ export default function MarketplaceAdmin() {
                     <button onClick={() => setShowSchoolForm(!showSchoolForm)} className="mp-btn !py-2 !px-4"><Plus className="w-4 h-4" /> Add school</button>
                   </div>
                   {newApiKey && <div className="mp-card p-5 mb-5 border-emerald-500/30"><p className="text-xs text-emerald-400 mb-2">Save this API key — it will not be shown again:</p><code className="text-xs break-all bg-black/30 p-3 rounded block">{newApiKey}</code></div>}
-                  {showSchoolForm && <div className="mp-card p-5 mb-5 flex gap-3"><input value={schoolForm.name} onChange={(e) => setSchoolForm({ name: e.target.value })} placeholder="School name" className="mp-input flex-1" /><button onClick={createSchool} className="mp-btn">Create</button></div>}
+                  {showSchoolForm && (
+                    <div className="mp-card p-5 mb-5 grid md:grid-cols-2 gap-3">
+                      {Object.entries(schoolForm).map(([key, val]) => (
+                        <input key={key} value={val} onChange={(e) => setSchoolForm({ ...schoolForm, [key]: e.target.value })} placeholder={key.replace(/([A-Z])/g, ' $1')} className="mp-input" />
+                      ))}
+                      <button onClick={createSchool} className="mp-btn md:col-span-2">Create</button>
+                    </div>
+                  )}
                   <div className="space-y-3">{schools.map((s: any) => (
                     <div key={s.id} className="mp-card p-5 flex flex-wrap items-center justify-between gap-4">
-                      <div><div className="font-semibold">{s.name}</div><div className="text-[11px] text-muted mt-1">Last connected: {s.lastConnectedAt ? new Date(s.lastConnectedAt).toLocaleString() : 'Never'} · {s.purchaseCount || 0} purchases · {money(s.totalPurchaseValue || 0)}</div></div>
+                      <div>
+                        <div className="font-semibold">{s.name}</div>
+                        <div className="text-[11px] text-muted mt-1">Last connected: {s.lastConnectedAt ? new Date(s.lastConnectedAt).toLocaleString() : 'Never'} · {s.purchaseCount || 0} purchases · {money(s.totalPurchaseValue || 0)}</div>
+                        <div className="flex gap-2 mt-2">
+                          <input
+                            value={deliveryDrafts[s.id] ?? s.deliveryWebhookUrl ?? ''}
+                            onChange={(e) => setDeliveryDrafts({ ...deliveryDrafts, [s.id]: e.target.value })}
+                            placeholder="PIN delivery webhook URL"
+                            className="mp-input !py-1 !text-xs w-64"
+                          />
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api(`/schools/${s.id}`, { method: 'PATCH', body: JSON.stringify({ deliveryWebhookUrl: deliveryDrafts[s.id] ?? s.deliveryWebhookUrl ?? '' }) });
+                                setMessage('Delivery URL saved');
+                              } catch (e: any) { setMessage(e.message); }
+                            }}
+                            className="text-violet-400 text-xs"
+                          >
+                            Save URL
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <span className={`text-[10px] px-2 py-1 rounded-full ${s.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{s.active ? 'Active' : 'Revoked'}</span>
                         <button onClick={async () => { const d = await api(`/schools/${s.id}/rotate`, { method: 'POST' }); setNewApiKey(d.apiKey); }} className="text-violet-400 text-xs">Rotate key</button>
@@ -341,7 +384,7 @@ export default function MarketplaceAdmin() {
                     <div className="flex justify-between border-b border-white/[0.04] pb-3"><span className="text-muted">Payment owner</span><span>Gtech Global</span></div>
                     <div className="flex justify-between border-b border-white/[0.04] pb-3"><span className="text-muted">Payment gateway</span><span>Paystack</span></div>
                     <div className="flex justify-between border-b border-white/[0.04] pb-3"><span className="text-muted">PIN storage</span><span>Hashed + AES-256-GCM encrypted</span></div>
-                    <div className="flex justify-between border-b border-white/[0.04] pb-3"><span className="text-muted">PIN ownership</span><span>Universal — no school lock</span></div>
+                    <div className="flex justify-between border-b border-white/[0.04] pb-3"><span className="text-muted">PIN lock</span><span>Session + term on first use</span></div>
                     <p className="text-xs text-muted leading-relaxed">Configure PAYSTACK_SECRET_KEY, PAYSTACK_WEBHOOK_SECRET, PIN_ENCRYPTION_KEY and MARKETPLACE_PUBLIC_URL in your backend environment.</p>
                   </div>
                 </div>

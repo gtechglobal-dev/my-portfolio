@@ -105,7 +105,7 @@ export default function OrderPage({ token }: { token?: string }) {
       <header className="mp-header">
         <div className="container flex items-center justify-between h-16 px-6">
           <button onClick={() => navigate('/marketplace')} className="flex items-center gap-2 text-sm text-muted hover:text-white"><ArrowLeft className="w-4 h-4" /> Marketplace</button>
-          <span className="font-bold">Gtech<span className="text-violet-400">Market</span></span>
+          <span className="font-bold">Gtech Global <span className="text-violet-400">Result PIN Depot</span></span>
         </div>
       </header>
       <main className="container px-6 py-16 max-w-3xl mx-auto">
@@ -158,7 +158,7 @@ export default function OrderPage({ token }: { token?: string }) {
                 </div>
                 <p className="text-[11px] text-faint mt-4">
                   {copied !== null ? 'Copied!' : 'These PINs are universal and can be used on any participating school portal.'}
-                  {orderData.pins[0]?.usageLimit && ` ${orderData.pins[0].usageLimit} successful checks per academic session.`}
+                  {orderData.pins[0]?.usageLimit && ` ${orderData.pins[0].usageLimit} successful checks; locked to the first session and term used.`}
                 </p>
               </div>
             )}

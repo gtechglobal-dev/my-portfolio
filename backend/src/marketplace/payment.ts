@@ -1,6 +1,6 @@
 import {
   OrderDoc, ProductDoc, PinDoc, makePinCode, hashPin, makeId, makeReference,
-  getUnitPrice, FulfilmentRecordDoc,
+  getUnitPrice, FulfilmentRecordDoc, deliverySignature,
 } from './types.js';
 import { decryptPin } from './pinCrypto.js';
 import {
@@ -38,6 +38,7 @@ export async function initializePaystack(order: OrderDoc, email: string, callbac
         orderId: order.id,
         orderReference: order.reference,
         custom_fields: [
+          { display_name: 'Seller', variable_name: 'seller', value: 'Gtech Global' },
           { display_name: 'Order', variable_name: 'order_reference', value: order.reference },
         ],
       },
@@ -142,6 +143,30 @@ export async function allocateAndFulfil(
 
   await markPinsSold(order.id, order.schoolId);
   return { pins: allPins, fulfilment: records };
+}
+
+export async function deliverSchoolStock(order: OrderDoc, codes: string[]): Promise<void> {
+  const delivery = order.delivery;
+  if (!delivery || delivery.mode !== 'school_stock' || !delivery.webhookUrl) return;
+  const body = JSON.stringify({
+    reference: order.reference,
+    schoolId: order.schoolId,
+    schoolName: order.schoolName,
+    quantity: order.quantity,
+    productName: order.items[0]?.name || '',
+    codes,
+    deliveredAt: new Date().toISOString(),
+  });
+  const signature = deliverySignature(
+    delivery.secret || process.env.PIN_DELIVERY_SECRET || '',
+    body,
+  );
+  const response = await fetch(delivery.webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-gtech-delivery-signature': signature },
+    body,
+  });
+  if (!response.ok) throw new Error(`School delivery failed (${response.status})`);
 }
 
 export function buildOrder(

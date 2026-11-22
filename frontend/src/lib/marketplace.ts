@@ -75,6 +75,39 @@ export async function verifyPayment(reference: string) {
   return data;
 }
 
+export interface SchoolCheckout {
+  reference: string;
+  paymentReference: string;
+  seller: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  currency: string;
+  customerName?: string;
+  customerEmail?: string;
+  paymentStatus: string;
+  returnUrl?: string | null;
+  returnSignature?: string;
+  status: string;
+}
+
+export async function getSchoolCheckout(reference: string): Promise<SchoolCheckout> {
+  const res = await fetch(`${API}/marketplace/school/checkout/${encodeURIComponent(reference)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Order not found');
+  return data.order as SchoolCheckout;
+}
+
+export async function startSchoolPayment(reference: string) {
+  const res = await fetch(`${API}/marketplace/school/checkout/${encodeURIComponent(reference)}/pay`, {
+    method: 'POST',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Payment could not be started');
+  return data as { authorizationUrl: string; reference: string; paymentReference: string };
+}
+
 export async function requestAccess(email: string) {
   const res = await fetch(`${API}/marketplace/customer/request-access`, {
     method: 'POST',

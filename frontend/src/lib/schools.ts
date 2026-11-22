@@ -102,6 +102,34 @@ export function clientLogin(email: string, password: string) {
   });
 }
 
+export interface SchoolSession {
+  token: string;
+  client?: any;
+  project?: any;
+  agreement?: any;
+  credentials?: { schoolId: string; apiKey?: string; deliverySecret?: string };
+  onboarding?: any[];
+  stage?: string;
+}
+
+export function schoolRegister(payload: { contactName: string; schoolName: string; email: string; password: string; phone: string }) {
+  return request<SchoolSession>('/public/auth/register', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function schoolLogin(email: string, password: string) {
+  return request<SchoolSession>('/public/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export function schoolMe() { return request<SchoolSession>('/public/auth/me'); }
+
+export function schoolGoogleStartUrl() { return `${API}/public/auth/google/start`; }
+
+export function schoolAgreement() { return request<any>('/client/agreement/current', {}, getClientToken()); }
+
+export function acceptSchoolAgreement(payload: { legalName: string; position: string; confirmed: boolean }) {
+  return request<any>('/client/agreement/current/accept', { method: 'POST', body: JSON.stringify(payload) }, getClientToken());
+}
+
 export function getProposal(token: string) { return request<any>(`/public/proposal/${encodeURIComponent(token)}`); }
 export function respondProposal(token: string, payload: any) {
   return request<any>(`/public/proposal/${encodeURIComponent(token)}/respond`, { method: 'POST', body: JSON.stringify(payload) });
@@ -165,6 +193,8 @@ export const clientApi = {
   readNotification: (id: string) => client(`/notifications/${encodeURIComponent(id)}/read`, { method: 'PATCH' }),
   onboarding: () => client('/onboarding'),
   saveOnboarding: (section: string, data: any, submit = false) => client(`/onboarding/${section}`, { method: 'POST', body: JSON.stringify({ data, submit }) }),
+  updateSchoolName: (schoolName: string) => client('/school-name', { method: 'PATCH', body: JSON.stringify({ schoolName }) }),
+  integration: () => client<{ schoolId: string; apiKey: string; deliverySecret: string; deliveryWebhookUrl: string }>('/integration'),
   importStudents: (fileName: string, content: string) => client('/student-imports', { method: 'POST', body: JSON.stringify({ fileName, content }) }),
   payments: () => client('/payments'),
   initiatePayment: (type: 'deposit' | 'milestone' | 'final') => client('/payments/initiate', { method: 'POST', body: JSON.stringify({ type }) }),

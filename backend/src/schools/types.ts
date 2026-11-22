@@ -78,6 +78,9 @@ export interface ClientDoc {
   projectId?: string;
   marketplaceIntegrationId?: string;
   marketplaceApiKeyHash?: string;
+  authProvider?: 'password' | 'google';
+  googleSub?: string;
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 }

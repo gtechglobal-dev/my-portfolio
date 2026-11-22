@@ -112,10 +112,11 @@ router.post('/products', async (req: Request, res: Response) => {
     bulkPricing: Array.isArray(body.bulkPricing) ? body.bulkPricing : [],
     available: body.available !== false,
     featured: !!body.featured,
+    schoolOnly: body.schoolOnly !== false,
     instructions: body.instructions,
     session: body.session,
     validityDays: body.validityDays ? Number(body.validityDays) : undefined,
-    usageLimit: body.usageLimit ? Number(body.usageLimit) : 3,
+    usageLimit: body.usageLimit ? Number(body.usageLimit) : 4,
     createdAt: now,
     updatedAt: now,
   };
@@ -178,7 +179,7 @@ router.post('/pin-batches', async (req: Request, res: Response) => {
     prefix: 'GT',
     session: req.body.session,
     validityDays: req.body.validityDays ? Number(req.body.validityDays) : undefined,
-    usageLimit: Number(req.body.usageLimit) || 3,
+    usageLimit: Number(req.body.usageLimit) || 4,
     createdBy: (req as AuthRequest).admin?.username || 'admin',
     createdAt: now,
   };
@@ -238,23 +239,37 @@ router.get('/schools', async (_req: Request, res: Response) => {
 });
 
 router.post('/schools', async (req: Request, res: Response) => {
-  const { name, permissions } = req.body;
+  const { name, permissions, deliveryWebhookUrl, deliverySecret } = req.body;
   if (!name) return res.status(400).json({ error: 'School name required' });
   const apiKey = generateApiKey('gts');
   const doc = {
-    id: makeId(), name, apiKeyHash: hashApiKey(apiKey), prefix: 'gts',
-    active: true, permissions: permissions || ['launch', 'verify', 'sync'],
+    id: makeId(), name, apiKeyHash: hashApiKey(apiKey), apiKeyPlain: apiKey, prefix: 'gts',
+    active: true, permissions: permissions || ['launch', 'verify', 'sync', 'purchase'],
+    deliveryWebhookUrl: deliveryWebhookUrl || undefined,
+    deliverySecret: deliverySecret || undefined,
     createdAt: new Date().toISOString(),
   };
   await putSchoolIntegration(doc);
   res.status(201).json({ school: { id: doc.id, name: doc.name, active: doc.active }, apiKey });
 });
 
+router.patch('/schools/:id', async (req: Request, res: Response) => {
+  const school = await getSchoolIntegration(req.params.id);
+  if (!school) return res.status(404).json({ error: 'School not found' });
+  const { deliveryWebhookUrl, deliverySecret } = req.body;
+  await putSchoolIntegration({
+    ...school,
+    ...(deliveryWebhookUrl !== undefined ? { deliveryWebhookUrl } : {}),
+    ...(deliverySecret !== undefined ? { deliverySecret } : {}),
+  });
+  res.json({ success: true });
+});
+
 router.post('/schools/:id/rotate', async (req: Request, res: Response) => {
   const school = await getSchoolIntegration(req.params.id);
   if (!school) return res.status(404).json({ error: 'School not found' });
   const apiKey = generateApiKey('gts');
-  await putSchoolIntegration({ ...school, apiKeyHash: hashApiKey(apiKey), rotatedAt: new Date().toISOString() });
+  await putSchoolIntegration({ ...school, apiKeyHash: hashApiKey(apiKey), apiKeyPlain: apiKey, rotatedAt: new Date().toISOString() });
   res.json({ apiKey });
 });
 

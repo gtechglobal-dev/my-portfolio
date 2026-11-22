@@ -7,7 +7,7 @@ import {
 } from '../marketplace/store.js';
 import {
   makeId, makeReference, paystackSignature, constantTimeEqual,
-  generateApiKey, hashApiKey, hashToken, type OrderDoc,
+  generateApiKey, hashApiKey, hashToken, orderReturnSignature, type OrderDoc,
 } from '../marketplace/types.js';
 import { requireDb, authenticateSchool, resolveLaunchToken, generateMarketplaceToken, verifyCustomerToken, type SchoolAuthRequest } from '../marketplace/auth.js';
 import { initializePaystack, verifyPaystack, buildOrder, allocateAndFulfil, retryOrderFulfilment } from '../marketplace/payment.js';
@@ -16,6 +16,14 @@ import { decryptPin } from '../marketplace/pinCrypto.js';
 import { rateLimit } from '../marketplace/rateLimit.js';
 
 const router = Router();
+
+function marketplaceBase(req: Request): string {
+  const configured = process.env.MARKETPLACE_PUBLIC_URL
+    || process.env.SCHOOL_CLIENT_PUBLIC_URL
+    || process.env.RENDER_EXTERNAL_URL
+    || '';
+  return (configured || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+}
 
 router.use(requireDb);
 
@@ -27,7 +35,8 @@ router.get('/bootstrap', async (_req: Request, res: Response) => {
       const resolved = await resolveLaunchToken(token);
       if (resolved) school = resolved.school;
     }
-    const [categories, products] = await Promise.all([getCategories(), getProducts({ available: true })]);
+    const [categories, allProducts] = await Promise.all([getCategories(), getProducts({ available: true })]);
+    const products = allProducts.filter((p) => !p.schoolOnly);
     const availablePins = await getAvailablePinCount();
     res.json({
       categories: categories.map((c) => ({ ...c, productCount: products.filter((p) => p.categoryId === c.id).length })),
@@ -59,7 +68,7 @@ router.post('/orders/quote', async (req: Request, res: Response) => {
   try {
     const { productId, quantity } = req.body;
     const product = await getProduct(productId);
-    if (!product || !product.available) return res.status(404).json({ error: 'Product not found' });
+    if (!product || !product.available || product.schoolOnly) return res.status(404).json({ error: 'Product not found' });
     const qty = Number(quantity);
     if (!Number.isInteger(qty) || qty < product.minQty || qty > product.maxQty) {
       return res.status(400).json({ error: `Quantity must be between ${product.minQty} and ${product.maxQty}` });
@@ -81,7 +90,7 @@ router.post('/orders', rateLimit(20, 15 * 60 * 1000, 'create-order'), async (req
       return res.status(400).json({ error: 'Product, name and email are required' });
     }
     const product = await getProduct(productId);
-    if (!product || !product.available) return res.status(404).json({ error: 'Product not found' });
+    if (!product || !product.available || product.schoolOnly) return res.status(404).json({ error: 'Product not found' });
     const qty = Number(quantity);
     if (!Number.isInteger(qty) || qty < product.minQty || qty > product.maxQty) {
       return res.status(400).json({ error: `Quantity must be between ${product.minQty} and ${product.maxQty}` });
@@ -179,14 +188,38 @@ async function confirmPayment(reference: string): Promise<OrderDoc | null> {
   order.updatedAt = new Date().toISOString();
   await putOrder(order);
 
+  let deliveredCodes: string[] = [];
   if (order.fulfilment?.status !== 'delivered') {
     const products = await Promise.all(order.items.map((i) => getProduct(i.productId)));
     const valid = products.filter(Boolean) as any[];
     const { pins } = await allocateAndFulfil(order, valid);
+    deliveredCodes = pins
+      .map((p) => (p.codeCipher ? decryptPin(p.codeCipher) || '' : ''))
+      .filter(Boolean);
     order.fulfilment = { status: 'delivered', deliveredAt: new Date().toISOString(), itemCount: pins.length };
     order.status = 'delivered';
     order.receiptNumber = makeReference('RCP');
+  } else {
+    const records = await getFulfilments(order.id);
+    deliveredCodes = records.flatMap((r) =>
+      ((r.payload?.pins as { code?: string }[] | undefined) || [])
+        .map((p) => p.code || '')
+        .filter(Boolean),
+    );
   }
+
+  if (order.delivery?.mode === 'school_stock') {
+    try {
+      const { deliverSchoolStock } = await import('../marketplace/payment.js');
+      await deliverSchoolStock(order, deliveredCodes);
+      order.delivery.status = 'delivered';
+      order.delivery.deliveredAt = new Date().toISOString();
+    } catch (err: any) {
+      order.delivery.status = 'failed';
+      order.delivery.error = err.message;
+    }
+  }
+
   order.updatedAt = new Date().toISOString();
   await putOrder(order);
 
@@ -347,6 +380,137 @@ router.post('/retry/:ref', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/school/catalogue', authenticateSchool, async (_req: SchoolAuthRequest, res: Response) => {
+  try {
+    const [products, availablePins] = await Promise.all([
+      getProducts({ available: true }),
+      getAvailablePinCount(),
+    ]);
+    res.json({
+      availablePins,
+      products: products
+        .filter((p) => p.type === 'DIGITAL_PIN' && p.schoolOnly)
+        .map((p) => ({
+          id: p.id, slug: p.slug, name: p.name, description: p.description,
+          shortDescription: p.shortDescription, price: p.price, currency: p.currency,
+          minQty: p.minQty, maxQty: p.maxQty, bulkPricing: p.bulkPricing || [],
+          usageLimit: p.usageLimit, availableQty: availablePins, session: p.session,
+        })),
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to load PIN catalogue' });
+  }
+});
+
+router.post('/school/orders', authenticateSchool, async (req: SchoolAuthRequest, res: Response) => {
+  try {
+    const { productId, quantity, customer, returnUrl } = req.body;
+    if (!productId || !customer?.name || !customer?.email) {
+      return res.status(400).json({ error: 'Product, name and email are required' });
+    }
+    if (returnUrl && !/^https?:\/\//i.test(String(returnUrl))) {
+      return res.status(400).json({ error: 'returnUrl must be an absolute URL' });
+    }
+    const product = await getProduct(productId);
+    if (!product || !product.available || !product.schoolOnly) {
+      return res.status(404).json({ error: 'PIN product not found' });
+    }
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty < product.minQty || qty > product.maxQty) {
+      return res.status(400).json({ error: `Quantity must be between ${product.minQty} and ${product.maxQty}` });
+    }
+    const available = await getAvailablePinCount(product.session);
+    if (qty > available) return res.status(409).json({ error: `Only ${available} PINs available` });
+
+    const school = await getSchoolIntegration(req.school!.id);
+    const order = buildOrder(
+      customer,
+      [{ product, quantity: qty }],
+      { id: req.school!.id, name: req.school!.name, returnUrl },
+      null,
+    );
+    order.delivery = {
+      mode: 'school_stock',
+      webhookUrl: school?.deliveryWebhookUrl || process.env.SCHOOL_PIN_DELIVERY_WEBHOOK || '',
+      secret: school?.deliverySecret || process.env.PIN_DELIVERY_SECRET || '',
+      status: 'pending',
+    };
+    await putOrder(order);
+
+    const checkoutUrl = `${marketplaceBase(req)}/school-management/pin-order?reference=${encodeURIComponent(order.reference)}`;
+    res.status(201).json({
+      order: {
+        reference: order.reference,
+        paymentReference: order.payment.reference,
+        total: order.total,
+        quantity: order.quantity,
+        checkoutUrl,
+        status: order.status,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      error: err.message === 'PAYSTACK_NOT_CONFIGURED' ? 'Payment gateway unavailable' : 'Failed to create PIN order',
+    });
+  }
+});
+
+router.get('/school/checkout/:ref', async (req: Request, res: Response) => {
+  try {
+    const order = await getOrder(req.params.ref);
+    if (!order || order.delivery?.mode !== 'school_stock') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json({
+      order: {
+        reference: order.reference,
+        paymentReference: order.payment.reference,
+        seller: 'Gtech Global',
+        productName: order.items[0]?.name || '',
+        quantity: order.quantity,
+        unitPrice: order.unitPrice,
+        total: order.total,
+        currency: order.currency,
+        customerName: order.customer.name,
+        customerEmail: order.customer.email,
+        paymentStatus: order.payment.status,
+        returnUrl: order.returnUrl || null,
+        returnSignature: order.delivery?.secret ? orderReturnSignature(order.delivery.secret, order.reference) : '',
+        status: order.status,
+      },
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to load order' });
+  }
+});
+
+router.post('/school/checkout/:ref/pay', async (req: Request, res: Response) => {
+  try {
+    const order = await getOrder(req.params.ref);
+    if (!order || order.delivery?.mode !== 'school_stock') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (order.payment.status === 'success') {
+      return res.json({ authorizationUrl: `${marketplaceBase(req)}/school-management/pin-order/callback?reference=${encodeURIComponent(order.payment.reference)}` });
+    }
+    const callbackUrl = `${marketplaceBase(req)}/school-management/pin-order/callback?reference=${encodeURIComponent(order.payment.reference)}`;
+    const init = await initializePaystack(order, order.customer.email, callbackUrl);
+    order.payment.accessCode = init.access_code;
+    order.payment.authorizationUrl = init.authorization_url;
+    order.status = 'awaiting_payment';
+    await putOrder(order);
+    res.json({
+      authorizationUrl: init.authorization_url,
+      reference: order.reference,
+      paymentReference: order.payment.reference,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      error: err.message === 'PAYSTACK_NOT_CONFIGURED' ? 'Payment gateway unavailable' : 'Failed to start payment',
+    });
+  }
+});
+
 router.get('/school/health', authenticateSchool, (_req: SchoolAuthRequest, res: Response) => {
   res.json({ status: 'ok', db: isDbConnected(), timestamp: new Date().toISOString() });
 });
@@ -379,7 +543,26 @@ router.post('/school/launch-token', authenticateSchool, async (req: SchoolAuthRe
 router.get('/school/order/:ref', authenticateSchool, async (req: SchoolAuthRequest, res: Response) => {
   const order = await getOrder(req.params.ref);
   if (!order || order.schoolId !== req.school!.id) return res.status(404).json({ error: 'Order not found' });
-  res.json({ order: { reference: order.reference, status: order.status, paymentStatus: order.payment.status, total: order.total, createdAt: order.createdAt } });
+  const records = await getFulfilments(order.id);
+  const codes = records.flatMap((r) =>
+    ((r.payload?.pins as { code?: string }[] | undefined) || [])
+      .map((p) => p.code || '')
+      .filter(Boolean),
+  );
+  res.json({
+    order: {
+        reference: order.reference,
+        schoolId: order.schoolId,
+        status: order.status,
+        paymentStatus: order.payment.status,
+        total: order.total,
+        quantity: order.quantity,
+      productName: order.items[0]?.name || '',
+      delivery: order.delivery || null,
+      createdAt: order.createdAt,
+    },
+    codes,
+  });
 });
 
 router.get('/school/orders', authenticateSchool, async (req: SchoolAuthRequest, res: Response) => {

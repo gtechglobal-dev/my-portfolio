@@ -5,10 +5,14 @@ import {
 } from '../schools/store.js';
 import {
   makeId, hashToken, CONSENT_VERSION, type ApplicationDoc, type ProposalDoc,
-  type AgreementDoc, type ClientDoc, type ProjectDoc, type MilestoneDoc,
+  type AgreementDoc, type ClientDoc, type ProjectDoc, type MilestoneDoc, type OnboardingDoc,
 } from '../schools/types.js';
 import { rateLimit } from '../marketplace/rateLimit.js';
-import { signClient, verifyClientCredentials, whatsappLink } from '../schools/auth.js';
+import { signClient, verifyClientCredentials, whatsappLink, clientAuth, type AuthRequest } from '../schools/auth.js';
+import {
+  createSchoolAccount, createOAuthState, exchangeGoogleCode, googleAuthUrl,
+  googleOauthConfigured, publicOrigin, verifyOAuthState,
+} from '../schools/selfService.js';
 import bcrypt from 'bcryptjs';
 
 const router = Router();
@@ -112,6 +116,108 @@ router.post('/client/login', async (req: Request, res: Response) => {
     reference: client.reference,
     stage: project?.stage,
   });
+});
+
+router.post('/auth/register', rateLimit(10, 60 * 60 * 1000, 'school-signup'), async (req: Request, res: Response) => {
+  try {
+    const email = String(req.body.email || '').trim();
+    const password = String(req.body.password || '');
+    const contactName = String(req.body.contactName || '').trim();
+    const schoolName = String(req.body.schoolName || '').trim();
+    const phone = String(req.body.phone || '').trim();
+    if (!email || !password || !contactName || !schoolName || !phone) {
+      return res.status(400).json({ error: 'Full name, school name, email, password and phone number are required.' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
+    if (phone.replace(/\D/g, '').length < 7) return res.status(400).json({ error: 'Enter a valid phone number. WhatsApp is preferred.' });
+    if (password.length < 8) return res.status(400).json({ error: 'Use at least 8 characters for your password.' });
+    const account = await createSchoolAccount({
+      email, password, contactName, schoolName, phone,
+    });
+    res.status(201).json({
+      token: signClient({ clientId: account.client.id, projectId: account.project.id, role: 'client', email: account.client.email }),
+      client: account.client,
+      project: account.project,
+      agreement: account.agreement,
+      credentials: account.credentials,
+    });
+  } catch (err: any) {
+    if (err.message === 'EMAIL_IN_USE') return res.status(409).json({ error: 'An account already exists for this email. Sign in instead.' });
+    res.status(err.message === 'DB_UNAVAILABLE' ? 503 : 500).json({ error: 'Could not create your school account. Please try again.' });
+  }
+});
+
+router.post('/auth/login', async (req: Request, res: Response) => {
+  const client = await verifyClientCredentials(String(req.body.email || ''), String(req.body.password || ''));
+  if (!client) return res.status(401).json({ error: 'Invalid email or password' });
+  const project = client.projectId ? await findOne<ProjectDoc>('sc_projects', { id: client.projectId }) : null;
+  res.json({
+    token: signClient({ clientId: client.id, projectId: client.projectId, role: 'client', email: client.email }),
+    client,
+    project,
+    credentials: client.marketplaceIntegrationId ? { schoolId: client.marketplaceIntegrationId } : null,
+    stage: project?.stage,
+  });
+});
+
+router.get('/auth/me', clientAuth, async (req: AuthRequest, res: Response) => {
+  const client = await findOne<ClientDoc>('sc_clients', { id: req.client!.clientId });
+  if (!client) return res.status(404).json({ error: 'School account not found' });
+  const project = client.projectId ? await findOne<ProjectDoc>('sc_projects', { id: client.projectId }) : null;
+  const [onboarding, agreements] = await Promise.all([
+    project ? findAll<OnboardingDoc>('sc_onboarding', { projectId: project.id }) : Promise.resolve([]),
+    findAll<AgreementDoc>('sc_agreements', { clientId: client.id }),
+  ]);
+  res.json({
+    client,
+    project,
+    onboarding,
+    agreement: agreements.find((a) => a.status === 'pending') || agreements[0] || null,
+    credentials: client.marketplaceIntegrationId ? { schoolId: client.marketplaceIntegrationId } : null,
+  });
+});
+
+router.get('/auth/google/start', (_req: Request, res: Response) => {
+  if (!googleOauthConfigured()) {
+    return res.status(503).json({ error: 'Google sign-in is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to the Gtech backend.' });
+  }
+  res.redirect(googleAuthUrl(createOAuthState()));
+});
+
+router.get('/auth/google/callback', async (req: Request, res: Response) => {
+  const state = String(req.query.state || '');
+  const code = String(req.query.code || '');
+  const frontend = publicOrigin();
+  if (!verifyOAuthState(state) || !code) {
+    return res.redirect(`${frontend}/school-management?authError=${encodeURIComponent('Google sign-in was cancelled or expired.')}`);
+  }
+  try {
+    const google = await exchangeGoogleCode(code);
+    if (!google) throw new Error('GOOGLE_VERIFY_FAILED');
+    let client = await findOne<ClientDoc>('sc_clients', { email: google.email });
+    let account: Awaited<ReturnType<typeof createSchoolAccount>> | null = null;
+    if (!client) {
+      account = await createSchoolAccount({
+        email: google.email,
+        contactName: google.name,
+        schoolName: `${google.name}'s School`,
+        authProvider: 'google',
+        googleSub: google.sub,
+        emailVerified: true,
+      });
+      client = account.client;
+    }
+    const project = client.projectId ? await findOne<ProjectDoc>('sc_projects', { id: client.projectId }) : null;
+    const token = signClient({ clientId: client.id, projectId: client.projectId, role: 'client', email: client.email });
+    if (account?.credentials) {
+      res.cookie('gtech_school_setup', encodeURIComponent(JSON.stringify(account.credentials)), {
+        httpOnly: true, sameSite: 'lax', secure: frontend.startsWith('https://'), maxAge: 10 * 60 * 1000,
+      });
+    }
+    res.redirect(`${frontend}/school-management?auth=${encodeURIComponent(token)}&stage=${encodeURIComponent(project?.stage || '')}`);
+  } catch {
+    res.redirect(`${frontend}/school-management?authError=${encodeURIComponent('Google sign-in could not be completed.')}`);
+  }
 });
 
 router.get('/proposal/:token', async (req: Request, res: Response) => {

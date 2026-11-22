@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Users, ClipboardList, FolderKanban,
   CreditCard, Settings, LogOut, RefreshCw, Copy, CheckCircle2,
-  AlertCircle, Plus, Send, KeyRound, Rocket, ShieldCheck, Upload,
+  AlertCircle, Plus, Send, KeyRound, Rocket, ShieldCheck, Upload, Eye, EyeOff,
 } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
 import {
   adminApi, ADMIN_TOKEN_KEY, dateLabel, downloadAdminDocument, fileToDataUrl, money, stageLabel,
 } from '../../lib/schools';
@@ -20,6 +21,16 @@ const TABS = [
 ] as const;
 
 type Tab = typeof TABS[number]['id'];
+
+type PendingAction = {
+  title: string;
+  message: string;
+  from?: string;
+  to?: string;
+  confirmLabel: string;
+  tone: 'primary' | 'success' | 'danger';
+  action: () => void;
+};
 
 const TAB_PATHS: Record<string, Tab> = {
   overview: 'overview',
@@ -46,6 +57,7 @@ function pathForTab(active: Tab): string {
 function Login({ onLogin }: { onLogin: (token: string) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +92,13 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
           <p className="text-xs text-muted mt-1">Gtech Global internal portal</p>
         </div>
         <input required placeholder="Username" className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.08] text-sm" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input required type="password" placeholder="Password" className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.08] text-sm" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="relative">
+          <input required type={showPassword ? 'text' : 'password'} placeholder="Password" className="w-full px-4 py-3 pr-12 rounded-lg bg-surface border border-white/[0.08] text-sm" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-white transition-colors">
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
         {error && <p className="text-xs text-red-400">{error}</p>}
         <button disabled={loading} className="btn btn-primary w-full">{loading ? 'Signing in...' : 'Sign in'}</button>
       </form>
@@ -114,6 +132,7 @@ export default function SchoolClientsAdmin() {
   const [forms, setForms] = useState<any>({
     convert: {}, proposal: {}, agreement: {}, settings: {}, training: {}, handover: {}, document: { category: 'other', clientVisible: true },
   });
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   useEffect(() => {
     setTab(tabFromPath(pathname));
@@ -198,6 +217,26 @@ export default function SchoolClientsAdmin() {
     } catch { setError('Could not copy to clipboard.'); }
   }
 
+  function requestApplicationStatus(status: string) {
+    const application = detail?.application;
+    if (!application) return;
+    const from = stageLabel(application.status);
+    const to = stageLabel(status);
+    const isAccept = status === 'accepted';
+    const isReject = status === 'rejected';
+    setPendingAction({
+      title: isAccept ? 'Approve & move application?' : `Move application to ${to}?`,
+      message: isAccept
+        ? `Approve ${application.school.name}'s application and move it to ${to}?`
+        : `Move ${application.school.name}'s application from ${from} to ${to}?`,
+      from,
+      to,
+      confirmLabel: isAccept ? 'Approve & move' : `Move to ${to}`,
+      tone: isReject ? 'danger' : isAccept ? 'success' : 'primary',
+      action: () => void act(() => adminApi.updateApplication(application.id, { status }), 'Status updated.'),
+    });
+  }
+
   if (!token) return <Login onLogin={login} />;
 
   const applications = data.applications || [];
@@ -216,10 +255,11 @@ export default function SchoolClientsAdmin() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-ink text-[#f5f5f5] flex">
       <aside className="w-60 shrink-0 border-r border-white/[0.06] bg-surface/40 p-4 space-y-1 hidden lg:block">
         <div className="px-3 py-4 mb-4">
-          <div className="font-bold">Gtech <span className="text-violet-400">Schools</span></div>
+          <div className="font-bold">Gtech Global <span className="text-violet-400">Schools</span></div>
           <div className="text-[10px] text-faint mt-1">Administration</div>
         </div>
         {TABS.map((item) => (
@@ -326,7 +366,7 @@ export default function SchoolClientsAdmin() {
                   <div className="p-3 rounded-lg bg-surface/60 text-xs text-muted"><div className="text-faint mb-1">Challenges</div>{detail.application.profile.challenges}</div>
                   <div className="flex flex-wrap gap-2">
                     {['under_review', 'contacted', 'consultation_scheduled', 'proposal_preparation', 'accepted', 'rejected'].map((status) => (
-                      <button key={status} disabled={busy} onClick={() => act(() => adminApi.updateApplication(detail.application.id, { status }), 'Status updated.')} className="px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-muted hover:text-white">
+                      <button key={status} disabled={busy} onClick={() => requestApplicationStatus(status)} className="px-3 py-1.5 rounded-lg border border-white/10 text-[11px] text-muted hover:text-white">
                         {stageLabel(status)}
                       </button>
                     ))}
@@ -360,12 +400,20 @@ export default function SchoolClientsAdmin() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-surface/60 text-faint uppercase tracking-wider">
-                  <tr><th className="p-3">School</th><th className="p-3">Email</th><th className="p-3">Project</th><th className="p-3">Marketplace</th><th className="p-3">Actions</th></tr>
+                  <tr><th className="p-3">School</th><th className="p-3">School ID</th><th className="p-3">Email</th><th className="p-3">Project</th><th className="p-3">Marketplace</th><th className="p-3">Actions</th></tr>
                 </thead>
                 <tbody>
                   {clients.map((client: any) => (
                     <tr key={client.id} className="border-t border-white/[0.06]">
                       <td className="p-3"><div className="font-medium">{client.schoolName}</div><div className="text-faint mt-0.5">{client.reference}</div></td>
+                      <td className="p-3">
+                        {client.marketplaceIntegrationId ? (
+                          <div className="flex items-center gap-1.5">
+                            <code className="text-[10px] text-violet-300">{client.marketplaceIntegrationId}</code>
+                            <button disabled={busy} onClick={() => copy(client.marketplaceIntegrationId, 'School ID')} className="p-1 rounded bg-white/5 text-muted hover:text-white" title="Copy school ID"><Copy className="w-3 h-3" /></button>
+                          </div>
+                        ) : <span className="text-faint">—</span>}
+                      </td>
                       <td className="p-3 text-muted">{client.email}</td>
                       <td className="p-3">{client.project ? <><div>{client.project.reference}</div><StatusBadge status={client.project.stage} /></> : <span className="text-faint">—</span>}</td>
                       <td className="p-3">{client.marketplace?.active ? <span className="text-emerald-400">Connected</span> : <span className="text-faint">Not connected</span>}</td>
@@ -613,9 +661,44 @@ export default function SchoolClientsAdmin() {
                 Paystack secrets are configured server-side only. {settings.paymentSecretsConfigured ? 'A secret key is present.' : 'No Paystack secret key is configured.'}
               </div>
             </div>
+            <div className="card p-5">
+              <h2 className="font-semibold mb-3">Marketplace API access</h2>
+              <p className="text-xs text-muted leading-relaxed">
+                School API keys are created and rotated here in Gtech Global Admin only. Use Clients →
+                Connect or Rotate key to copy the key into the school's Greatpath backend
+                <code className="text-violet-300"> .env</code> as
+                <code className="text-violet-300"> GTECH_MARKETPLACE_API_KEY</code>. Copy the School ID
+                from the Clients table as <code className="text-violet-300">GTECH_SCHOOL_ID</code>.
+                Never paste keys into a browser-facing page.
+              </p>
+              <div className="mt-4 p-3 rounded-lg bg-surface/50 text-[11px] text-faint leading-relaxed">
+                Use Clients to connect, rotate or revoke a school key. The matching delivery secret
+                belongs in <code className="text-violet-300">GTECH_DELIVERY_SECRET</code> on the
+                school backend.
+              </div>
+            </div>
           </div>
         )}
       </main>
     </div>
+
+    {pendingAction && (
+      <ConfirmModal
+        open
+        title={pendingAction.title}
+        message={pendingAction.message}
+        from={pendingAction.from}
+        to={pendingAction.to}
+        confirmLabel={pendingAction.confirmLabel}
+        tone={pendingAction.tone}
+        onClose={() => setPendingAction(null)}
+        onConfirm={() => {
+          const action = pendingAction.action;
+          setPendingAction(null);
+          action();
+        }}
+      />
+    )}
+    </>
   );
 }

@@ -5,8 +5,9 @@ import {
   Users, Clock, CheckCircle, XCircle, Trash2, Mail, Phone,
   Calendar, Search, Menu, X, ChevronDown, TrendingUp, ArrowRight,
   Palette, Upload, Image as ImageIcon, Download, FileText, Bot,
-  QrCode, ShoppingBag, Store,
+  QrCode, ShoppingBag, Store, Eye, EyeOff,
 } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 import CryptoBot from '../components/admin/CryptoBot';
 import QRCodeSystem from '../components/admin/QRCodeSystem';
 import { optimizeImage } from '../lib/image';
@@ -60,9 +61,20 @@ interface Stats {
   recentBookings: Booking[];
 }
 
+type ConfirmAction = {
+  title: string;
+  message: string;
+  from?: string;
+  to?: string;
+  confirmLabel: string;
+  tone: 'primary' | 'success' | 'danger';
+  action: () => void;
+};
+
 function Login({ onLogin }: { onLogin: (token: string) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -107,8 +119,14 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
           </div>
           <div>
             <label htmlFor="admin-password" className="block text-sm text-muted mb-1.5">Password</label>
-                            <input id="admin-password" name="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
+            <div className="relative">
+              <input id="admin-password" name="admin-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 rounded-lg bg-surface border border-white/[0.06] text-white text-sm placeholder-faint focus:border-indigo/40 focus:outline-none transition-colors" placeholder="••••••" />
+              <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-white transition-colors">
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button type="submit" disabled={loading}
@@ -170,6 +188,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [gfxUploading, setGfxUploading] = useState(false);
   const [gfxUploadProgress, setGfxUploadProgress] = useState<string>('');
   const [gfxStatus, setGfxStatus] = useState<{ type: string; message: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
@@ -212,7 +231,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   };
 
   const deleteBooking = async (id: string) => {
-    if (!confirm('Delete this booking?')) return;
     const res = await fetch(`${API}/bookings/${id}`, { method: 'DELETE', headers });
     if (res.ok) fetchData();
   };
@@ -324,9 +342,66 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   };
 
   const deleteGraphics = async (id: string) => {
-    if (!confirm('Delete this design?')) return;
     const res = await fetch(`${API}/graphics/${id}`, { method: 'DELETE', headers });
     if (res.ok) fetchData();
+  };
+
+  const statusLabel = (value?: string) => (value || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const requestStatusChange = (booking: Booking, status: 'approved' | 'completed' | 'cancelled') => {
+    const copy = {
+      approved: {
+        title: 'Approve & move booking?',
+        message: `Approve ${booking.clientName}'s booking and move it to Approved?`,
+        confirmLabel: 'Approve & move',
+        tone: 'success' as const,
+      },
+      completed: {
+        title: 'Complete this booking?',
+        message: `Move ${booking.clientName}'s booking to Completed?`,
+        confirmLabel: 'Move to completed',
+        tone: 'primary' as const,
+      },
+      cancelled: {
+        title: 'Cancel this booking?',
+        message: `Move ${booking.clientName}'s booking to Cancelled?`,
+        confirmLabel: 'Move to cancelled',
+        tone: 'danger' as const,
+      },
+    }[status];
+
+    setConfirmAction({
+      ...copy,
+      from: statusLabel(booking.status),
+      to: statusLabel(status),
+      action: () => {
+        void updateStatus(booking.id, status);
+        setExpandedId(null);
+      },
+    });
+  };
+
+  const requestDeleteBooking = (booking: Booking) => {
+    setConfirmAction({
+      title: 'Delete this booking?',
+      message: `${booking.clientName}'s booking and its details will be permanently removed.`,
+      confirmLabel: 'Delete booking',
+      tone: 'danger',
+      action: () => {
+        void deleteBooking(booking.id);
+        setExpandedId(null);
+      },
+    });
+  };
+
+  const requestDeleteGraphics = (design: GraphicsDesign) => {
+    setConfirmAction({
+      title: 'Delete this design?',
+      message: `“${design.title}” will be permanently removed from the gallery.`,
+      confirmLabel: 'Delete design',
+      tone: 'danger',
+      action: () => void deleteGraphics(design.id),
+    });
   };
 
   const filteredBookings = bookings.filter((b) => {
@@ -352,6 +427,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   ];
 
   return (
+    <>
     <div className="min-h-screen bg-ink flex">
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-ink border-r border-white/[0.04] transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="p-5 border-b border-white/[0.04] flex items-center justify-between">
@@ -359,7 +435,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             <div className="w-8 h-8 rounded-lg bg-indigo flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-sm">Gtech Admin</span>
+            <span className="font-semibold text-sm">Gtech Global Admin</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted">
             <X className="w-5 h-5" />
@@ -695,24 +771,24 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                                                   </a>
                                                   <div className="flex-1" />
                                                   {b.status !== 'approved' && (
-                                                    <button onClick={() => { updateStatus(b.id, 'approved'); setExpandedId(null); }}
+                                                    <button onClick={() => requestStatusChange(b, 'approved')}
                                                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-400 text-xs hover:bg-blue-500/20 transition-colors">
-                                                      <CheckCircle className="w-3.5 h-3.5" /> Approve
+                                                      <CheckCircle className="w-3.5 h-3.5" /> Approve & move
                                                     </button>
                                                   )}
                                                   {b.status !== 'completed' && (
-                                                    <button onClick={() => { updateStatus(b.id, 'completed'); setExpandedId(null); }}
+                                                    <button onClick={() => requestStatusChange(b, 'completed')}
                                                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors">
                                                       <CheckCircle className="w-3.5 h-3.5" /> Complete
                                                     </button>
                                                   )}
                                                   {b.status !== 'cancelled' && (
-                                                    <button onClick={() => { updateStatus(b.id, 'cancelled'); setExpandedId(null); }}
+                                                    <button onClick={() => requestStatusChange(b, 'cancelled')}
                                                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
                                                       <XCircle className="w-3.5 h-3.5" /> Cancel
                                                     </button>
                                                   )}
-                                                  <button onClick={() => { deleteBooking(b.id); setExpandedId(null); }}
+                                                  <button onClick={() => requestDeleteBooking(b)}
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
                                                     <Trash2 className="w-3.5 h-3.5" /> Delete
                                                   </button>
@@ -879,7 +955,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                             <div key={d.id} className="card p-0 overflow-hidden group">
                               <div className="relative w-full aspect-[4/3] overflow-hidden bg-ink flex items-center justify-center p-2">
                                 <img src={d.image} alt={d.title} decoding="async" className="max-w-full max-h-full object-contain" />
-                                <button onClick={() => deleteGraphics(d.id)}
+                                  <button onClick={() => requestDeleteGraphics(d)}
+
                                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/60">
                                   <Trash2 className="w-3.5 h-3.5 text-white" />
                                 </button>
@@ -922,6 +999,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </div>
       </div>
     </div>
+
+    {confirmAction && (
+      <ConfirmModal
+        open
+        title={confirmAction.title}
+        message={confirmAction.message}
+        from={confirmAction.from}
+        to={confirmAction.to}
+        confirmLabel={confirmAction.confirmLabel}
+        tone={confirmAction.tone}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          const action = confirmAction.action;
+          setConfirmAction(null);
+          action();
+        }}
+      />
+    )}
+    </>
   );
 }
 

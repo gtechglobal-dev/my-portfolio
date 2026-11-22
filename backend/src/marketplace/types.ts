@@ -28,6 +28,7 @@ export interface ProductDoc {
   bulkPricing?: { minQty: number; price: number }[];
   available: boolean;
   featured: boolean;
+  schoolOnly?: boolean;
   instructions?: string;
   session?: string;
   validityDays?: number;
@@ -85,6 +86,14 @@ export interface OrderDoc {
   };
   receiptNumber?: string;
   returnUrl?: string | null;
+  delivery?: {
+    mode: 'school_stock';
+    webhookUrl: string;
+    secret: string;
+    status: 'pending' | 'delivered' | 'failed';
+    deliveredAt?: string;
+    error?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -104,9 +113,12 @@ export interface SchoolIntegrationDoc {
   id: string;
   name: string;
   apiKeyHash: string;
+  apiKeyPlain?: string;
   prefix: string;
   active: boolean;
   permissions: string[];
+  deliveryWebhookUrl?: string;
+  deliverySecret?: string;
   lastConnectedAt?: string;
   lastError?: string;
   revokedAt?: string;
@@ -196,7 +208,7 @@ export interface FulfilmentRecordDoc {
   updatedAt: string;
 }
 
-const DEFAULT_USAGE_LIMIT = 3;
+const DEFAULT_USAGE_LIMIT = 4;
 const PIN_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export function makeId(): string {
@@ -244,6 +256,14 @@ export function constantTimeEqual(a: string, b: string): boolean {
 
 export function paystackSignature(secret: string, body: string): string {
   return createHmac('sha512', secret).update(body).digest('hex');
+}
+
+export function deliverySignature(secret: string, body: string): string {
+  return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
+}
+
+export function orderReturnSignature(secret: string, reference: string): string {
+  return createHmac('sha256', secret).update(`pin-order:${reference}`).digest('hex');
 }
 
 export function getUnitPrice(product: ProductDoc, qty: number): number {

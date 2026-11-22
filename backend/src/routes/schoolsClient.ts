@@ -5,11 +5,11 @@ import {
 import {
   makeId, makeSecureToken, hashToken, type ClientDoc, type ProjectDoc, type MilestoneDoc,
   type PaymentDoc, type OnboardingDoc, type NotificationDoc, type IssueDoc, type MessageDoc,
-  type DocumentDoc, type FileDoc, type StudentImportDoc, type HandoverDoc, type TrainingDoc, stageIndex, projectPaymentAmount,
+  type DocumentDoc, type FileDoc, type StudentImportDoc, type HandoverDoc, type TrainingDoc, type AgreementDoc, stageIndex, projectPaymentAmount,
   DOCUMENT_CATEGORIES, validateFileUpload, safeFileName, parseCsv,
 } from '../schools/types.js';
 import { clientAuth, type AuthRequest } from '../schools/auth.js';
-import { getSchoolIntegration, putLaunchToken } from '../marketplace/store.js';
+import { getSchoolIntegration, putLaunchToken, putSchoolIntegration } from '../marketplace/store.js';
 import { initializePaystack } from '../marketplace/payment.js';
 import { makeReference } from '../marketplace/types.js';
 
@@ -55,6 +55,29 @@ router.get('/overview', async (req: AuthRequest, res: Response) => {
   });
 });
 
+router.patch('/school-name', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const schoolName = String(req.body.schoolName || '').trim();
+  if (!schoolName) return res.status(400).json({ error: 'School name is required.' });
+  await update<ClientDoc>('sc_clients', 'id', ctx.client.id, { schoolName, updatedAt: new Date().toISOString() });
+  if (ctx.project) await update<ProjectDoc>('sc_projects', 'id', ctx.project.id, { schoolName, updatedAt: new Date().toISOString() });
+  res.json({ success: true, schoolName });
+});
+
+router.get('/integration', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.client.marketplaceIntegrationId) return res.status(404).json({ error: 'PIN integration is not provisioned yet.' });
+  const integration = await getSchoolIntegration(ctx.client.marketplaceIntegrationId);
+  if (!integration) return res.status(404).json({ error: 'PIN integration not found.' });
+  res.json({
+    schoolId: integration.id,
+    apiKey: integration.apiKeyPlain || '',
+    deliverySecret: integration.deliverySecret || '',
+    deliveryWebhookUrl: integration.deliveryWebhookUrl || '',
+  });
+});
+
 router.get('/notifications', async (req: AuthRequest, res: Response) => {
   const notifications = await findAll<NotificationDoc>('sc_notifications', { clientId: req.client!.clientId }, { createdAt: -1 }, 100);
   res.json({ notifications });
@@ -77,7 +100,7 @@ router.post('/onboarding/:section', async (req: AuthRequest, res: Response) => {
   const ctx = await context(req);
   if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
   const section = req.params.section;
-  if (!['school_profile', 'class_subject', 'staff', 'student_import'].includes(section)) {
+  if (!['school_profile', 'site_request', 'class_subject', 'staff', 'student_import'].includes(section)) {
     return res.status(400).json({ error: 'Invalid onboarding section' });
   }
   const existing = await findOne<OnboardingDoc>('sc_onboarding', { projectId: ctx.project.id, section });
@@ -95,11 +118,53 @@ router.post('/onboarding/:section', async (req: AuthRequest, res: Response) => {
   if (doc.status === 'submitted' && !req.body.submit) doc.status = 'draft';
   if (existing) await update<OnboardingDoc>('sc_onboarding', 'id', existing.id, doc);
   else await insert('sc_onboarding', doc);
+  if (section === 'site_request' && ctx.client.marketplaceIntegrationId) {
+    const integration = await getSchoolIntegration(ctx.client.marketplaceIntegrationId);
+    const webhook = String((req.body.data || {}).deliveryWebhookUrl || '').trim();
+    if (integration && webhook) {
+      await putSchoolIntegration({ ...integration, name: ctx.client.schoolName, deliveryWebhookUrl: webhook });
+    }
+  }
   await logActivity({ clientId: ctx.client.id, projectId: ctx.project.id, actor: ctx.client.email, action: `onboarding.${doc.status}`, detail: section });
   if (doc.status === 'submitted') {
     await notify({ audience: 'admin', title: 'Onboarding form submitted', message: `${ctx.project.schoolName} · ${section}`, type: 'onboarding' });
   }
   res.json({ submission: doc });
+});
+
+router.get('/agreement/current', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const agreements = await findAll<AgreementDoc>('sc_agreements', { clientId: ctx.client.id });
+  const agreement = agreements.find((a) => a.status === 'pending') || agreements[0] || null;
+  if (!agreement) return res.status(404).json({ error: 'Agreement not found' });
+  const settings = await getSettings();
+  res.json({ agreement, brand: settings.brand, contact: settings.contact, privacyPolicy: settings.privacyPolicy });
+});
+
+router.post('/agreement/current/accept', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const agreements = await findAll<AgreementDoc>('sc_agreements', { clientId: ctx.client.id });
+  const agreement = agreements.find((a) => a.status === 'pending');
+  if (!agreement) return res.status(409).json({ error: 'Agreement unavailable or already accepted' });
+  if (req.body.confirmed !== true || !req.body.legalName || !req.body.position) {
+    return res.status(400).json({ error: 'Legal name, position and confirmation are required.' });
+  }
+  const updated = await update<AgreementDoc>('sc_agreements', 'id', agreement.id, {
+    status: 'accepted',
+    acceptance: {
+      legalName: String(req.body.legalName), position: String(req.body.position), confirmed: true,
+      at: new Date().toISOString(), ip: req.ip, userAgent: req.headers['user-agent'],
+    },
+    updatedAt: new Date().toISOString(),
+  });
+  if (ctx.project && stageIndex(ctx.project.stage) < stageIndex('onboarding')) {
+    await update<ProjectDoc>('sc_projects', 'id', ctx.project.id, { stage: 'onboarding', updatedAt: new Date().toISOString() });
+  }
+  await logActivity({ clientId: ctx.client.id, projectId: ctx.project?.id, actor: String(req.body.legalName), action: 'agreement.accepted', detail: agreement.reference });
+  await notify({ audience: 'admin', title: 'Agreement accepted', message: `${ctx.client.schoolName} · ${agreement.reference}`, type: 'agreement' });
+  res.json({ success: true, agreement: updated });
 });
 
 router.post('/student-imports', async (req: AuthRequest, res: Response) => {

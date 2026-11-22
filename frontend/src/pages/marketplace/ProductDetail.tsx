@@ -45,7 +45,7 @@ export default function ProductDetail({ token }: { token?: string }) {
           <button onClick={() => navigate(`/marketplace${token ? `?token=${token}` : ''}`)} className="flex items-center gap-2 text-sm text-muted hover:text-white">
             <ArrowLeft className="w-4 h-4" /> Marketplace
           </button>
-          <span className="font-bold">Gtech<span className="text-violet-400">Market</span></span>
+          <span className="font-bold">Gtech Global <span className="text-violet-400">Result PIN Depot</span></span>
         </div>
       </header>
       <main className="container px-6 py-12 max-w-5xl mx-auto">
@@ -113,7 +113,7 @@ export default function ProductDetail({ token }: { token?: string }) {
 
             <div className="flex items-start gap-3 text-xs text-muted">
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-              <p>Payment is processed securely through Gtech Global's Paystack account. PINs are universal and are never locked to the purchasing school.</p>
+              <p>Payment is processed securely through Gtech Global's Paystack account. PINs are delivered to your school stock and are locked to a session and term on first use.</p>
             </div>
           </div>
         </div>

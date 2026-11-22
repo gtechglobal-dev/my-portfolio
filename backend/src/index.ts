@@ -28,7 +28,21 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 app.set('trust proxy', 1);
-app.use(cors({ origin: process.env.CORS_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173' }));
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,
+  process.env.MARKETPLACE_PUBLIC_URL,
+  process.env.SCHOOL_CLIENT_PUBLIC_URL,
+  process.env.RENDER_EXTERNAL_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+].filter(Boolean).flatMap((value) => String(value).split(',').map((item) => item.trim())).filter(Boolean);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS origin not allowed'));
+  },
+  credentials: true,
+}));
 app.use(express.json({
   limit: '50mb',
   verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); },
