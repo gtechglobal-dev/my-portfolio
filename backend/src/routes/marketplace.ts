@@ -458,7 +458,7 @@ router.post('/school/orders', authenticateSchool, async (req: SchoolAuthRequest,
 
 router.get('/school/checkout/:ref', async (req: Request, res: Response) => {
   try {
-    const order = await getOrder(req.params.ref);
+    const order = await getOrder(req.params.ref) || await getOrderByPaymentReference(req.params.ref);
     if (!order || order.delivery?.mode !== 'school_stock') {
       return res.status(404).json({ error: 'Order not found' });
     }
@@ -487,7 +487,7 @@ router.get('/school/checkout/:ref', async (req: Request, res: Response) => {
 
 router.post('/school/checkout/:ref/pay', async (req: Request, res: Response) => {
   try {
-    const order = await getOrder(req.params.ref);
+    const order = await getOrder(req.params.ref) || await getOrderByPaymentReference(req.params.ref);
     if (!order || order.delivery?.mode !== 'school_stock') {
       return res.status(404).json({ error: 'Order not found' });
     }

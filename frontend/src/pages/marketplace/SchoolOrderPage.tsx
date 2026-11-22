@@ -82,13 +82,14 @@ const SchoolOrderPage = ({ callback = false }: { callback?: boolean }) => {
         if (callback || params.get('callback') === '1') {
           const verified = await verifyPayment(reference);
           if (!active) return;
-          const complete = { ...verified.checkout, returnSignature: order.returnSignature };
-          setCheckout(complete);
           if (verified.paymentStatus !== 'success') {
             setStatus('failed');
             setMessage('Payment was not confirmed by Paystack. Please try again.');
             return;
           }
+          const refreshed = await getSchoolCheckout(reference).catch(() => null);
+          const complete = { ...(refreshed || order), returnSignature: (refreshed || order).returnSignature || order.returnSignature };
+          setCheckout(complete);
           notifyParent(complete);
           if (window.opener && !isEmbedded) {
             setStatus('success');
