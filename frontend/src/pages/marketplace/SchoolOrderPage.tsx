@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   XCircle,
 } from 'lucide-react';
-import { getSchoolCheckout, verifyPayment } from '../../lib/marketplace';
+import { getSchoolCheckout, startSchoolPayment, verifyPayment } from '../../lib/marketplace';
 import type { SchoolCheckout } from '../../lib/marketplace';
 
 type Status = 'loading' | 'ready' | 'paying' | 'success' | 'failed';
@@ -130,15 +130,13 @@ const SchoolOrderPage = ({ callback = false }: { callback?: boolean }) => {
     setStatus('paying');
     setMessage('');
     try {
-      const result = await verifyPayment(checkout.reference);
-      if (result.paymentStatus === 'success') {
-        const complete = { ...result.checkout, returnSignature: checkout.returnSignature };
-        setCheckout(complete);
-        notifyParent(complete);
+      if (checkout.paymentStatus === 'success') {
+        notifyParent(checkout);
         setStatus('success');
         setMessage('Payment confirmed. Your PINs are now in your school vault.');
         return;
       }
+      const result = await startSchoolPayment(checkout.reference);
       if (isEmbedded) {
         const paymentWindow = window.open(
           result.authorizationUrl,
@@ -147,13 +145,13 @@ const SchoolOrderPage = ({ callback = false }: { callback?: boolean }) => {
         );
         if (paymentWindow) {
           setStatus('ready');
-          setMessage('Secure payment opened in a new window. Your PINs are added automatically when payment is completed.');
+          setMessage('Secure payment opened in a new window. Complete payment there; PINs will import automatically.');
           return;
         }
       }
       window.location.assign(result.authorizationUrl);
     } catch (err) {
-      setStatus('failed');
+      setStatus('ready');
       setMessage((err as Error).message || 'The payment could not be started.');
     }
   };
