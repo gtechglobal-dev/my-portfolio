@@ -80,7 +80,7 @@ export interface OrderDoc {
     receivingAccount: string;
   };
   fulfilment?: {
-    status: 'pending' | 'allocated' | 'delivered' | 'failed';
+    status: 'pending' | 'generating' | 'allocated' | 'delivered' | 'failed';
     deliveredAt?: string;
     itemCount?: number;
   };
@@ -200,7 +200,7 @@ export interface FulfilmentRecordDoc {
   orderId: string;
   productId: string;
   type: ProductType;
-  status: 'pending' | 'allocated' | 'delivered' | 'failed';
+  status: 'pending' | 'generating' | 'allocated' | 'delivered' | 'failed';
   payload?: Record<string, unknown>;
   attempts: number;
   lastError?: string;

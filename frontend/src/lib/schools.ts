@@ -120,7 +120,7 @@ export function schoolLogin(email: string, password: string) {
   return request<SchoolSession>('/public/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 }
 
-export function schoolMe() { return request<SchoolSession>('/public/auth/me'); }
+export function schoolMe() { return request<SchoolSession>('/public/auth/me', {}, getClientToken()); }
 
 export function schoolGoogleStartUrl() { return `${API}/public/auth/google/start`; }
 

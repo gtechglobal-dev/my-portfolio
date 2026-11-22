@@ -1,11 +1,11 @@
 import {
-  OrderDoc, ProductDoc, PinDoc, makePinCode, hashPin, makeId, makeReference,
-  getUnitPrice, FulfilmentRecordDoc, deliverySignature,
+  OrderDoc, ProductDoc, PinDoc, PinBatchDoc, makePinCode, hashPin, normalizePin, makeId, makeReference,
+  getUnitPrice, defaultUsageLimit, FulfilmentRecordDoc, deliverySignature,
 } from './types.js';
-import { decryptPin } from './pinCrypto.js';
+import { decryptPin, encryptPin, isPinEncryptionConfigured } from './pinCrypto.js';
 import {
-  atomicAllocatePins, markPinsSold, releasePins, putFulfilment,
-  getOrder, putOrder,
+  atomicAllocatePins, markPinsSold, releasePins, putFulfilment, getFulfilments,
+  getPinBatches, getPins, getPinByCodeHash, getOrder, insertPins, putPinBatch, putOrder,
 } from './store.js';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
@@ -145,6 +145,130 @@ export async function allocateAndFulfil(
   return { pins: allPins, fulfilment: records };
 }
 
+const pinCodeOf = (pin: PinDoc): string => (pin.codeCipher ? decryptPin(pin.codeCipher) || '' : '');
+
+async function generatePinsForOrder(order: OrderDoc, product: ProductDoc, quantity: number): Promise<PinDoc[]> {
+  if (!isPinEncryptionConfigured()) throw new Error('PIN_GENERATION_NOT_CONFIGURED');
+
+  const batchId = `order-${order.id}-${product.id}`;
+  const existing = await getPins({ batchId }, Math.max(quantity, 500));
+  const pins = [...existing];
+  const newPins: PinDoc[] = [];
+  const seen = new Set(existing.map((pin) => pin.codeHash));
+  const now = new Date().toISOString();
+
+  const batch: PinBatchDoc = (await getPinBatches()).find((item) => item.id === batchId) || {
+    id: batchId,
+    name: `Order ${order.reference}`,
+    count: quantity,
+    prefix: 'GT',
+    session: product.session,
+    usageLimit: defaultUsageLimit(product),
+    createdBy: order.schoolName || order.customer.name,
+    createdAt: now,
+  };
+  await putPinBatch(batch);
+
+  while (pins.length < quantity) {
+    const code = makePinCode();
+    const hash = hashPin(code);
+    if (seen.has(hash)) continue;
+    seen.add(hash);
+    if (await getPinByCodeHash(hash)) continue;
+
+    const pin: PinDoc = {
+      id: makeId(),
+      codeHash: hash,
+      codeCipher: encryptPin(code),
+      codeLast4: normalizePin(code).slice(-4),
+      batchId,
+      status: 'sold',
+      session: product.session,
+      usageLimit: defaultUsageLimit(product),
+      usedCount: 0,
+      createdAt: now,
+      soldAt: now,
+      orderId: order.id,
+      schoolAtPurchase: order.schoolId || null,
+    };
+    pins.push(pin);
+    newPins.push(pin);
+  }
+
+  if (newPins.length) await insertPins(newPins);
+  return pins.slice(0, quantity);
+}
+
+/** Generate PINs only after Gtech has confirmed payment, then record them for delivery. */
+export async function generateAndFulfil(
+  order: OrderDoc,
+  products: ProductDoc[],
+): Promise<{ codes: string[]; fulfilment: FulfilmentRecordDoc[] }> {
+  const existingRecords = await getFulfilments(order.id);
+  const existingCodes = existingRecords
+    .filter((record) => record.status !== 'failed')
+    .flatMap((record) => ((record.payload?.pins as { code?: string }[] | undefined) || [])
+      .map((pin) => pin.code || '')
+      .filter(Boolean));
+  if (existingCodes.length >= order.quantity) {
+    return { codes: existingCodes.slice(0, order.quantity), fulfilment: existingRecords };
+  }
+
+  const codes: string[] = [];
+  const records: FulfilmentRecordDoc[] = [];
+
+  for (const item of order.items) {
+    const product = products.find((p) => p.id === item.productId);
+    if (!product) continue;
+
+    const prior = existingRecords.find((record) =>
+      record.productId === product.id &&
+      record.status !== 'failed' &&
+      Boolean((record.payload?.pins as { code?: string }[] | undefined)?.length)
+    );
+    if (prior) {
+      codes.push(...((prior.payload?.pins as { code?: string }[] | undefined) || [])
+        .map((pin) => pin.code || '')
+        .filter(Boolean));
+      records.push(prior);
+      continue;
+    }
+
+    const now = new Date().toISOString();
+    const record: FulfilmentRecordDoc = {
+      id: makeId(),
+      orderId: order.id,
+      productId: product.id,
+      type: product.type,
+      status: 'generating',
+      attempts: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await putFulfilment(record);
+
+    try {
+      const pins = product.type === 'DIGITAL_PIN'
+        ? await generatePinsForOrder(order, product, item.quantity)
+        : [];
+      codes.push(...pins.map(pinCodeOf).filter(Boolean));
+      record.payload = fulfilmentHandler(product, pins);
+      record.status = 'allocated';
+      record.updatedAt = new Date().toISOString();
+      await putFulfilment(record);
+      records.push(record);
+    } catch (err: any) {
+      record.status = 'failed';
+      record.lastError = err.message;
+      record.updatedAt = new Date().toISOString();
+      await putFulfilment(record);
+      throw err;
+    }
+  }
+
+  return { codes: codes.slice(0, order.quantity), fulfilment: records };
+}
+
 export async function deliverSchoolStock(order: OrderDoc, codes: string[]): Promise<void> {
   const delivery = order.delivery;
   if (!delivery || delivery.mode !== 'school_stock' || !delivery.webhookUrl) return;
@@ -224,8 +348,8 @@ export async function retryOrderFulfilment(orderId: string): Promise<void> {
   const { getProduct } = await import('./store.js');
   const products = await Promise.all(order.items.map((i) => getProduct(i.productId)));
   const valid = products.filter(Boolean) as ProductDoc[];
-  await allocateAndFulfil(order, valid);
-  order.fulfilment = { status: 'allocated' };
+  await generateAndFulfil(order, valid);
+  order.fulfilment = { ...order.fulfilment, status: 'allocated' };
   order.status = 'paid';
   order.updatedAt = new Date().toISOString();
   await putOrder(order);

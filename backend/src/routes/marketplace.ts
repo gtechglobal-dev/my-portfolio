@@ -10,9 +10,9 @@ import {
   generateApiKey, hashApiKey, hashToken, orderReturnSignature, type OrderDoc,
 } from '../marketplace/types.js';
 import { requireDb, authenticateSchool, resolveLaunchToken, generateMarketplaceToken, verifyCustomerToken, type SchoolAuthRequest } from '../marketplace/auth.js';
-import { initializePaystack, verifyPaystack, buildOrder, allocateAndFulfil, retryOrderFulfilment } from '../marketplace/payment.js';
+import { initializePaystack, verifyPaystack, buildOrder, generateAndFulfil, retryOrderFulfilment } from '../marketplace/payment.js';
 import { isDbConnected } from '../db.js';
-import { decryptPin } from '../marketplace/pinCrypto.js';
+import { decryptPin, isPinEncryptionConfigured } from '../marketplace/pinCrypto.js';
 import { rateLimit } from '../marketplace/rateLimit.js';
 
 const router = Router();
@@ -192,11 +192,14 @@ async function confirmPayment(reference: string): Promise<OrderDoc | null> {
   if (order.fulfilment?.status !== 'delivered') {
     const products = await Promise.all(order.items.map((i) => getProduct(i.productId)));
     const valid = products.filter(Boolean) as any[];
-    const { pins } = await allocateAndFulfil(order, valid);
-    deliveredCodes = pins
-      .map((p) => (p.codeCipher ? decryptPin(p.codeCipher) || '' : ''))
-      .filter(Boolean);
-    order.fulfilment = { status: 'delivered', deliveredAt: new Date().toISOString(), itemCount: pins.length };
+    const { codes } = await generateAndFulfil(order, valid);
+    deliveredCodes = codes;
+    order.fulfilment = {
+      ...order.fulfilment,
+      status: 'delivered',
+      deliveredAt: new Date().toISOString(),
+      itemCount: codes.length,
+    };
     order.status = 'delivered';
     order.receiptNumber = makeReference('RCP');
   } else {
@@ -382,19 +385,16 @@ router.post('/retry/:ref', async (req: Request, res: Response) => {
 
 router.get('/school/catalogue', authenticateSchool, async (_req: SchoolAuthRequest, res: Response) => {
   try {
-    const [products, availablePins] = await Promise.all([
-      getProducts({ available: true }),
-      getAvailablePinCount(),
-    ]);
+    const products = await getProducts({ available: true });
     res.json({
-      availablePins,
+      availablePins: null,
       products: products
         .filter((p) => p.type === 'DIGITAL_PIN' && p.schoolOnly)
         .map((p) => ({
           id: p.id, slug: p.slug, name: p.name, description: p.description,
           shortDescription: p.shortDescription, price: p.price, currency: p.currency,
           minQty: p.minQty, maxQty: p.maxQty, bulkPricing: p.bulkPricing || [],
-          usageLimit: p.usageLimit, availableQty: availablePins, session: p.session,
+          usageLimit: p.usageLimit, availableQty: p.maxQty, session: p.session,
         })),
     });
   } catch {
@@ -419,8 +419,9 @@ router.post('/school/orders', authenticateSchool, async (req: SchoolAuthRequest,
     if (!Number.isInteger(qty) || qty < product.minQty || qty > product.maxQty) {
       return res.status(400).json({ error: `Quantity must be between ${product.minQty} and ${product.maxQty}` });
     }
-    const available = await getAvailablePinCount(product.session);
-    if (qty > available) return res.status(409).json({ error: `Only ${available} PINs available` });
+    if (!isPinEncryptionConfigured()) {
+      return res.status(503).json({ error: 'PIN generation is not configured on Gtech Global' });
+    }
 
     const school = await getSchoolIntegration(req.school!.id);
     const order = buildOrder(

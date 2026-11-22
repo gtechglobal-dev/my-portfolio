@@ -1,184 +1,285 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import {
-  getSchoolCheckout,
-  startSchoolPayment,
-  verifyPayment,
-  type SchoolCheckout,
-} from '../../lib/marketplace';
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Lock,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react';
+import { getSchoolCheckout, verifyPayment } from '../../lib/marketplace';
+import type { SchoolCheckout } from '../../lib/marketplace';
 
 type Status = 'loading' | 'ready' | 'paying' | 'success' | 'failed';
 
-function money(amount: number, currency = 'NGN') {
-  return `${currency === 'NGN' ? '₦' : ''}${Number(amount || 0).toLocaleString('en-NG')}`;
-}
+const money = (value: number) =>
+  new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(value);
 
-function returnWithPinOrder(returnUrl: string, orderRef: string, signature: string) {
+const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
+
+const notifyParent = (order: SchoolCheckout) => {
+  const message = {
+    type: 'gtech-pin-order-complete',
+    reference: order.reference,
+    signature: order.returnSignature || '',
+  };
   try {
-    const url = new URL(returnUrl);
-    url.searchParams.set('pinOrder', orderRef);
-    if (signature) url.searchParams.set('pinSig', signature);
-    return url.toString();
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(message, window.location.origin);
+      return;
+    }
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(message, '*');
+    }
   } catch {
-    return '';
+    return;
   }
-}
+};
 
-export default function SchoolOrderPage({ callback = false }: { callback?: boolean }) {
-  const [params] = useSearchParams();
+const SchoolOrderPage = ({ callback = false }: { callback?: boolean }) => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const reference = params.get('reference') || '';
+  const [checkout, setCheckout] = useState<SchoolCheckout | null>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
-  const [order, setOrder] = useState<SchoolCheckout | null>(null);
-  const started = useRef(false);
+  const [quantity, setQuantity] = useState(10);
+
+  const returnWithPinOrder = (order: SchoolCheckout) => {
+    const url = new URL('/', window.location.origin);
+    url.searchParams.set('pinOrder', order.reference);
+    url.searchParams.set('pinSig', order.returnSignature || '');
+    window.location.replace(url.toString());
+  };
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    const forward = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'gtech-pin-order-complete') return;
+      if (window.parent !== window) window.parent.postMessage(event.data, '*');
+    };
+    window.addEventListener('message', forward);
+    return () => window.removeEventListener('message', forward);
+  }, []);
 
-    const run = async () => {
-      if (!reference) {
-        setStatus('failed');
-        setMessage('No order reference was provided.');
-        return;
-      }
-
+  useEffect(() => {
+    let active = true;
+    if (!reference) {
+      setStatus('failed');
+      setMessage('No order reference was supplied.');
+      return () => {
+        active = false;
+      };
+    }
+    (async () => {
       try {
-        if (callback) {
-          const verified = await verifyPayment(reference);
-          const current = await getSchoolCheckout(String(verified.reference || ''));
-          setOrder(current);
+        const order = await getSchoolCheckout(reference);
+        if (!active) return;
+        setCheckout(order);
+        setQuantity(order.quantity || 10);
 
-          if (current.paymentStatus !== 'success') {
+        if (callback || params.get('callback') === '1') {
+          const verified = await verifyPayment(reference);
+          if (!active) return;
+          const complete = { ...verified.checkout, returnSignature: order.returnSignature };
+          setCheckout(complete);
+          if (verified.paymentStatus !== 'success') {
             setStatus('failed');
-            setMessage('Payment was not confirmed. Please return to your school dashboard and try again.');
+            setMessage('Payment was not confirmed by Paystack. Please try again.');
             return;
           }
-
-          setStatus('success');
-          setMessage('Payment confirmed. Your PINs are being delivered to your school dashboard.');
-          const target = current.returnUrl ? returnWithPinOrder(current.returnUrl, current.reference, current.returnSignature || '') : '';
-          if (target) window.setTimeout(() => window.location.replace(target), 900);
+          notifyParent(complete);
+          if (window.opener && !isEmbedded) {
+            setStatus('success');
+            setMessage('Payment confirmed. Your PINs are now in your school vault.');
+            window.setTimeout(() => window.close(), 1200);
+            return;
+          }
+          if (isEmbedded) {
+            setStatus('success');
+            setMessage('Payment confirmed. Your PINs are now in your school vault.');
+            return;
+          }
+          returnWithPinOrder(complete);
           return;
         }
 
-        const current = await getSchoolCheckout(reference);
-        setOrder(current);
-
-        if (current.paymentStatus === 'success') {
+        if (order.paymentStatus === 'success' && isEmbedded) {
+          notifyParent(order);
           setStatus('success');
-          setMessage('Payment confirmed. Redirecting your PINs to the school dashboard.');
-          const target = current.returnUrl ? returnWithPinOrder(current.returnUrl, current.reference, current.returnSignature || '') : '';
-          if (target) window.setTimeout(() => window.location.replace(target), 900);
+          setMessage('Payment confirmed. Your PINs are now in your school vault.');
           return;
         }
 
         setStatus('ready');
-      } catch (err: any) {
+      } catch (err) {
+        if (!active) return;
         setStatus('failed');
-        setMessage(err.message || 'Unable to load this order.');
+        setMessage((err as Error).message || 'This checkout could not be loaded.');
       }
-    };
+    })();
 
-    run();
-  }, [callback, reference]);
+    return () => {
+      active = false;
+    };
+  }, [reference, callback]);
 
   const handlePay = async () => {
-    if (!order) return;
+    if (!checkout) return;
     setStatus('paying');
     setMessage('');
     try {
-      const result = await startSchoolPayment(order.reference);
+      const result = await verifyPayment(checkout.reference);
+      if (result.paymentStatus === 'success') {
+        const complete = { ...result.checkout, returnSignature: checkout.returnSignature };
+        setCheckout(complete);
+        notifyParent(complete);
+        setStatus('success');
+        setMessage('Payment confirmed. Your PINs are now in your school vault.');
+        return;
+      }
+      if (isEmbedded) {
+        const paymentWindow = window.open(
+          result.authorizationUrl,
+          'gtech-pin-payment',
+          'width=520,height=760,scrollbars=yes,resizable=yes'
+        );
+        if (paymentWindow) {
+          setStatus('ready');
+          setMessage('Secure payment opened in a new window. Your PINs are added automatically when payment is completed.');
+          return;
+        }
+      }
       window.location.assign(result.authorizationUrl);
-    } catch (err: any) {
-      setStatus('ready');
-      setMessage(err.message || 'Payment could not be started.');
+    } catch (err) {
+      setStatus('failed');
+      setMessage((err as Error).message || 'The payment could not be started.');
     }
   };
 
   return (
-    <div className="mp-root min-h-screen">
-      <header className="mp-header">
-        <div className="container flex items-center justify-between h-16 px-6">
-          <button
-            onClick={() => navigate('/school-management')}
-            className="flex items-center gap-2 text-sm text-muted hover:text-white"
-          >
-            <ArrowLeft className="w-4 h-4" /> School Management
-          </button>
-          <span className="font-bold">Gtech Global</span>
+    <div className={`pin-shop${isEmbedded ? ' pin-shop--embedded' : ''}`}>
+      <header className="pin-shop__header">
+        <div className="pin-shop__brand">
+          <img className="pin-shop__logo" src="/gtechlogo.png" alt="Gtech Global" />
+          <span>
+            <strong>Gtech Global</strong>
+            <small>Result PIN checkout</small>
+          </span>
         </div>
+        <span className="pin-shop__secure"><ShieldCheck size={14} /> Secure payment</span>
       </header>
 
-      <main className="container px-6 py-16 max-w-2xl mx-auto">
-        {status === 'loading' ? (
-          <div className="text-center">
-            <Loader2 className="w-10 h-10 text-violet-400 animate-spin mx-auto mb-4" />
-            <p className="text-muted">Preparing your Gtech Global order...</p>
-          </div>
-        ) : status === 'failed' ? (
-          <div className="mp-card p-10 text-center">
-            <XCircle className="w-14 h-14 text-red-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Order unavailable</h1>
-            <p className="text-sm text-muted mb-6">{message}</p>
-            <button className="mp-btn" onClick={() => navigate('/school-management')}>Back to School Management</button>
-          </div>
-        ) : status === 'success' ? (
-          <div className="mp-card p-10 text-center">
-            <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Payment confirmed</h1>
-            <p className="text-sm text-muted">{message}</p>
-            <p className="text-xs text-faint mt-3">Order {order?.reference}</p>
-          </div>
-        ) : order ? (
-          <div className="space-y-6">
-            <div className="text-center">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold text-violet-300 border border-violet-400/30 rounded-full px-3 py-1">
-                <ShieldCheck className="w-4 h-4" /> Seller: Gtech Global
-              </span>
-              <h1 className="text-2xl font-bold mt-4 mb-2">Review your PIN order</h1>
-              <p className="text-sm text-muted">Confirm the quantity and total before payment.</p>
-            </div>
+      <main className="pin-shop__main">
+        {status === 'loading' && (
+          <section className="pin-shop__state">
+            <Loader2 className="pin-shop__spin" size={34} />
+            <h1>Preparing your PIN order</h1>
+            <p>Loading your product, school details and secure payment reference.</p>
+          </section>
+        )}
 
-            <div className="mp-card p-6">
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted">Product</span>
-                  <span className="font-semibold text-right">{order.productName}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted">School</span>
-                  <span className="font-semibold text-right">{order.customerName || 'School account'}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted">Quantity</span>
-                  <span className="font-semibold">{order.quantity.toLocaleString('en-NG')} PIN(s)</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted">Unit price</span>
-                  <span className="font-semibold">{money(order.unitPrice, order.currency)}</span>
-                </div>
-                <div className="border-t border-white/[0.06] pt-4 flex justify-between gap-4 text-lg font-bold">
-                  <span>Total</span>
-                  <span>{money(order.total, order.currency)}</span>
+        {status === 'failed' && (
+          <section className="pin-shop__state pin-shop__state--error">
+            <XCircle size={36} />
+            <h1>Checkout unavailable</h1>
+            <p>{message}</p>
+            <button className="pin-shop__button pin-shop__button--soft" type="button" onClick={() => navigate(-1)}>
+              Return to School Management
+            </button>
+          </section>
+        )}
+
+        {status === 'success' && (
+          <section className="pin-shop__state pin-shop__state--success">
+            <CheckCircle2 size={42} />
+            <h1>Payment confirmed</h1>
+            <p>{message}</p>
+            {!isEmbedded && checkout && (
+              <button className="pin-shop__button" type="button" onClick={() => returnWithPinOrder(checkout)}>
+                Back to my school
+              </button>
+            )}
+          </section>
+        )}
+
+        {(status === 'ready' || status === 'paying') && checkout && (
+          <div className="pin-shop__layout">
+            <section className="pin-shop__intro">
+              <div className="pin-shop__identity">
+                <img className="pin-shop__identity-logo" src="/gtechlogo.png" alt="Gtech Global" />
+                <div>
+                  <span className="pin-shop__eyebrow">Gtech Global</span>
+                  <h1>Result PIN checkout</h1>
+                  <p className="pin-shop__lede">Securely purchase PINs for your school. They are delivered to your vault after payment.</p>
                 </div>
               </div>
-            </div>
 
-            {message && <p className="text-sm text-amber-300 text-center">{message}</p>}
+              <div className="pin-shop__product">
+                <span className="pin-shop__product-icon"><KeyRound size={24} /></span>
+                <div>
+                  <span className="pin-shop__eyebrow">Order</span>
+                  <h2>{checkout.productName}</h2>
+                  <p>For {checkout.customerName || 'your school'} · {quantity} PIN{quantity === 1 ? '' : 's'}</p>
+                </div>
+              </div>
 
-            <button className="mp-btn w-full justify-center" onClick={handlePay} disabled={status === 'paying'}>
-              {status === 'paying' ? 'Opening secure payment...' : `Pay ${money(order.total, order.currency)} on Gtech Global`}
-            </button>
+              <div className="pin-shop__highlights">
+                <div><ShieldCheck size={16} /><span>Secure Paystack payment</span></div>
+                <div><Lock size={16} /><span>4 checks per PIN</span></div>
+                <div><CheckCircle2 size={16} /><span>Instant vault delivery</span></div>
+              </div>
 
-            <p className="text-[11px] text-faint text-center">
-              Payment is processed securely on Gtech Global’s Paystack account. After payment, your PINs are delivered straight to your school dashboard.
-            </p>
+              <div className="pin-shop__mobile-summary">
+                <div className="pin-shop__cart-head">
+                  <span>Order summary</span>
+                  <span className="pin-shop__ref">{checkout.reference}</span>
+                </div>
+                <div className="pin-shop__totals">
+                  <div><span>PINs</span><strong>{quantity}</strong></div>
+                  <div><span>Unit price</span><strong>{money(checkout.unitPrice)}</strong></div>
+                  <div className="pin-shop__total"><span>Total</span><strong>{money(checkout.unitPrice * quantity)}</strong></div>
+                </div>
+                <button className="pin-shop__button" type="button" onClick={handlePay} disabled={status === 'paying'}>
+                  {status === 'paying' ? <Loader2 className="pin-shop__spin" size={17} /> : <Lock size={16} />}
+                  {status === 'paying' ? 'Opening secure payment...' : 'Pay securely'}
+                </button>
+                <p className="pin-shop__note">
+                  {message || 'Payment opens securely. Your PINs are added automatically after confirmation.'}
+                </p>
+                <div className="pin-shop__payment-mark"><ShieldCheck size={15} /> Secured by Paystack</div>
+              </div>
+            </section>
+
+            <aside className="pin-shop__cart">
+              <div className="pin-shop__cart-head">
+                <span>Order summary</span>
+                <span className="pin-shop__ref">{checkout.reference}</span>
+              </div>
+
+              <div className="pin-shop__totals">
+                <div><span>School</span><strong>{checkout.customerName || 'School'}</strong></div>
+                <div><span>PINs</span><strong>{quantity}</strong></div>
+                <div><span>Unit price</span><strong>{money(checkout.unitPrice)}</strong></div>
+                <div className="pin-shop__total"><span>Total</span><strong>{money(checkout.unitPrice * quantity)}</strong></div>
+              </div>
+
+              <button className="pin-shop__button" type="button" onClick={handlePay} disabled={status === 'paying'}>
+                {status === 'paying' ? <Loader2 className="pin-shop__spin" size={17} /> : <Lock size={16} />}
+                {status === 'paying' ? 'Opening secure payment...' : 'Pay securely'}
+              </button>
+
+              <p className="pin-shop__note">
+                {message || 'Payment opens securely. Your PINs are added automatically after confirmation.'}
+              </p>
+              <div className="pin-shop__payment-mark"><ShieldCheck size={15} /> Secured by Paystack</div>
+            </aside>
           </div>
-        ) : null}
+        )}
       </main>
     </div>
   );
-}
+};
+
+export default SchoolOrderPage;
