@@ -1,9 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { findAll, findOne, insert, update, increment, logActivity, notify } from '../schools/store.js';
 import { getDb } from '../db.js';
-import { makeId, type PaymentDoc, type ProjectDoc, type DocumentDoc, stageIndex } from '../schools/types.js';
+import {
+  makeId, type PaymentDoc, type ProjectDoc, type DocumentDoc, type ClientDoc, type MessageDoc, stageIndex,
+} from '../schools/types.js';
 import { paystackSignature, constantTimeEqual } from '../marketplace/types.js';
 import { verifyPaystack } from '../marketplace/payment.js';
+import { sendTelegramText } from '../services/telegram.js';
 
 const router = Router();
 const WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET || '';
@@ -33,11 +36,10 @@ async function finalizePayment(payment: PaymentDoc, eventId?: string, gatewayRes
   await increment('sc_projects', 'id', payment.projectId, 'totalPaid', payment.amount);
   const project = await findOne<ProjectDoc>('sc_projects', { id: payment.projectId });
   if (project) {
-    const nextPaid = project.totalPaid + payment.amount;
+    const nextPaid = project.totalPaid;
     const desiredStage = payment.type === 'deposit' ? 'onboarding' : payment.type === 'final' ? 'deployment' : 'development';
     const stage = stageIndex(project.stage) < stageIndex(desiredStage) ? desiredStage : project.stage;
     await update<ProjectDoc>('sc_projects', 'id', project.id, {
-      totalPaid: nextPaid,
       stage: nextPaid >= project.cost ? 'deployment' : stage,
       updatedAt: now,
     });
@@ -57,6 +59,15 @@ async function finalizePayment(payment: PaymentDoc, eventId?: string, gatewayRes
       uploadedBy: 'system', clientVisible: true, createdAt: now,
     };
     await insert('sc_documents', receipt);
+    const client = await findOne<ClientDoc>('sc_clients', { id: payment.clientId || project.clientId });
+    if (client?.telegramChatId && client.telegramEnabled) {
+      try { await sendTelegramText(client.telegramChatId, `Payment received: NGN ${payment.amount.toLocaleString()} · ${payment.reference}`); } catch {}
+    }
+    const receiptMessage: MessageDoc = {
+      id: makeId(), projectId: project.id, senderId: 'paystack', senderName: 'Gtech admin',
+      senderRole: 'admin', message: receipt.content || `Payment receipt ${payment.reference}`, read: false, channel: 'paystack', createdAt: now,
+    };
+    await insert('sc_messages', receiptMessage);
     await notify({ clientId: payment.clientId, projectId: project.id, audience: 'client', title: 'Payment received', message: `${payment.reference} · NGN ${payment.amount.toLocaleString()}`, type: 'payment' });
     await notify({ audience: 'admin', title: 'School payment received', message: `${project.schoolName} · NGN ${payment.amount.toLocaleString()}`, type: 'payment' });
     await logActivity({ clientId: payment.clientId, projectId: project.id, actor: 'paystack', action: 'payment.success', detail: payment.reference });

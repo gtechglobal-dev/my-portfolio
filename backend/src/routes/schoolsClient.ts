@@ -1,14 +1,17 @@
 import { Router, Request, Response } from 'express';
 import {
-  findAll, findOne, insert, update, getSettings, logActivity, notify, progressFor,
+  findAll, findOne, insert, update, getSettings, logActivity, notify, progressFor, removeMany,
 } from '../schools/store.js';
 import {
   makeId, makeSecureToken, hashToken, type ClientDoc, type ProjectDoc, type MilestoneDoc,
   type PaymentDoc, type OnboardingDoc, type NotificationDoc, type IssueDoc, type MessageDoc,
-  type DocumentDoc, type FileDoc, type StudentImportDoc, type HandoverDoc, type TrainingDoc, type AgreementDoc, stageIndex, projectPaymentAmount,
+  type DocumentDoc, type FileDoc, type StudentImportDoc, type HandoverDoc, type TrainingDoc, type AgreementDoc,
+  type ClassDoc, type ParentSubmissionDoc, stageIndex, projectPaymentAmount,
   DOCUMENT_CATEGORIES, validateFileUpload, safeFileName, parseCsv,
 } from '../schools/types.js';
-import { clientAuth, type AuthRequest } from '../schools/auth.js';
+import { clientAuth, assertProjectAccess, type AuthRequest } from '../schools/auth.js';
+import PDFDocument from 'pdfkit';
+import { sendTelegramVoice, telegramBotUrl, telegramConfigured } from '../services/telegram.js';
 import { getSchoolIntegration, putLaunchToken, putSchoolIntegration } from '../marketplace/store.js';
 import { initializePaystack } from '../marketplace/payment.js';
 import { makeReference } from '../marketplace/types.js';
@@ -29,6 +32,15 @@ function decodeUpload(data: unknown): Buffer | null {
   const cleaned = value.replace(/\s/g, '');
   if (!cleaned || !/^[A-Za-z0-9+/]+={0,2}$/.test(cleaned)) return null;
   return Buffer.from(cleaned, 'base64');
+}
+
+function schoolPublicUrl(): string {
+  return String(process.env.MARKETPLACE_PUBLIC_URL || process.env.PUBLIC_URL || 'http://localhost:5173').replace(/\/+$/, '');
+}
+
+function asStringList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  return String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
 }
 
 router.get('/overview', async (req: AuthRequest, res: Response) => {
@@ -373,6 +385,249 @@ router.post('/handover/acknowledge', async (req: AuthRequest, res: Response) => 
   await update<ProjectDoc>('sc_projects', 'id', ctx.project.id, { stage: 'completed', status: 'completed', updatedAt: new Date().toISOString() });
   await logActivity({ clientId: ctx.client.id, projectId: ctx.project.id, actor: ctx.client.email, action: 'handover.acknowledged', detail: ctx.project.schoolName });
   res.json({ handover: updated });
+});
+
+router.get('/classes', async (req: AuthRequest, res: Response) => {
+  const projectId = req.client!.projectId;
+  if (!projectId) return res.json({ classes: [] });
+  const project = await assertProjectAccess(req.client!.clientId, projectId);
+  if (!project) return res.status(403).json({ error: 'Project access denied' });
+  res.json({ classes: await findAll<ClassDoc>('sc_classes', { projectId: project.id }) });
+});
+
+router.post('/classes', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const name = String(req.body.name || '').trim();
+  const arm = String(req.body.arm || '').trim();
+  if (!name || !arm) return res.status(400).json({ error: 'Class name and arm are required.' });
+  const token = makeSecureToken('cls');
+  const inviteUrl = `${schoolPublicUrl()}/school-management/class-invite/${token}`;
+  const now = new Date().toISOString();
+  const doc: ClassDoc = {
+    id: makeId(), projectId: ctx.project.id,
+    schoolName: ctx.project.schoolName || ctx.client.schoolName,
+    name, arm,
+    level: req.body.level !== undefined ? String(req.body.level || '') : undefined,
+    headTeacherName: req.body.headTeacherName !== undefined ? String(req.body.headTeacherName || '') : undefined,
+    headTeacherEmail: req.body.headTeacherEmail !== undefined ? String(req.body.headTeacherEmail || '') : undefined,
+    headTeacherPhone: req.body.headTeacherPhone !== undefined ? String(req.body.headTeacherPhone || '') : undefined,
+    subjects: asStringList(req.body.subjects),
+    inviteToken: token, inviteTokenHash: hashToken(token), inviteUrl,
+    status: 'active', createdBy: req.client!.clientId, createdAt: now, updatedAt: now,
+  };
+  (doc as any).expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+  (doc as any).clientId = ctx.client.id;
+  await insert('sc_classes', doc);
+  await logActivity({ clientId: ctx.client.id, projectId: ctx.project.id, actor: ctx.client.email, action: 'class.created', detail: `${name} ${arm}` });
+  res.status(201).json({ classDoc: doc, inviteUrl, token });
+});
+
+router.patch('/classes/:id', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const cls = await findOne<ClassDoc>('sc_classes', { id: req.params.id, projectId: ctx.project.id });
+  if (!cls) return res.status(404).json({ error: 'Class not found' });
+  const patch: Partial<ClassDoc> = { updatedAt: new Date().toISOString() };
+  for (const key of ['name', 'arm', 'level', 'headTeacherName', 'headTeacherEmail', 'headTeacherPhone']) {
+    if (req.body[key] !== undefined) (patch as any)[key] = String(req.body[key] || '');
+  }
+  if (req.body.subjects !== undefined) patch.subjects = asStringList(req.body.subjects);
+  if (req.body.status === 'active' || req.body.status === 'closed') patch.status = req.body.status;
+  const updated = await update<ClassDoc>('sc_classes', 'id', cls.id, patch);
+  res.json({ classDoc: updated });
+});
+
+router.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const cls = await findOne<ClassDoc>('sc_classes', { id: req.params.id, projectId: ctx.project.id });
+  if (!cls) return res.status(404).json({ error: 'Class not found' });
+  await removeMany('sc_parent_submissions', { projectId: ctx.project.id, classId: cls.id });
+  await removeMany('sc_classes', { id: cls.id, projectId: ctx.project.id });
+  await logActivity({ clientId: ctx.client.id, projectId: ctx.project.id, actor: ctx.client.email, action: 'class.deleted', detail: `${cls.name} ${cls.arm || ''}` });
+  res.json({ success: true });
+});
+
+router.post('/classes/:id/link', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const cls = await findOne<ClassDoc>('sc_classes', { id: req.params.id, projectId: ctx.project.id });
+  if (!cls) return res.status(404).json({ error: 'Class not found' });
+  const token = makeSecureToken('cls');
+  const inviteUrl = `${schoolPublicUrl()}/school-management/class-invite/${token}`;
+  const patch: Partial<ClassDoc> = {
+    inviteToken: token, inviteTokenHash: hashToken(token), inviteUrl,
+    status: 'active', updatedAt: new Date().toISOString(),
+  };
+  (patch as any).expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+  await update<ClassDoc>('sc_classes', 'id', cls.id, patch);
+  await logActivity({ clientId: ctx.client.id, projectId: ctx.project.id, actor: ctx.client.email, action: 'class.link_regenerated', detail: cls.name });
+  res.json({ inviteUrl, token });
+});
+
+router.get('/submissions', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.json({ submissions: [] });
+  res.json({ submissions: await findAll<ParentSubmissionDoc>('sc_parent_submissions', { projectId: ctx.project.id }) });
+});
+
+router.delete('/account', async (req: AuthRequest, res: Response) => {
+  const clientId = req.client!.clientId;
+  try {
+    const projects = await findAll<ProjectDoc>('sc_projects', { clientId });
+    const projectIds = projects.map((project) => project.id);
+    if (req.client!.projectId && !projectIds.includes(req.client!.projectId)) projectIds.push(req.client!.projectId);
+    const collections = [
+      'sc_clients', 'sc_projects', 'sc_agreements', 'sc_onboarding', 'sc_classes',
+      'sc_parent_submissions', 'sc_invitations', 'sc_submissions', 'sc_documents',
+      'sc_files', 'sc_notifications', 'sc_messages', 'sc_issues', 'sc_trainings',
+      'sc_handovers', 'sc_activity', 'sc_marketplace_integrations',
+    ];
+    await Promise.all(collections.map((name) => removeMany(name, {
+      $or: [{ clientId }, ...(projectIds.length ? [{ projectId: { $in: projectIds } }] : [])],
+    } as Record<string, unknown>)));
+  } catch {}
+  res.json({ success: true });
+});
+
+router.get('/telegram/status', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const settings = await getSettings();
+  const username = String(settings.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || '').replace(/^@/, '');
+  const botUrl = telegramBotUrl() || (username ? `https://t.me/${username}` : '');
+  res.json({
+    connected: Boolean(ctx.client.telegramChatId && ctx.client.telegramEnabled),
+    chatId: ctx.client.telegramChatId,
+    botUsername: username,
+    botUrl,
+    client: { id: ctx.client.id, email: ctx.client.email, schoolName: ctx.client.schoolName },
+  });
+});
+
+router.patch('/telegram', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const rawChatId = req.body?.telegramChatId;
+  const telegramChatId = rawChatId === undefined || rawChatId === null ? undefined : String(rawChatId).trim();
+  const telegramEnabled = req.body?.telegramEnabled === undefined ? undefined : Boolean(req.body.telegramEnabled);
+  const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+  if (telegramChatId !== undefined) patch.telegramChatId = telegramChatId;
+  if (telegramEnabled !== undefined) patch.telegramEnabled = telegramEnabled;
+  const client = await update<ClientDoc>('sc_clients', 'id', ctx.client.id, patch as any);
+  if (!client) return res.status(404).json({ error: 'School account not found' });
+  res.json({
+    connected: Boolean(client.telegramChatId && client.telegramEnabled !== false),
+    chatId: client.telegramChatId,
+    client: { id: client.id, email: client.email, schoolName: client.schoolName, telegramChatId: client.telegramChatId, telegramEnabled: client.telegramEnabled },
+  });
+});
+
+router.post('/telegram/bind-code', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx) return res.status(404).json({ error: 'School account not found' });
+  const settings = await getSettings();
+  const username = String(settings.telegramBotUsername || process.env.TELEGRAM_BOT_USERNAME || '').replace(/^@/, '');
+  const derivedUrl = telegramBotUrl() || (username ? `https://t.me/${username}` : '');
+  const configured = telegramConfigured() && Boolean(derivedUrl);
+  const code = makeSecureToken('tg');
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  await update<ClientDoc>('sc_clients', 'id', ctx.client.id, {
+    telegramBindCodeHash: hashToken(code), telegramBindCodeExpiresAt: expiresAt,
+    updatedAt: new Date().toISOString(),
+  } as any);
+  if (!configured) return res.json({ code, botUrl: '', expiresAt, error: 'Telegram bot is not configured.' });
+  res.json({ code, botUrl: derivedUrl, botUsername: username, expiresAt });
+});
+
+router.post('/messages/voice', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const { fileName, mimeType } = req.body || {};
+  const binary = decodeUpload(req.body?.data);
+  if (!fileName || !mimeType || !binary || !binary.length) {
+    return res.status(400).json({ error: 'File name, type and file data are required.' });
+  }
+  const settings = await getSettings();
+  const problem = validateFileUpload(settings, String(mimeType), binary.length);
+  if (problem) return res.status(400).json({ error: problem });
+  const now = new Date().toISOString();
+  const documentId = makeId();
+  const fileId = makeId();
+  const safe = safeFileName(String(fileName));
+  const caption = String(req.body.caption || '').trim();
+  const file: FileDoc = {
+    id: fileId, projectId: ctx.project.id, documentId, fileName: safe,
+    mimeType: String(mimeType), size: binary.length, data: binary.toString('base64'),
+    uploadedBy: ctx.client.email, createdAt: now,
+  };
+  const document: DocumentDoc = {
+    id: documentId, projectId: ctx.project.id, category: 'other', title: caption || safe,
+    fileId, fileName: safe, mimeType: String(mimeType), size: binary.length,
+    url: `/api/schools/client/documents/${documentId}/file`,
+    uploadedBy: ctx.client.email, clientVisible: true, createdAt: now,
+  };
+  const message: MessageDoc = {
+    id: makeId(), projectId: ctx.project.id, senderId: ctx.client.id,
+    senderName: ctx.client.contactName, senderRole: 'client',
+    message: caption || 'Voice note', read: false, channel: 'portal',
+    voiceFileId: fileId, documentId, fileName: safe, mimeType: String(mimeType), createdAt: now,
+  };
+  await insert('sc_files', file);
+  await insert('sc_documents', document);
+  await insert('sc_messages', message);
+  if (ctx.client.telegramChatId && ctx.client.telegramEnabled) {
+    try { await sendTelegramVoice(ctx.client.telegramChatId, binary, safe, caption || undefined); } catch {}
+  }
+  await notify({ audience: 'admin', title: 'New client voice note', message: `${ctx.project.schoolName} · ${caption || 'Voice note'}`.slice(0, 160), type: 'message' });
+  res.status(201).json({ message });
+});
+
+router.get('/messages/:id/voice', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const message = await findOne<MessageDoc>('sc_messages', { id: req.params.id, projectId: ctx.project.id });
+  if (!message?.voiceFileId) return res.status(404).json({ error: 'Voice note not found' });
+  const file = await findOne<FileDoc>('sc_files', { id: message.voiceFileId, documentId: message.documentId });
+  if (!file) return res.status(404).json({ error: 'Voice note not found' });
+  res.setHeader('Content-Type', file.mimeType || message.mimeType || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename="${safeFileName(file.fileName)}"`);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.send(Buffer.from(file.data, 'base64'));
+});
+
+router.get('/payments/:id/receipt.pdf', async (req: AuthRequest, res: Response) => {
+  const ctx = await context(req);
+  if (!ctx?.project) return res.status(404).json({ error: 'No active project' });
+  const payment = await findOne<PaymentDoc>('sc_payments', {
+    id: req.params.id, projectId: ctx.project.id, clientId: ctx.client.id,
+  });
+  if (!payment) return res.status(404).json({ error: 'Payment not found' });
+  const documents = await findAll<DocumentDoc>('sc_documents', { projectId: ctx.project.id, category: 'receipt' });
+  const receipt = documents.find((doc) => doc.title.includes(payment.reference)) || null;
+  const pdf = new PDFDocument({ margin: 50, size: 'A4' });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeFileName(`receipt-${payment.reference}.pdf`)}"`);
+  pdf.pipe(res);
+  pdf.fontSize(22).font('Helvetica-Bold').fillColor('#111827').text('Payment Receipt');
+  pdf.moveDown(0.5);
+  pdf.fontSize(10).font('Helvetica').fillColor('#374151');
+  pdf.text(`School: ${ctx.project.schoolName}`);
+  pdf.text(`Reference: ${payment.reference}`);
+  pdf.text(`Receipt number: ${payment.receiptNumber || '—'}`);
+  pdf.text(`Payment: ${payment.description}`);
+  pdf.text(`Amount: NGN ${payment.amount.toLocaleString()}`);
+  pdf.text(`Status: ${payment.status}`);
+  pdf.text(`Paid on: ${payment.paidAt || '—'}`);
+  if (receipt?.content) {
+    pdf.moveDown(1);
+    pdf.fontSize(12).font('Helvetica-Bold').fillColor('#111827').text('Receipt details');
+    pdf.moveDown(0.5);
+    pdf.fontSize(10).font('Helvetica').fillColor('#374151').text(receipt.content);
+  }
+  pdf.end();
 });
 
 export default router;

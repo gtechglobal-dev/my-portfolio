@@ -20,6 +20,7 @@ import OnboardingPortal from './pages/school-management/OnboardingPortal'
 import ProposalPage from './pages/school-management/ProposalPage'
 import AgreementPage from './pages/school-management/AgreementPage'
 import InvitePage from './pages/school-management/InvitePage'
+import ClassInvite from './pages/school-management/ClassInvite'
 
 export default function App() {
   const { pathname } = useLocation()
@@ -28,6 +29,7 @@ export default function App() {
   const isMarketplaceAdmin = pathname.startsWith('/admin/marketplace')
   const isSchoolClientsAdmin = pathname.startsWith('/admin/school-clients')
   const isSchoolPinOrder = pathname.startsWith('/school-management/pin-order')
+  const isClassInvite = pathname.startsWith('/school-management/class-invite/')
   const isSchoolManagement = pathname.startsWith('/school-management')
   const isClientPortal = pathname.startsWith('/client-portal')
   const isProposal = pathname.startsWith('/proposal/')
@@ -75,6 +77,14 @@ export default function App() {
       <Routes>
         <Route path="/school-management/pin-order" element={<SchoolOrderPage />} />
         <Route path="/school-management/pin-order/callback" element={<SchoolOrderPage callback />} />
+      </Routes>
+    )
+  }
+
+  if (isClassInvite) {
+    return (
+      <Routes>
+        <Route path="/school-management/class-invite/:token" element={<ClassInvite />} />
       </Routes>
     )
   }

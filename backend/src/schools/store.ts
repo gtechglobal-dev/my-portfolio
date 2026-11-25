@@ -7,7 +7,7 @@ const COLLECTIONS = [
   'sc_agreements', 'sc_projects', 'sc_milestones', 'sc_payments', 'sc_onboarding',
   'sc_invitations', 'sc_submissions', 'sc_student_imports', 'sc_documents', 'sc_files',
   'sc_notifications', 'sc_messages', 'sc_issues', 'sc_trainings', 'sc_handovers',
-  'sc_activity', 'sc_settings', 'sc_webhook_events',
+  'sc_activity', 'sc_settings', 'sc_webhook_events', 'sc_classes', 'sc_parent_submissions',
 ] as const;
 
 export async function ensureSchoolIndexes(db: Db): Promise<void> {
@@ -32,6 +32,10 @@ export async function ensureSchoolIndexes(db: Db): Promise<void> {
     db.collection('sc_notifications').createIndex({ clientId: 1, createdAt: -1 }),
     db.collection('sc_messages').createIndex({ projectId: 1, createdAt: -1 }),
     db.collection('sc_webhook_events').createIndex({ id: 1 }, { unique: true }),
+    db.collection('sc_classes').createIndex({ inviteTokenHash: 1 }, { unique: true }),
+    db.collection('sc_classes').createIndex({ projectId: 1 }),
+    db.collection('sc_parent_submissions').createIndex({ projectId: 1, createdAt: -1 }),
+    db.collection('sc_parent_submissions').createIndex({ classId: 1 }),
   ]);
 }
 
@@ -81,6 +85,18 @@ export async function update<T extends object>(name: string, key: string, id: st
   return rest as T;
 }
 
+export async function remove(name: string, filter: Record<string, unknown>): Promise<void> {
+  const c = collection(name);
+  if (!c) return;
+  await c.deleteOne(filter as any);
+}
+
+export async function removeMany(name: string, filter: Record<string, unknown>): Promise<void> {
+  const c = collection(name);
+  if (!c) return;
+  await c.deleteMany(filter as any);
+}
+
 export async function increment(name: string, key: string, id: string, field: string, amount: number): Promise<void> {
   const c = collection(name);
   if (!c) return;
@@ -126,6 +142,16 @@ export async function getSettings(): Promise<T.SettingsDoc> {
     privacyPolicy: 'Privacy policy content is managed by Gtech Global administrators.',
     terms: 'Terms and conditions are managed by Gtech Global administrators.',
     agreementTemplate: '',
+    onboardingVideo: {
+      title: 'GTECH Global School Management demo',
+      description: 'Please watch our short demo of what we will be building together.',
+      landscapeUrl: '',
+      portraitUrl: '',
+      posterUrl: '',
+      downloads: [],
+    },
+    guidelineVideos: [],
+    telegramBotUsername: '',
     depositPercent: 40,
     finalPercent: 60,
     defaultMilestones: [
@@ -143,10 +169,23 @@ export async function getSettings(): Promise<T.SettingsDoc> {
       { title: 'Production deployment', weight: 4 },
       { title: 'Handover', weight: 1 },
     ],
-    fileRestrictions: { maxBytes: 5 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] },
+    fileRestrictions: { maxBytes: 5 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'] },
     updatedAt: new Date().toISOString(),
   };
-  return (await findOne<T.SettingsDoc>('sc_settings', { id: 'global' })) || defaults;
+  const saved = await findOne<T.SettingsDoc>('sc_settings', { id: 'global' });
+  if (!saved) return defaults;
+  const savedTypes = Array.isArray(saved.fileRestrictions?.allowedTypes) ? saved.fileRestrictions.allowedTypes : [];
+  const mergedTypes = Array.from(new Set([...defaults.fileRestrictions.allowedTypes, ...savedTypes]));
+  return {
+    ...defaults,
+    ...saved,
+    contact: { ...defaults.contact, ...(saved.contact || {}) },
+    brand: { ...defaults.brand, ...(saved.brand || {}) },
+    onboardingVideo: { ...defaults.onboardingVideo, ...(saved.onboardingVideo || {}) },
+    guidelineVideos: Array.isArray(saved.guidelineVideos) ? saved.guidelineVideos : defaults.guidelineVideos,
+    telegramBotUsername: saved.telegramBotUsername ?? defaults.telegramBotUsername,
+    fileRestrictions: { ...defaults.fileRestrictions, ...(saved.fileRestrictions || {}), allowedTypes: mergedTypes },
+  };
 }
 
 export async function getPackages(activeOnly = false): Promise<T.PackageDoc[]> {

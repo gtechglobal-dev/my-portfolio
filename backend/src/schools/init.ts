@@ -1,5 +1,5 @@
 import { getDb, isDbConnected } from '../db.js';
-import { ensureSchoolIndexes, findAll, upsert } from './store.js';
+import { ensureSchoolIndexes, findAll, findOne, upsert } from './store.js';
 import { makeId, type PackageDoc, type FaqDoc, type SettingsDoc } from './types.js';
 
 const PACKAGES: Omit<PackageDoc, 'id' | 'createdAt' | 'updatedAt'>[] = [
@@ -60,6 +60,16 @@ export async function initSchoolClients(): Promise<void> {
     privacyPolicy: 'We collect only the information needed to assess, propose and deliver your school project. We do not sell applicant or student data.',
     terms: 'Project scope, pricing, timelines and support terms are defined in the accepted proposal and development agreement.',
     agreementTemplate: '',
+    onboardingVideo: {
+      title: 'GTECH Global School Management demo',
+      description: 'Please watch our short demo of what we will be building together.',
+      landscapeUrl: '',
+      portraitUrl: '',
+      posterUrl: '',
+      downloads: [],
+    },
+    guidelineVideos: [],
+    telegramBotUsername: '',
     depositPercent: 40,
     finalPercent: 60,
     defaultMilestones: [
@@ -77,8 +87,8 @@ export async function initSchoolClients(): Promise<void> {
       { title: 'Production deployment', weight: 4 },
       { title: 'Handover', weight: 1 },
     ],
-    fileRestrictions: { maxBytes: 5 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] },
+    fileRestrictions: { maxBytes: 5 * 1024 * 1024, allowedTypes: ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'] },
     updatedAt: new Date().toISOString(),
   };
-  await upsert('sc_settings', 'id', settings);
+  if (!(await findOne('sc_settings', { id: 'global' }))) await upsert('sc_settings', 'id', settings);
 }

@@ -21,6 +21,7 @@ export interface SchoolAccountInput {
   schoolName: string;
   password?: string;
   phone?: string;
+  logo?: string;
   authProvider?: 'password' | 'google';
   googleSub?: string;
   emailVerified?: boolean;
@@ -198,6 +199,7 @@ export async function createSchoolAccount(input: SchoolAccountInput): Promise<Sc
     contactName: input.contactName,
     email,
     phone: input.phone,
+    logo: input.logo,
     passwordHash: input.password ? bcrypt.hashSync(input.password, 10) : bcrypt.hashSync(makeSecureToken('oauth'), 10),
     projectId: project.id,
     marketplaceIntegrationId: integration.id,
@@ -245,7 +247,7 @@ export async function createSchoolAccount(input: SchoolAccountInput): Promise<Sc
     refundPolicy: 'Payments are non-refundable once implementation work has begun.',
     disputeResolution: 'Disputes will be resolved amicably before any formal action.',
     additionalTerms: '',
-    content: settings.agreementTemplate || settings.terms || 'By accepting this agreement, the school authorizes Gtech Global to build and deploy its customized school platform.',
+    content: `SCHOOL: ${input.schoolName}\nADMINISTRATOR: ${input.contactName}\n\n${settings.agreementTemplate || settings.terms || 'By accepting this agreement, the school authorizes Gtech Global to build and deploy its customized school platform.'}`,
     status: 'pending',
     clientToken: agreementToken,
     clientTokenHash: hashToken(agreementToken),
@@ -263,7 +265,7 @@ export async function createSchoolAccount(input: SchoolAccountInput): Promise<Sc
     id: makeId(),
     projectId: project.id,
     section: 'school_profile',
-    data: { schoolName: input.schoolName, contactName: input.contactName, email, phone: input.phone || '' },
+    data: { schoolName: input.schoolName, contactName: input.contactName, email, phone: input.phone || '', logo: input.logo || '' },
     status: 'draft',
     updatedAt: now,
   });

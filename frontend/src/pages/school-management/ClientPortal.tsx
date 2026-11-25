@@ -3,15 +3,23 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardList, CreditCard, KeyRound, MessageSquare,
   FileText, AlertCircle, RefreshCw, LogOut, CheckCircle2, ExternalLink, Send, Upload,
+  Video, Users, Copy, Download,
 } from 'lucide-react';
+import ChatBox from '../../components/ChatBox';
 import {
   clientApi, clientLogin, clearClientToken, dateLabel, downloadClientDocument, fileToDataUrl,
-  getClientToken, money, setClientToken, stageLabel, verifySchoolPayment,
+  getClientToken, getPublicConfig, money, setClientToken, stageLabel, verifySchoolPayment,
 } from '../../lib/schools';
+import { schoolsApi } from '../../lib/schools';
 import { OnboardingForms } from './OnboardingPortal';
+
+const configApi = schoolsApi as typeof schoolsApi & { getPublicConfig?: typeof getPublicConfig };
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'guidelines', label: 'Guidelines', icon: Video },
+  { id: 'classes', label: 'Classes', icon: Users },
+  { id: 'submissions', label: 'Submissions', icon: ClipboardList },
   { id: 'onboarding', label: 'Onboarding', icon: ClipboardList },
   { id: 'payments', label: 'Payments', icon: CreditCard },
   { id: 'marketplace', label: 'Exam PINs', icon: KeyRound },
@@ -19,6 +27,26 @@ const TABS = [
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'documents', label: 'Documents', icon: FileText },
 ] as const;
+
+const tableCellStyle = { border: '1px solid #dce6f7', padding: '8px 10px', textAlign: 'left', whiteSpace: 'nowrap' } as const;
+
+function youtubeEmbedUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    let id = '';
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (parsed.pathname === '/watch') id = parsed.searchParams.get('v') || '';
+      else if (parsed.pathname.startsWith('/embed/') || parsed.pathname.startsWith('/shorts/')) id = parsed.pathname.split('/')[2] || '';
+    } else if (host === 'youtu.be') {
+      id = parsed.pathname.slice(1);
+    }
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return '';
+    return `https://www.youtube-nocookie.com/embed/${id}`;
+  } catch {
+    return '';
+  }
+}
 
 type Tab = typeof TABS[number]['id'];
 
@@ -75,6 +103,10 @@ export default function ClientPortal() {
   const [issue, setIssue] = useState({ title: '', description: '', module: '', severity: 'medium' });
   const [message, setMessage] = useState('');
   const [approval, setApproval] = useState({ name: '', note: '' });
+  const [config, setConfig] = useState<any>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [receiptPayments, setReceiptPayments] = useState<any[]>([]);
 
   async function load() {
     if (!token) return;
@@ -95,7 +127,24 @@ export default function ClientPortal() {
     }
   }
 
+  useEffect(() => {
+    (configApi.getPublicConfig ? configApi.getPublicConfig() : getPublicConfig()).then(setConfig).catch(() => setConfig({}));
+  }, []);
+
+  async function loadWorkspace() {
+    if (!token) return;
+    const [classData, submissionData, paymentData] = await Promise.all([
+      schoolsApi.getClientClasses().catch(() => ({ classes: [] as any[] })),
+      schoolsApi.getClientSubmissions().catch(() => ({ submissions: [] as any[] })),
+      clientApi.payments().catch(() => ({ payments: [] as any[] })),
+    ]);
+    setClasses(Array.isArray(classData?.classes) ? classData.classes : []);
+    setSubmissions(Array.isArray(submissionData?.submissions) ? submissionData.submissions : []);
+    setReceiptPayments(Array.isArray(paymentData?.payments) ? paymentData.payments : []);
+  }
+
   useEffect(() => { load(); }, [token]);
+  useEffect(() => { loadWorkspace(); }, [token]);
 
   useEffect(() => {
     const reference = searchParams.get('payment');
@@ -123,6 +172,30 @@ export default function ClientPortal() {
       return null;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyInvite(url?: string) {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice('Invite link copied.');
+    } catch {
+      setError('Could not copy the invite link.');
+    }
+  }
+
+  async function regenerateClassLink(id: string) {
+    const result = await run(() => schoolsApi.createClassLink(id), 'Invite link regenerated.');
+    if (result) await loadWorkspace();
+  }
+
+  async function downloadPaymentReceipt(payment: any) {
+    setError('');
+    try {
+      await schoolsApi.downloadReceipt(payment.id || payment.reference, `receipt-${payment.reference || payment.id}.pdf`);
+    } catch (err: any) {
+      setError(err.message || 'Could not download the receipt.');
     }
   }
 
@@ -224,6 +297,120 @@ export default function ClientPortal() {
           </div>
         )}
 
+        {!loading && tab === 'guidelines' && (
+          <section className="sm-root sm-card sm-form-card a4-sheet" style={{ minHeight: 'auto' }}>
+            <div className="sm-section-heading">
+              <div>
+                <span className="sm-eyebrow sm-eyebrow-blue"><Video className="w-3.5 h-3.5" /> Guidelines</span>
+                <h2 className="sm-section-title">Guideline videos</h2>
+                <p className="sm-muted">Short guides to help your team use the school workspace.</p>
+              </div>
+            </div>
+            <div className="sm-grid sm-grid-three">
+              {(config?.guidelineVideos || []).map((video: any) => {
+                const embedUrl = youtubeEmbedUrl(video.url || '');
+                return (
+                  <div key={video.id} className="sm-card-soft">
+                    <p className="sm-card-title">{video.title}</p>
+                    {video.description && <p className="sm-small">{video.description}</p>}
+                    {embedUrl ? (
+                      <iframe
+                        className="sm-video"
+                        style={{ height: 220 }}
+                        src={embedUrl}
+                        title={video.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : video.type === 'file' && video.url ? (
+                      <video className="sm-video" controls playsInline preload="metadata" poster={video.posterUrl || undefined}>
+                        <source src={video.url} type="video/mp4" />
+                      </video>
+                    ) : null}
+                    {video.url && <a href={video.url} target="_blank" rel="noreferrer" className="sm-btn-outline">Open guideline</a>}
+                  </div>
+                );
+              })}
+            </div>
+            {!config?.guidelineVideos?.length && <p className="sm-small">No guideline videos have been added yet.</p>}
+          </section>
+        )}
+
+        {!loading && tab === 'classes' && (
+          <section className="sm-root sm-card sm-form-card a4-sheet" style={{ minHeight: 'auto' }}>
+            <div className="sm-section-heading">
+              <div>
+                <span className="sm-eyebrow sm-eyebrow-blue"><Users className="w-3.5 h-3.5" /> Classes</span>
+                <h2 className="sm-section-title">Classes</h2>
+                <p className="sm-muted">Invite links and head teacher details for each class.</p>
+              </div>
+            </div>
+            <div className="sm-grid sm-grid-three">
+              {classes.map((item: any) => (
+                <section key={item.id} className="sm-credential">
+                  <p className="sm-semibold">{item.name}{item.arm ? ` · ${item.arm}` : ''}</p>
+                  {item.headTeacherName && <p className="sm-small">Head teacher: {item.headTeacherName}</p>}
+                  <p className="sm-code">{item.inviteUrl || 'Invite link pending'}</p>
+                  <div className="sm-form-actions no-print">
+                    <button type="button" disabled={!item.inviteUrl || busy} onClick={() => copyInvite(item.inviteUrl)} className="sm-btn-outline"><Copy className="w-3.5 h-3.5" /> Copy link</button>
+                    <button type="button" disabled={busy} onClick={() => regenerateClassLink(item.id)} className="sm-btn-ghost"><RefreshCw className="w-3.5 h-3.5" /> Regenerate link</button>
+                  </div>
+                </section>
+              ))}
+            </div>
+            {!classes.length && <p className="sm-small">No classes have been created yet.</p>}
+          </section>
+        )}
+
+        {!loading && tab === 'submissions' && (
+          <section className="sm-root sm-card sm-form-card a4-sheet" style={{ minHeight: 'auto' }}>
+            <div className="sm-section-heading">
+              <div>
+                <span className="sm-eyebrow sm-eyebrow-blue"><ClipboardList className="w-3.5 h-3.5" /> Submissions</span>
+                <h2 className="sm-section-title">Submissions</h2>
+                <p className="sm-muted">Student and parent details received through class invite links.</p>
+              </div>
+              <button type="button" onClick={() => window.print()} className="sm-btn-outline no-print"><FileText className="w-3.5 h-3.5" /> Print form</button>
+            </div>
+            <div className="sm-grid">
+              {submissions.map((submission: any) => (
+                <section key={submission.id} className="sm-card-soft">
+                  <p className="sm-semibold">{submission.className}{submission.arm ? ` ${submission.arm}` : ''}</p>
+                  <p className="sm-small">Head teacher: {submission.headTeacher?.fullName || '—'}{submission.headTeacher?.email ? ` · ${submission.headTeacher.email}` : ''}</p>
+                  <div style={{ overflowX: 'auto', marginTop: 12 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
+                      <thead>
+                        <tr>
+                          {['Student', 'Class', 'Arm', 'Gender', 'Date of birth', 'Parent', 'Relationship', 'Parent phone', 'Parent email', 'Address'].map((heading) => (
+                            <th key={heading} style={tableCellStyle}>{heading}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(submission.students || []).map((student: any, index: number) => (
+                          <tr key={`${submission.id}-${student.studentName || index}`}>
+                            <td style={tableCellStyle}>{student.studentName || '—'}</td>
+                            <td style={tableCellStyle}>{student.className || submission.className || '—'}</td>
+                            <td style={tableCellStyle}>{student.arm || '—'}</td>
+                            <td style={tableCellStyle}>{student.gender || '—'}</td>
+                            <td style={tableCellStyle}>{student.dateOfBirth || '—'}</td>
+                            <td style={tableCellStyle}>{student.parentName || '—'}</td>
+                            <td style={tableCellStyle}>{student.relationship || '—'}</td>
+                            <td style={tableCellStyle}>{student.parentPhone || '—'}</td>
+                            <td style={tableCellStyle}>{student.parentEmail || '—'}</td>
+                            <td style={tableCellStyle}>{student.address || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+            {!submissions.length && <p className="sm-small">No submissions have been received yet.</p>}
+          </section>
+        )}
+
         {!loading && tab === 'onboarding' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -256,6 +443,33 @@ export default function ClientPortal() {
                 {!payments.length && <p className="text-sm text-muted">No payments recorded yet.</p>}
               </div>
             </div>
+            <section className="sm-root sm-card sm-form-card a4-sheet" style={{ minHeight: 'auto' }}>
+              <div className="sm-section-heading">
+                <div>
+                  <span className="sm-eyebrow sm-eyebrow-blue"><FileText className="w-3.5 h-3.5" /> Receipts</span>
+                  <h2 className="sm-section-title">Receipts</h2>
+                  <p className="sm-muted">Download receipts for successful school payments.</p>
+                </div>
+              </div>
+              <div className="sm-grid sm-grid-three">
+                {receiptPayments.map((payment: any) => {
+                  const paid = ['success', 'paid', 'completed'].includes(String(payment.status || '').toLowerCase());
+                  if (!paid) return null;
+                  return (
+                    <section key={payment.id || payment.reference} className="sm-credential">
+                      <p className="sm-semibold">{payment.description || payment.type || 'Payment'}</p>
+                      <p className="sm-small">{payment.reference || 'No reference'}</p>
+                      <p className="sm-code">{money(payment.amount)}</p>
+                      <p className="sm-small">Status: {payment.status}</p>
+                      <div className="sm-form-actions no-print">
+                        <button type="button" onClick={() => downloadPaymentReceipt(payment)} className="sm-btn-outline"><Download className="w-3.5 h-3.5" /> Download receipt</button>
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+              {!receiptPayments.some((payment: any) => ['success', 'paid', 'completed'].includes(String(payment.status || '').toLowerCase())) && <p className="sm-small">No receipts available yet.</p>}
+            </section>
           </div>
         )}
 
@@ -361,6 +575,7 @@ export default function ClientPortal() {
           </div>
         )}
       </div>
+      <ChatBox projectId={data.project?.id || data.projectId} />
     </div>
   );
 }

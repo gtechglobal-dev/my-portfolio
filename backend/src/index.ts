@@ -21,8 +21,10 @@ import schoolsAdminRouter from './routes/schoolsAdmin.js';
 import schoolsClientRouter from './routes/schoolsClient.js';
 import schoolsPaymentsRouter from './routes/schoolsPayments.js';
 import schoolsInvitesRouter from './routes/schoolsInvites.js';
+import telegramRouter from './routes/telegram.js';
 import { initMarketplace } from './marketplace/init.js';
 import { initSchoolClients } from './schools/init.js';
+import { setTelegramWebhook } from './services/telegram.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -80,6 +82,7 @@ app.use('/api/schools/admin', schoolsAdminRouter);
 app.use('/api/schools/client', schoolsClientRouter);
 app.use('/api/schools/payments', schoolsPaymentsRouter);
 app.use('/api/schools/invite', schoolsInvitesRouter);
+app.use('/api/telegram', telegramRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', db: isDbConnected(), timestamp: new Date().toISOString() });
@@ -100,12 +103,14 @@ if (existsSync(frontendDist)) {
 connectDB().then(async () => {
   await initMarketplace();
   await initSchoolClients();
+  void setTelegramWebhook();
   app.listen(PORT, () => {
     console.log(`Gtech Global web service running on http://localhost:${PORT}`);
   });
 }).catch((err) => {
   console.error('Failed to connect to MongoDB:', err.message);
   console.warn('Starting server without database — writes will fail');
+  void setTelegramWebhook();
   app.listen(PORT, () => {
     console.log(`Gtech Global web service running on http://localhost:${PORT} (NO DB)`);
   });

@@ -17,7 +17,7 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
-router.get('/public/config', async (_req: Request, res: Response) => {
+router.get('/config', async (_req: Request, res: Response) => {
   const settings = await getSettings();
   res.json({
     contact: settings.contact,
@@ -26,6 +26,16 @@ router.get('/public/config', async (_req: Request, res: Response) => {
     faqs: await getFaqs(),
     privacyPolicy: settings.privacyPolicy,
     terms: settings.terms,
+    onboardingVideo: settings.onboardingVideo || {
+      title: 'GTECH Global School Management demo',
+      description: 'Please watch our short demo of what we will be building together.',
+      landscapeUrl: '',
+      portraitUrl: '',
+      posterUrl: '',
+      downloads: [],
+    },
+    guidelineVideos: settings.guidelineVideos || [],
+    telegramBotUsername: settings.telegramBotUsername || '',
   });
 });
 
@@ -125,14 +135,23 @@ router.post('/auth/register', rateLimit(10, 60 * 60 * 1000, 'school-signup'), as
     const contactName = String(req.body.contactName || '').trim();
     const schoolName = String(req.body.schoolName || '').trim();
     const phone = String(req.body.phone || '').trim();
+    const logo = typeof req.body.logo === 'string' ? req.body.logo : '';
     if (!email || !password || !contactName || !schoolName || !phone) {
       return res.status(400).json({ error: 'Full name, school name, email, password and phone number are required.' });
     }
     if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
     if (phone.replace(/\D/g, '').length < 7) return res.status(400).json({ error: 'Enter a valid phone number. WhatsApp is preferred.' });
     if (password.length < 8) return res.status(400).json({ error: 'Use at least 8 characters for your password.' });
+    if (logo) {
+      if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(logo)) {
+        return res.status(400).json({ error: 'Upload a PNG, JPG or WEBP school logo.' });
+      }
+      if (Buffer.from(logo.split(',')[1] || '', 'base64').length > 2 * 1024 * 1024) {
+        return res.status(400).json({ error: 'School logo must be 2MB or smaller.' });
+      }
+    }
     const account = await createSchoolAccount({
-      email, password, contactName, schoolName, phone,
+      email, password, contactName, schoolName, phone, logo,
     });
     res.status(201).json({
       token: signClient({ clientId: account.client.id, projectId: account.project.id, role: 'client', email: account.client.email }),

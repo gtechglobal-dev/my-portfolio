@@ -74,6 +74,7 @@ export interface ClientDoc {
   contactName: string;
   email: string;
   phone?: string;
+  logo?: string;
   passwordHash: string;
   projectId?: string;
   marketplaceIntegrationId?: string;
@@ -81,6 +82,10 @@ export interface ClientDoc {
   authProvider?: 'password' | 'google';
   googleSub?: string;
   emailVerified?: boolean;
+  telegramChatId?: string;
+  telegramEnabled?: boolean;
+  telegramBindCodeHash?: string;
+  telegramBindCodeExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -317,9 +322,14 @@ export interface MessageDoc {
   projectId: string;
   senderId: string;
   senderName: string;
-  senderRole: 'client' | 'admin';
+  senderRole: 'client' | 'admin' | 'telegram';
   message: string;
   read: boolean;
+  channel?: 'portal' | 'telegram' | 'paystack';
+  voiceFileId?: string;
+  fileName?: string;
+  mimeType?: string;
+  documentId?: string;
   createdAt: string;
 }
 
@@ -363,6 +373,39 @@ export interface HandoverDoc {
   createdAt: string;
 }
 
+export interface ClassDoc {
+  id: string;
+  projectId: string;
+  schoolName: string;
+  name: string;
+  arm?: string;
+  level?: string;
+  headTeacherName?: string;
+  headTeacherEmail?: string;
+  headTeacherPhone?: string;
+  subjects: string[];
+  inviteToken: string;
+  inviteTokenHash: string;
+  inviteUrl?: string;
+  status: 'active' | 'closed';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentSubmissionDoc {
+  id: string;
+  projectId: string;
+  classId: string;
+  className: string;
+  arm?: string;
+  headTeacher: { fullName: string; email: string; phone?: string };
+  students: Array<{ studentName: string; className: string; arm?: string; gender?: string; dateOfBirth?: string; parentName: string; relationship?: string; parentPhone: string; parentEmail?: string; address?: string; subjects?: string[] }>;
+  status: 'submitted' | 'approved' | 'correction_requested';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ActivityDoc {
   id: string;
   projectId?: string;
@@ -381,6 +424,16 @@ export interface SettingsDoc {
   privacyPolicy: string;
   terms: string;
   agreementTemplate: string;
+  onboardingVideo?: {
+    title?: string;
+    description?: string;
+    landscapeUrl?: string;
+    portraitUrl?: string;
+    posterUrl?: string;
+    downloads?: { label?: string; quality?: string; url: string }[];
+  };
+  guidelineVideos: { id: string; title: string; url: string; description?: string; posterUrl?: string; type: 'file' | 'youtube' }[];
+  telegramBotUsername?: string;
   depositPercent: number;
   finalPercent: number;
   defaultMilestones: { title: string; weight: number }[];
@@ -394,7 +447,7 @@ export function validateFileUpload(settings: SettingsDoc | null, mimeType: strin
   const maxBytes = Number(settings?.fileRestrictions?.maxBytes) || 5 * 1024 * 1024;
   const allowedTypes = Array.isArray(settings?.fileRestrictions?.allowedTypes) && settings.fileRestrictions.allowedTypes.length
     ? settings.fileRestrictions.allowedTypes
-    : ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    : ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
   if (!allowedTypes.includes(mimeType)) return `File type ${mimeType || 'unknown'} is not allowed.`;
   if (bytes > maxBytes) return `File exceeds the ${Math.round(maxBytes / 1024 / 1024)}MB limit.`;
   return null;

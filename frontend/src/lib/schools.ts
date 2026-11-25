@@ -11,6 +11,16 @@ export interface PublicConfig {
   faqs: Faq[];
   privacyPolicy: string;
   terms: string;
+  onboardingVideo?: {
+    title?: string;
+    description?: string;
+    landscapeUrl?: string;
+    portraitUrl?: string;
+    posterUrl?: string;
+    downloads?: { label?: string; quality?: string; url: string }[];
+  };
+  guidelineVideos?: Array<{ id: string; title: string; url: string; description?: string; posterUrl?: string; type: 'file' | 'youtube' }>;
+  telegramBotUsername?: string;
 }
 
 export interface Package {
@@ -30,6 +40,70 @@ export interface Package {
 }
 
 export interface Faq { id: string; question: string; answer: string; sortOrder: number; active: boolean; }
+
+export interface ClassDoc {
+  id: string;
+  projectId: string;
+  schoolName: string;
+  name: string;
+  arm: string;
+  level?: string;
+  headTeacherName?: string;
+  headTeacherEmail?: string;
+  headTeacherPhone?: string;
+  subjects: string[];
+  inviteToken: string;
+  inviteUrl?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentSubmissionDoc {
+  id: string;
+  projectId: string;
+  classId: string;
+  className: string;
+  arm?: string;
+  headTeacher: { fullName: string; email: string; phone?: string };
+  students: Array<{
+    studentName: string;
+    className: string;
+    arm?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    parentName: string;
+    relationship?: string;
+    parentPhone: string;
+    parentEmail?: string;
+    address?: string;
+    subjects?: string[];
+  }>;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSchoolGroup {
+  client: any;
+  project?: any;
+  agreements: any[];
+  onboarding: any[];
+  classes: ClassDoc[];
+  submissions: ParentSubmissionDoc[];
+  payments: any[];
+  messages: any[];
+}
+
+export interface TelegramBind {
+  code?: string;
+  botUrl?: string;
+  botUsername?: string;
+  expiresAt?: string;
+  connected?: boolean;
+  client?: { id: string; telegramChatId?: string; telegramEnabled?: boolean; [key: string]: any };
+  [key: string]: any;
+}
 
 export interface ApplicationPayload {
   applicant: { fullName: string; position: string; email: string; whatsapp: string; altPhone?: string };
@@ -112,7 +186,7 @@ export interface SchoolSession {
   stage?: string;
 }
 
-export function schoolRegister(payload: { contactName: string; schoolName: string; email: string; password: string; phone: string }) {
+export function schoolRegister(payload: { contactName: string; schoolName: string; email: string; password: string; phone: string; logo?: string }) {
   return request<SchoolSession>('/public/auth/register', { method: 'POST', body: JSON.stringify(payload) });
 }
 
@@ -121,8 +195,6 @@ export function schoolLogin(email: string, password: string) {
 }
 
 export function schoolMe() { return request<SchoolSession>('/public/auth/me', {}, getClientToken()); }
-
-export function schoolGoogleStartUrl() { return `${API}/public/auth/google/start`; }
 
 export function schoolAgreement() { return request<any>('/client/agreement/current', {}, getClientToken()); }
 
@@ -206,6 +278,59 @@ export const clientApi = {
   uploadDocument: (payload: any) => client('/documents/upload', { method: 'POST', body: JSON.stringify(payload) }),
   finalApproval: (payload: any) => client('/final-approval', { method: 'POST', body: JSON.stringify(payload) }),
   acknowledgeHandover: (feedback?: string) => client('/handover/acknowledge', { method: 'POST', body: JSON.stringify({ feedback }) }),
+};
+
+export function getVoiceUrl(messageId: string) {
+  return apiUrl(`/api/schools/client/messages/${encodeURIComponent(messageId)}/voice`);
+}
+
+async function fetchVoiceBlob(messageId: string): Promise<string> {
+  const token = getClientToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(getVoiceUrl(messageId), { headers });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Could not load the voice note.');
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
+export const schoolsApi = {
+  getAdminSchools: () => admin<{ groups: AdminSchoolGroup[]; schools?: AdminSchoolGroup[] }>('/schools'),
+  updateAgreement: (id: string, patch: { content?: string; schoolName?: string; status?: string; additionalTerms?: string }) =>
+    admin(`/agreements/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  adminGetMessages: (projectId?: string) => admin<{ messages: any[] }>(`/messages${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
+  adminSendMessage: (projectId: string, message: string) =>
+    admin('/messages', { method: 'POST', body: JSON.stringify({ projectId, message }) }),
+  markMessageRead: (id: string) => admin(`/messages/${encodeURIComponent(id)}/read`, { method: 'PATCH' }),
+  updateClientTelegram: (clientId: string, payload: { telegramChatId?: string; telegramEnabled?: boolean }) =>
+    admin(`/clients/${encodeURIComponent(clientId)}/telegram`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  getClientClasses: () => client<{ classes: ClassDoc[] }>('/classes'),
+  createClass: (payload: any) => client('/classes', { method: 'POST', body: JSON.stringify(payload) }),
+  updateClass: (id: string, payload: any) => client(`/classes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteClass: (id: string) => client(`/classes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  createClassLink: (id: string) => client(`/classes/${encodeURIComponent(id)}/link`, { method: 'POST' }),
+  getClientSubmissions: () => client<{ submissions: ParentSubmissionDoc[] }>('/submissions'),
+  deleteAccount: () => client('/account', { method: 'DELETE' }),
+  getTelegramStatus: () => client<TelegramBind>('/telegram/status'),
+  createTelegramBindCode: () => client<TelegramBind>('/telegram/bind-code', { method: 'POST' }),
+  updateTelegram: (payload: { telegramChatId?: string; telegramEnabled?: boolean }) =>
+    client<TelegramBind>('/telegram', { method: 'PATCH', body: JSON.stringify(payload) }),
+  sendVoice: (payload: { fileName: string; mimeType: string; data: string; caption?: string }) =>
+    client('/messages/voice', { method: 'POST', body: JSON.stringify(payload) }),
+  getVoiceUrl,
+  fetchVoiceBlob,
+  downloadReceipt: (paymentId: string, fileName?: string) =>
+    downloadSchoolFile(`/client/payments/${encodeURIComponent(paymentId)}/receipt.pdf`, fileName || `receipt-${paymentId}.pdf`, getClientToken()),
+  getClassInvite: (token: string) => request<any>(`/invite/class/${encodeURIComponent(token)}`),
+  submitClassInvite: (token: string, payload: any) =>
+    request<any>(`/invite/class/${encodeURIComponent(token)}/submit`, { method: 'POST', body: JSON.stringify(payload) }),
+  getMessages: () => client<{ messages: any[] }>('/messages'),
+  sendMessage: (message: string) => client('/messages', { method: 'POST', body: JSON.stringify({ message }) }),
+  uploadDocument: (payload: { title?: string; fileName: string; mimeType: string; data: string; category?: string }) =>
+    client('/documents/upload', { method: 'POST', body: JSON.stringify({ title: payload.title || payload.fileName, ...payload }) }),
+  updateSettings: (payload: any) => admin('/settings', { method: 'PATCH', body: JSON.stringify(payload) }),
 };
 
 export function downloadClientDocument(id: string, fileName: string) {

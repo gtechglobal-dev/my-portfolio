@@ -19,6 +19,7 @@ import schoolsAdminRouter from '../../backend/src/routes/schoolsAdmin';
 import schoolsClientRouter from '../../backend/src/routes/schoolsClient';
 import schoolsPaymentsRouter from '../../backend/src/routes/schoolsPayments';
 import schoolsInvitesRouter from '../../backend/src/routes/schoolsInvites';
+import telegramRouter from '../../backend/src/routes/telegram';
 import { initMarketplace } from '../../backend/src/marketplace/init';
 import { initSchoolClients } from '../../backend/src/schools/init';
 
@@ -51,6 +52,7 @@ app.use('/api/schools/admin', schoolsAdminRouter);
 app.use('/api/schools/client', schoolsClientRouter);
 app.use('/api/schools/payments', schoolsPaymentsRouter);
 app.use('/api/schools/invite', schoolsInvitesRouter);
+app.use('/api/telegram', telegramRouter);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

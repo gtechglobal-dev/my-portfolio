@@ -8,10 +8,12 @@ import {
   makeId, makeSecureToken, hashToken, type ApplicationDoc, type ClientDoc, type ProposalDoc,
   type AgreementDoc, type ProjectDoc, type MilestoneDoc, type PackageDoc, type FaqDoc,
   type InvitationDoc, type SettingsDoc, type IssueDoc, type TrainingDoc, type HandoverDoc,
-  type DocumentDoc, type FileDoc, APPLICATION_STATUSES, PROJECT_STAGES,
+  type DocumentDoc, type FileDoc, type MessageDoc, type ClassDoc, type ParentSubmissionDoc,
+  type PaymentDoc, APPLICATION_STATUSES, PROJECT_STAGES,
   DOCUMENT_CATEGORIES, validateFileUpload, safeFileName,
 } from '../schools/types.js';
 import { adminAuth, adminRoles, type AuthRequest } from '../schools/auth.js';
+import { sendTelegramText } from '../services/telegram.js';
 import { generateApiKey, hashApiKey } from '../marketplace/types.js';
 import { putSchoolIntegration, putLaunchToken } from '../marketplace/store.js';
 
@@ -138,6 +140,82 @@ router.get('/clients', async (_req: Request, res: Response) => {
   }) });
 });
 
+router.get('/schools', async (_req: Request, res: Response) => {
+  const clients = await findAll<ClientDoc>('sc_clients');
+  const groups = await Promise.all(clients.map(async (client) => {
+    const project = await findOne<ProjectDoc>('sc_projects', { clientId: client.id })
+      || (client.projectId ? await findOne<ProjectDoc>('sc_projects', { id: client.projectId, clientId: client.id }) : null);
+    const projectId = project?.id || '';
+    const forProject = async <T>(name: string): Promise<T[]> => projectId ? findAll<T>(name, { projectId }) : [];
+    const [onboarding, classes, submissions, payments, messages] = await Promise.all([
+      forProject<any>('sc_onboarding'),
+      forProject<ClassDoc>('sc_classes'),
+      forProject<ParentSubmissionDoc>('sc_parent_submissions'),
+      forProject<PaymentDoc>('sc_payments'),
+      forProject<MessageDoc>('sc_messages'),
+    ]);
+    const clientAgreements = await findAll<AgreementDoc>('sc_agreements', { clientId: client.id });
+    const projectAgreements = projectId ? await findAll<AgreementDoc>('sc_agreements', { projectId }) : [];
+    const agreements = [...clientAgreements, ...projectAgreements].filter((a, i, all) => all.findIndex((x) => x.id === a.id) === i);
+    return {
+      client: { ...client, passwordHash: undefined, schoolName: client.schoolName, logo: client.logo },
+      project: project || undefined,
+      agreements,
+      onboarding,
+      classes,
+      submissions,
+      payments,
+      messages,
+      schoolName: client.schoolName,
+      schoolLogo: client.logo,
+    };
+  }));
+  res.json({ groups });
+});
+
+router.patch('/clients/:id/telegram', async (req: AuthRequest, res: Response) => {
+  const client = await findOne<ClientDoc>('sc_clients', { id: req.params.id });
+  if (!client) return res.status(404).json({ error: 'Client not found' });
+  const patch: Partial<ClientDoc> = { updatedAt: new Date().toISOString() };
+  if (req.body.telegramChatId !== undefined) patch.telegramChatId = String(req.body.telegramChatId || '');
+  if (req.body.telegramEnabled !== undefined) patch.telegramEnabled = req.body.telegramEnabled === true;
+  const updated = await update<ClientDoc>('sc_clients', 'id', client.id, patch);
+  await logActivity({ clientId: client.id, projectId: client.projectId, actor: actor(req), action: 'client.telegram_updated', detail: client.schoolName });
+  res.json({ client: updated ? { ...updated, passwordHash: undefined } : null });
+});
+
+router.get('/messages', async (req: Request, res: Response) => {
+  const filter = req.query.projectId ? { projectId: String(req.query.projectId) } : {};
+  res.json({ messages: await findAll<MessageDoc>('sc_messages', filter) });
+});
+
+router.post('/messages', async (req: AuthRequest, res: Response) => {
+  const project = await findOne<ProjectDoc>('sc_projects', { id: String(req.body.projectId || '') });
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const message = String(req.body.message || '').trim();
+  if (!message) return res.status(400).json({ error: 'Message is required.' });
+  const now = new Date().toISOString();
+  const doc: MessageDoc = {
+    id: makeId(), projectId: project.id, senderId: req.admin?.username || 'admin',
+    senderName: req.admin?.name || 'Gtech admin', senderRole: 'admin',
+    message, read: false, channel: 'portal', createdAt: now,
+  };
+  await insert('sc_messages', doc);
+  const client = await findOne<ClientDoc>('sc_clients', { id: project.clientId });
+  if (client?.telegramChatId && client.telegramEnabled) {
+    try { await sendTelegramText(client.telegramChatId, `New message from Gtech admin: ${message}`); } catch {}
+  }
+  await notify({ clientId: project.clientId, projectId: project.id, audience: 'client', title: 'New admin message', message: message.slice(0, 160), type: 'message' });
+  res.status(201).json({ message: doc });
+});
+
+router.patch('/messages/:id/read', async (req: AuthRequest, res: Response) => {
+  const message = await findOne<MessageDoc>('sc_messages', { id: req.params.id });
+  if (!message) return res.status(404).json({ error: 'Message not found' });
+  const updated = await update<MessageDoc>('sc_messages', 'id', message.id, { read: true });
+  res.json({ message: updated });
+});
+
 router.post('/clients/:id/marketplace/connect', adminRoles('super_admin'), async (req: AuthRequest, res: Response) => {
   const client = await findOne<ClientDoc>('sc_clients', { id: req.params.id });
   if (!client) return res.status(404).json({ error: 'Client not found' });
@@ -247,6 +325,26 @@ router.post('/proposals/:id/send', async (req: AuthRequest, res: Response) => {
 });
 
 router.get('/agreements', async (_req: Request, res: Response) => res.json({ agreements: await findAll<AgreementDoc>('sc_agreements') }));
+
+router.patch('/agreements/:id', async (req: AuthRequest, res: Response) => {
+  const agreement = await findOne<AgreementDoc>('sc_agreements', { id: req.params.id });
+  if (!agreement) return res.status(404).json({ error: 'Agreement not found' });
+  const patch: any = { updatedAt: new Date().toISOString() };
+  if (req.body.content !== undefined) patch.content = String(req.body.content);
+  if (req.body.additionalTerms !== undefined) {
+    patch.additionalTerms = String(req.body.additionalTerms);
+    if (req.body.content === undefined) {
+      const terms = String(req.body.additionalTerms).trim();
+      const base = String(agreement.content || '').trimEnd();
+      patch.content = base ? `${base}\n\nAdditional terms: ${terms}` : `Additional terms: ${terms}`;
+    }
+  }
+  if (req.body.schoolName !== undefined) patch.schoolName = String(req.body.schoolName);
+  if (req.body.status !== undefined) patch.status = req.body.status;
+  const updated = await update<AgreementDoc>('sc_agreements', 'id', agreement.id, patch);
+  await logActivity({ applicationId: agreement.applicationId, clientId: agreement.clientId, actor: actor(req), action: 'agreement.updated', detail: agreement.reference });
+  res.json({ agreement: updated });
+});
 
 router.post('/agreements', adminRoles('super_admin'), async (req: AuthRequest, res: Response) => {
   const application = await findOne<ApplicationDoc>('sc_applications', { id: req.body.applicationId });
@@ -506,6 +604,10 @@ router.patch('/settings', adminRoles('super_admin'), async (req: AuthRequest, re
   const patch = { ...req.body, id: 'global', updatedAt: new Date().toISOString() };
   delete (patch as any).PAYSTACK_SECRET_KEY;
   delete (patch as any).paystackSecretKey;
+  patch.guidelineVideos = Array.isArray(req.body.guidelineVideos) ? req.body.guidelineVideos : settings.guidelineVideos;
+  patch.telegramBotUsername = req.body.telegramBotUsername !== undefined
+    ? String(req.body.telegramBotUsername || '').replace(/^@/, '')
+    : settings.telegramBotUsername;
   const updated = await upsert<SettingsDoc>('sc_settings', 'id', { ...settings, ...patch });
   res.json({ settings: updated });
 });

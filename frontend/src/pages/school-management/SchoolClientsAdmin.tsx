@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import {
-  adminApi, ADMIN_TOKEN_KEY, dateLabel, downloadAdminDocument, fileToDataUrl, money, stageLabel,
+  adminApi, ADMIN_TOKEN_KEY, dateLabel, downloadAdminDocument, fileToDataUrl, money, schoolsApi, stageLabel,
 } from '../../lib/schools';
 
 const TABS = [
@@ -15,6 +15,8 @@ const TABS = [
   { id: 'applications', label: 'Applications', icon: ClipboardList },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'documents', label: 'Proposals & Agreements', icon: FileText },
+  { id: 'agreements', label: 'Agreements', icon: FileText },
+  { id: 'people', label: 'People', icon: Users },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'operations', label: 'Payments & Operations', icon: CreditCard },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -38,6 +40,8 @@ const TAB_PATHS: Record<string, Tab> = {
   clients: 'clients',
   proposals: 'documents',
   documents: 'documents',
+  agreements: 'agreements',
+  people: 'people',
   projects: 'projects',
   operations: 'operations',
   settings: 'settings',
@@ -133,6 +137,12 @@ export default function SchoolClientsAdmin() {
     convert: {}, proposal: {}, agreement: {}, settings: {}, training: {}, handover: {}, document: { category: 'other', clientVisible: true },
   });
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [schoolGroups, setSchoolGroups] = useState<any[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [agreementDrafts, setAgreementDrafts] = useState<Record<string, { content: string; additionalTerms: string }>>({});
+  const [telegramDraft, setTelegramDraft] = useState<{ clientId: string; chatId: string; enabled: boolean }>({ clientId: '', chatId: '', enabled: false });
+  const [messages, setMessages] = useState<any[]>([]);
+  const [messageText, setMessageText] = useState('');
 
   useEffect(() => {
     setTab(tabFromPath(pathname));
@@ -152,13 +162,15 @@ export default function SchoolClientsAdmin() {
         adminApi.proposals(), adminApi.agreements(), adminApi.projects(),
         adminApi.payments(), adminApi.issues(), adminApi.trainings(),
         adminApi.handovers(), adminApi.documents(), adminApi.packages(), adminApi.faqs(),
-        adminApi.settings(), adminApi.reports(),
+        adminApi.settings(), adminApi.reports(), schoolsApi.getAdminSchools(),
       ]);
       if (results.some((r) => r.status === 'rejected' && String((r as any).reason?.message).includes('Authentication'))) {
         localStorage.removeItem(ADMIN_TOKEN_KEY);
         setToken(null);
         return;
       }
+      const nextSchoolGroups = (results[15] as any).value?.groups || [];
+      setSchoolGroups(nextSchoolGroups);
       setData({
         overview: (results[0] as any).value,
         applications: (results[1] as any).value?.applications || [],
@@ -175,6 +187,7 @@ export default function SchoolClientsAdmin() {
         faqs: (results[12] as any).value?.faqs || [],
         settings: (results[13] as any).value?.settings,
         reports: (results[14] as any).value,
+        schoolGroups: nextSchoolGroups,
       });
     } catch (err: any) {
       setError(err.message);
@@ -217,6 +230,56 @@ export default function SchoolClientsAdmin() {
     } catch { setError('Could not copy to clipboard.'); }
   }
 
+  function groupKey(group: any) {
+    return String(group?.client?.id || group?.project?.id || group?.client?.reference || '');
+  }
+
+  function selectSchoolGroup(group: any) {
+    setSelectedGroupId(groupKey(group));
+    const agreement = group?.agreements?.[0];
+    if (agreement?.id) {
+      setAgreementDrafts((prev) => ({
+        ...prev,
+        [agreement.id]: { content: String(agreement.content || ''), additionalTerms: String(agreement.additionalTerms || '') },
+      }));
+    }
+    setTelegramDraft({
+      clientId: String(group?.client?.id || ''),
+      chatId: String(group?.client?.telegramChatId || ''),
+      enabled: group?.client?.telegramEnabled === true,
+    });
+    setMessageText('');
+  }
+
+  async function refreshMessages(projectId: string) {
+    if (!projectId) {
+      setMessages([]);
+      return;
+    }
+    try {
+      const result = await schoolsApi.adminGetMessages(projectId);
+      setMessages(result.messages || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  const selectedGroup = schoolGroups.find((group) => groupKey(group) === selectedGroupId) || null;
+  const selectedProjectId = String(selectedGroup?.project?.id || selectedGroup?.client?.projectId || '');
+  const selectedAgreement = selectedGroup?.agreements?.[0] || null;
+
+  useEffect(() => {
+    if (!selectedGroupId && schoolGroups.length) selectSchoolGroup(schoolGroups[0]);
+  }, [schoolGroups, selectedGroupId]);
+
+  useEffect(() => {
+    if (tab !== 'people' || !selectedProjectId) {
+      setMessages([]);
+      return;
+    }
+    void refreshMessages(selectedProjectId);
+  }, [tab, selectedProjectId]);
+
   function requestApplicationStatus(status: string) {
     const application = detail?.application;
     if (!application) return;
@@ -248,10 +311,103 @@ export default function SchoolClientsAdmin() {
   const issues = data.issues || [];
   const documents = data.documents || [];
   const settings = data.settings || {};
+  const selectedClientId = String(selectedGroup?.client?.id || '');
+  const selectedAgreementId = String(selectedAgreement?.id || '');
+  const agreementDraft = agreementDrafts[selectedAgreementId] || {};
+  const agreementContent = agreementDraft.content ?? String(selectedAgreement?.content || '');
+  const additionalTerms = agreementDraft.additionalTerms ?? String(selectedAgreement?.additionalTerms || '');
+  const telegramChatId = telegramDraft.clientId === selectedClientId ? telegramDraft.chatId : String(selectedGroup?.client?.telegramChatId || '');
+  const telegramEnabled = telegramDraft.clientId === selectedClientId ? telegramDraft.enabled : selectedGroup?.client?.telegramEnabled === true;
+
+  async function saveAgreement() {
+    if (!selectedAgreement?.id) return;
+    const agreementId = String(selectedAgreement.id);
+    const result = await act(() => schoolsApi.updateAgreement(agreementId, { content: agreementContent }), 'Agreement saved.');
+    if (result?.agreement) {
+      setAgreementDrafts((prev) => ({ ...prev, [agreementId]: { content: String(result.agreement.content || ''), additionalTerms: String(result.agreement.additionalTerms || '') } }));
+    }
+  }
+
+  async function saveAdditionalTerms() {
+    if (!selectedAgreement?.id) return;
+    const agreementId = String(selectedAgreement.id);
+    const result = await act(() => schoolsApi.updateAgreement(agreementId, { additionalTerms }), 'Additional terms saved.');
+    if (result?.agreement) {
+      setAgreementDrafts((prev) => ({ ...prev, [agreementId]: { content: String(result.agreement.content || ''), additionalTerms: String(result.agreement.additionalTerms || '') } }));
+    }
+  }
+
+  async function sendAdminMessage() {
+    const text = messageText.trim();
+    if (!text || !selectedProjectId) return;
+    const result = await act(() => schoolsApi.adminSendMessage(selectedProjectId, text), 'Message sent.');
+    if (result) {
+      setMessageText('');
+      await refreshMessages(selectedProjectId);
+    }
+  }
+
+  async function markMessageRead(message: any) {
+    if (!message?.id) return;
+    await act(() => schoolsApi.markMessageRead(String(message.id)), 'Message marked read.');
+    if (selectedProjectId) await refreshMessages(selectedProjectId);
+  }
+
+  async function saveTelegram() {
+    if (!selectedGroup?.client?.id) return;
+    const clientId = String(selectedGroup.client.id);
+    const result = await act(() => schoolsApi.updateClientTelegram(clientId, { telegramChatId: telegramChatId.trim(), telegramEnabled }), 'Telegram settings saved.');
+    if (result?.client) {
+      setTelegramDraft({ clientId: String(result.client.id || clientId), chatId: String(result.client.telegramChatId || ''), enabled: result.client.telegramEnabled === true });
+    }
+  }
+
+  function setGuidelineValue(index: number, key: string, value: string) {
+    setForms((p: any) => {
+      const videos = [...(p.settings.guidelineVideos || settings.guidelineVideos || [])].map((item: any) => ({ ...item }));
+      if (!videos[index]) return p;
+      videos[index] = { ...videos[index], [key]: value };
+      return { ...p, settings: { ...p.settings, guidelineVideos: videos } };
+    });
+  }
+
+  function addGuidelineVideo() {
+    setForms((p: any) => {
+      const videos = [...(p.settings.guidelineVideos || settings.guidelineVideos || [])].map((item: any) => ({ ...item }));
+      videos.push({ id: `video-${Date.now()}`, title: '', url: '', description: '', posterUrl: '', type: 'file' });
+      return { ...p, settings: { ...p.settings, guidelineVideos: videos } };
+    });
+  }
+
+  function removeGuidelineVideo(index: number) {
+    setForms((p: any) => {
+      const videos = [...(p.settings.guidelineVideos || settings.guidelineVideos || [])].map((item: any) => ({ ...item }));
+      return { ...p, settings: { ...p.settings, guidelineVideos: videos.filter((_: any, i: number) => i !== index) } };
+    });
+  }
 
   async function openApplication(id: string) {
     const result = await act(() => adminApi.application(id), '');
     if (result) setDetail(result);
+  }
+
+  function setVideoValue(key: string, value: string) {
+    setForms((p: any) => ({
+      ...p,
+      settings: { ...p.settings, onboardingVideo: { ...(p.settings.onboardingVideo || {}), [key]: value } },
+    }));
+  }
+
+  function setDownloadValue(index: number, url: string) {
+    setForms((p: any) => {
+      const video = p.settings.onboardingVideo || {};
+      const qualities = ['1080p', '720p', '480p'];
+      const quality = qualities[index];
+      const downloads = [...(video.downloads || [])].filter((item: any) => item?.quality !== quality);
+      if (url.trim()) downloads.push({ label: `Download ${quality}`, quality, url: url.trim() });
+      downloads.sort((a: any, b: any) => qualities.indexOf(a.quality) - qualities.indexOf(b.quality));
+      return { ...p, settings: { ...p.settings, onboardingVideo: { ...video, downloads } } };
+    });
   }
 
   return (
@@ -541,6 +697,219 @@ export default function SchoolClientsAdmin() {
           </div>
         )}
 
+        {tab === 'agreements' && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="card p-5 school-grouped">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="font-semibold">School agreements</h2>
+                <span className="text-[10px] text-faint">{schoolGroups.length} schools</span>
+              </div>
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                {schoolGroups.map((group: any, index: number) => {
+                  const agreement = group.agreements?.[0];
+                  const schoolName = group.client?.schoolName || group.schoolName || 'School';
+                  return (
+                    <div key={groupKey(group) || String(index)} className={`p-3 rounded-lg border ${groupKey(group) === selectedGroupId ? 'border-violet-500/40 bg-violet-500/10' : 'border-white/[0.06] bg-surface/40'}`}>
+                      <div className="flex items-center gap-3">
+                        {group.client?.logo ? (
+                          <img src={group.client.logo} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-violet-500/15 flex items-center justify-center text-xs font-semibold text-violet-300">{schoolName.slice(0, 2).toUpperCase()}</div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{schoolName}</div>
+                          <div className="text-[11px] text-faint truncate">{group.client?.email || 'No email'}</div>
+                        </div>
+                        {agreement && <StatusBadge status={agreement.status} />}
+                      </div>
+                      <div className="text-[10px] text-faint mt-2 truncate">Project: {group.project?.reference || group.client?.reference || '—'}</div>
+                      <button disabled={busy} onClick={() => selectSchoolGroup(group)} className="mt-2 px-2 py-1 rounded bg-violet-500/10 text-violet-300 text-[10px]">Open agreement</button>
+                    </div>
+                  );
+                })}
+                {!schoolGroups.length && <p className="text-sm text-muted">No school groups found.</p>}
+              </div>
+            </div>
+            <div className="lg:col-span-2 space-y-4">
+              <div className="card p-5">
+                {!selectedGroup ? (
+                  <p className="text-sm text-muted">Select a school to open its agreement.</p>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {selectedGroup.client?.logo ? (
+                        <img src={selectedGroup.client.logo} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-violet-500/15 flex items-center justify-center text-xs font-semibold text-violet-300">{(selectedGroup.client?.schoolName || selectedGroup.schoolName || 'S').slice(0, 2).toUpperCase()}</div>
+                      )}
+                      <div>
+                        <h2 className="font-semibold">{selectedGroup.client?.schoolName || selectedGroup.schoolName || 'School'}</h2>
+                        <p className="text-[11px] text-faint">{selectedGroup.client?.email || 'No email'} · {selectedGroup.project?.reference || selectedGroup.client?.reference || 'No project reference'}</p>
+                      </div>
+                    </div>
+                    {selectedAgreement && <StatusBadge status={selectedAgreement.status} />}
+                  </div>
+                )}
+              </div>
+              <div className="card p-6 sm-agreement-sheet a4-sheet">
+                {!selectedAgreement ? (
+                  <p className="text-sm text-muted">No agreement has been created for this school.</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 no-print">
+                      <div>
+                        <h3 className="font-semibold">{selectedAgreement.reference || 'School development agreement'}</h3>
+                        <p className="text-[11px] text-faint">Version {selectedAgreement.version || 1} · {stageLabel(selectedAgreement.status)}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button disabled={busy} onClick={saveAgreement} className="btn btn-primary !py-2 !px-3 !text-xs">Save agreement</button>
+                        <button onClick={() => window.print()} className="btn btn-outline !py-2 !px-3 !text-xs no-print"><FileText className="w-3 h-3 inline" /> Print</button>
+                      </div>
+                    </div>
+                    <textarea aria-label="Agreement content" rows={18} className="w-full px-4 py-3 rounded-lg bg-surface border border-white/[0.08] text-sm leading-relaxed" value={agreementContent} onChange={(e) => setAgreementDrafts((prev) => ({ ...prev, [selectedAgreementId]: { content: e.target.value, additionalTerms } }))} />
+                    <div className="no-print border-t border-white/[0.06] pt-4 space-y-2">
+                      <label className="block text-xs font-semibold">Additional terms</label>
+                      <textarea rows={4} className="w-full px-3 py-2 rounded-lg bg-surface border border-white/[0.08] text-xs" value={additionalTerms} onChange={(e) => setAgreementDrafts((prev) => ({ ...prev, [selectedAgreementId]: { content: agreementContent, additionalTerms: e.target.value } }))} />
+                      <button disabled={busy} onClick={saveAdditionalTerms} className="btn btn-outline !py-2 !px-3 !text-xs">Save terms</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'people' && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="card p-5 school-grouped">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="font-semibold">School clients</h2>
+                <span className="text-[10px] text-faint">{schoolGroups.length} grouped</span>
+              </div>
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                {schoolGroups.map((group: any, index: number) => (
+                  <button key={groupKey(group) || String(index)} onClick={() => selectSchoolGroup(group)} className={`w-full p-3 rounded-lg text-left border ${groupKey(group) === selectedGroupId ? 'border-violet-500/40 bg-violet-500/10' : 'border-white/[0.06] bg-surface/40 hover:bg-surface'}`}>
+                    <div className="text-sm font-medium">{group.client?.schoolName || group.schoolName || 'School'}</div>
+                    <div className="text-[11px] text-faint mt-0.5">{group.client?.email || 'No email'}</div>
+                    <div className="text-[10px] text-faint mt-1">{group.project?.reference || group.client?.reference || 'No reference'} · {(group.classes || []).length} classes · {(group.submissions || []).length} submissions</div>
+                  </button>
+                ))}
+                {!schoolGroups.length && <p className="text-sm text-muted">No school groups found.</p>}
+              </div>
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+              {!selectedGroup ? (
+                <div className="card p-6 text-sm text-muted">Select a school to review its classes and submissions.</div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold">{selectedGroup.client?.schoolName || selectedGroup.schoolName || 'School'}</h2>
+                      <p className="text-[11px] text-faint mt-1">{selectedGroup.client?.email || 'No email'} · {selectedGroup.project?.reference || selectedGroup.client?.reference || 'No project reference'}</p>
+                    </div>
+                    <button onClick={() => window.print()} className="btn btn-outline !py-2 !px-3 !text-xs no-print"><FileText className="w-3 h-3 inline" /> Print form</button>
+                  </div>
+                  <div className="card p-5 a4-sheet space-y-6">
+                    <section>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="font-semibold">Classes</h3>
+                        <span className="text-[10px] text-faint">{(selectedGroup.classes || []).length} total</span>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {(selectedGroup.classes || []).map((item: any) => {
+                          const invite = item.inviteUrl || (item.inviteToken ? `${window.location.origin}/school-management/class-invite/${item.inviteToken}` : '');
+                          return (
+                            <div key={item.id} className="p-3 rounded-lg bg-surface/60 text-xs">
+                              <div className="font-medium">{item.name || 'Class'}{item.arm ? ` · ${item.arm}` : ''}</div>
+                              <div className="text-[11px] text-muted mt-1">Arm: {item.arm || '—'}{item.level ? ` · Level: ${item.level}` : ''}</div>
+                              <div className="text-[11px] text-faint mt-1">Head teacher: {item.headTeacherName || '—'}{item.headTeacherEmail ? ` · ${item.headTeacherEmail}` : ''}{item.headTeacherPhone ? ` · ${item.headTeacherPhone}` : ''}</div>
+                              {Array.isArray(item.subjects) && item.subjects.length > 0 && <div className="text-[11px] text-faint mt-1">Subjects: {item.subjects.join(', ')}</div>}
+                              <div className="text-[10px] text-violet-300 break-all mt-2">{invite || 'No invite link'}</div>
+                              {invite && <button onClick={() => copy(invite, 'Invite link')} className="mt-2 px-2 py-1 rounded bg-white/5 text-muted text-[10px]"><Copy className="w-3 h-3 inline" /> Copy link</button>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {!(selectedGroup.classes || []).length && <p className="text-sm text-muted">No classes have been created for this school.</p>}
+                    </section>
+                    <section>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="font-semibold">Submissions</h3>
+                        <span className="text-[10px] text-faint">{(selectedGroup.submissions || []).length} received</span>
+                      </div>
+                      <div className="space-y-3">
+                        {(selectedGroup.submissions || []).map((submission: any) => (
+                          <div key={submission.id} className="p-3 rounded-lg bg-surface/50">
+                            <div className="text-xs font-medium">{submission.className || 'Class'}{submission.arm ? ` · ${submission.arm}` : ''}</div>
+                            <div className="text-[11px] text-faint mt-0.5">Head teacher: {submission.headTeacher?.fullName || '—'}{submission.headTeacher?.email ? ` · ${submission.headTeacher.email}` : ''}{submission.headTeacher?.phone ? ` · ${submission.headTeacher.phone}` : ''}</div>
+                            <div className="overflow-x-auto mt-3">
+                              <table className="w-full text-left text-[10px]">
+                                <thead className="text-faint uppercase">
+                                  <tr>
+                                    {['Student', 'Class', 'Arm', 'Gender', 'Date of birth', 'Parent', 'Relationship', 'Parent phone', 'Parent email', 'Address'].map((heading) => (
+                                      <th key={heading} className="p-2 border border-white/10 whitespace-nowrap">{heading}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(submission.students || []).map((student: any, studentIndex: number) => {
+                                    const cells = [student.studentName, student.className || submission.className, student.arm, student.gender, student.dateOfBirth, student.parentName, student.relationship, student.parentPhone, student.parentEmail, student.address];
+                                    return (
+                                      <tr key={`${submission.id}-${student.studentName || studentIndex}`}>
+                                        {cells.map((cell: any, cellIndex: number) => <td key={cellIndex} className="p-2 border border-white/10">{cell || '—'}</td>)}
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {!(selectedGroup.submissions || []).length && <p className="text-sm text-muted">No submissions have been received for this school.</p>}
+                    </section>
+                  </div>
+                  <div className="card p-5">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <h3 className="font-semibold">Messages</h3>
+                      <span className="text-[10px] text-faint">{messages.length} in this project</span>
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {messages.map((message: any) => (
+                        <div key={message.id} className={`p-3 rounded-lg text-xs ${message.senderRole === 'admin' ? 'bg-violet-500/10' : 'bg-surface/60'}`}>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-medium">{message.senderName || message.senderRole || 'Message'}</div>
+                            <div className="text-[10px] text-faint">{dateLabel(message.createdAt)} · {stageLabel(message.senderRole)}</div>
+                          </div>
+                          <div className="text-muted mt-1 whitespace-pre-wrap">{message.message}</div>
+                          {message.senderRole !== 'admin' && !message.read && (
+                            <button disabled={busy} onClick={() => markMessageRead(message)} className="mt-2 px-2 py-1 rounded bg-white/5 text-violet-300 text-[10px]">Mark read</button>
+                          )}
+                        </div>
+                      ))}
+                      {!messages.length && <p className="text-sm text-muted">No messages for this project yet.</p>}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <input className="flex-1 px-3 py-2 rounded-lg bg-surface border border-white/[0.08] text-xs" placeholder="Write a message to the school" value={messageText} onChange={(e) => setMessageText(e.target.value)} />
+                      <button disabled={busy || !messageText.trim() || !selectedProjectId} onClick={sendAdminMessage} className="btn btn-primary !py-2 !px-3 !text-xs"><Send className="w-3 h-3 inline" /> Send</button>
+                    </div>
+                  </div>
+                  <div className="card p-5">
+                    <h3 className="font-semibold mb-3">Telegram settings</h3>
+                    <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                      <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" placeholder="Telegram chat ID" value={telegramChatId} onChange={(e) => setTelegramDraft({ clientId: selectedClientId, chatId: e.target.value, enabled: telegramEnabled })} />
+                      <label className="flex items-center gap-2 text-muted">
+                        <input type="checkbox" checked={telegramEnabled} onChange={(e) => setTelegramDraft({ clientId: selectedClientId, chatId: telegramChatId, enabled: e.target.checked })} /> Enable Telegram messages
+                      </label>
+                    </div>
+                    <button disabled={busy || !selectedClientId} onClick={saveTelegram} className="btn btn-primary !py-2 !px-3 !text-xs mt-3">Save Telegram settings</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === 'projects' && (
           <div className="space-y-4">
             {projects.map((project: any) => (
@@ -648,6 +1017,34 @@ export default function SchoolClientsAdmin() {
                 <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.contact?.whatsapp ?? settings.contact?.whatsapp ?? ''} placeholder="WhatsApp number" onChange={(e) => setForms((p: any) => ({ ...p, settings: { ...p.settings, contact: { ...settings.contact, ...p.settings.contact, whatsapp: e.target.value } } }))} />
                 <textarea rows={3} className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.privacyPolicy ?? settings.privacyPolicy ?? ''} placeholder="Privacy policy" onChange={(e) => setForms((p: any) => ({ ...p, settings: { ...p.settings, privacyPolicy: e.target.value } }))} />
                 <textarea rows={3} className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.terms ?? settings.terms ?? ''} placeholder="Terms" onChange={(e) => setForms((p: any) => ({ ...p, settings: { ...p.settings, terms: e.target.value } }))} />
+                <textarea rows={5} className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.agreementTemplate ?? settings.agreementTemplate ?? ''} placeholder="School development agreement template" onChange={(e) => setForms((p: any) => ({ ...p, settings: { ...p.settings, agreementTemplate: e.target.value } }))} />
+                <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.telegramBotUsername ?? settings.telegramBotUsername ?? ''} placeholder="Telegram bot username" onChange={(e) => setForms((p: any) => ({ ...p, settings: { ...p.settings, telegramBotUsername: e.target.value } }))} />
+                <div className="pt-3 text-xs font-semibold text-violet-300">Guideline videos</div>
+                {(forms.settings.guidelineVideos ?? settings.guidelineVideos ?? []).map((video: any, index: number) => (
+                  <div key={video.id || index} className="p-3 rounded-lg bg-surface/60 space-y-2">
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" placeholder="Title" value={video.title || ''} onChange={(e) => setGuidelineValue(index, 'title', e.target.value)} />
+                      <select className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={video.type || 'file'} onChange={(e) => setGuidelineValue(index, 'type', e.target.value)}>
+                        <option value="file">File</option>
+                        <option value="youtube">YouTube</option>
+                      </select>
+                      <input className="sm:col-span-2 px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" placeholder="Video URL" value={video.url || ''} onChange={(e) => setGuidelineValue(index, 'url', e.target.value)} />
+                      <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" placeholder="Poster image URL" value={video.posterUrl || ''} onChange={(e) => setGuidelineValue(index, 'posterUrl', e.target.value)} />
+                      <input className="sm:col-span-2 px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" placeholder="Description" value={video.description || ''} onChange={(e) => setGuidelineValue(index, 'description', e.target.value)} />
+                    </div>
+                    <button type="button" onClick={() => removeGuidelineVideo(index)} className="px-2 py-1 rounded bg-white/5 text-muted text-[10px]">Remove</button>
+                  </div>
+                ))}
+                <button type="button" onClick={addGuidelineVideo} className="w-fit px-3 py-2 rounded-lg bg-violet-500/10 text-violet-300 text-[11px]"><Plus className="w-3 h-3 inline" /> Add guideline video</button>
+                <div className="pt-3 text-xs font-semibold text-violet-300">Onboarding demo video</div>
+                <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.title ?? settings.onboardingVideo?.title ?? ''} placeholder="Video title" onChange={(e) => setVideoValue('title', e.target.value)} />
+                <textarea rows={2} className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.description ?? settings.onboardingVideo?.description ?? ''} placeholder="Video description" onChange={(e) => setVideoValue('description', e.target.value)} />
+                <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.landscapeUrl ?? settings.onboardingVideo?.landscapeUrl ?? ''} placeholder="Landscape hosted video URL" onChange={(e) => setVideoValue('landscapeUrl', e.target.value)} />
+                <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.portraitUrl ?? settings.onboardingVideo?.portraitUrl ?? ''} placeholder="Portrait hosted video URL" onChange={(e) => setVideoValue('portraitUrl', e.target.value)} />
+                <input className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.posterUrl ?? settings.onboardingVideo?.posterUrl ?? ''} placeholder="Poster image URL" onChange={(e) => setVideoValue('posterUrl', e.target.value)} />
+                {['1080p', '720p', '480p'].map((quality, index) => (
+                  <input key={quality} className="px-3 py-2 rounded-lg bg-surface border border-white/[0.08]" value={forms.settings.onboardingVideo?.downloads?.find((item: any) => item?.quality === quality)?.url ?? settings.onboardingVideo?.downloads?.find((item: any) => item?.quality === quality)?.url ?? ''} placeholder={`${quality} hosted download URL`} onChange={(e) => setDownloadValue(index, e.target.value)} />
+                ))}
               </div>
             </div>
             <div className="card p-5">
